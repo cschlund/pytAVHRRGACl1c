@@ -25,7 +25,7 @@ avail = sorted(rl.REGIONS.keys())
 defin = ', '.join(map(str, avail))
 
 parser = argparse.ArgumentParser(description='''This script 
-displays AVHRR GAC Level 1c data processed in the framework 
+displays one AVHRR GAC Level 1c orbit processed in the framework 
 of cloud_cci (gyGAC).''')
 
 parser.add_argument('-c', '--channel', help='Available channels are: ch1/ch2/ch3b/ch4/ch5/ch3a', required=True)
