@@ -51,6 +51,9 @@ outdir = './OUT/'
 outfil = bastxt+'_'+args.channel+'_'+args.region+'_'+args.time+'.png'
 outtit = "AVHRR GAC L1c - "+rl.REGIONS[args.region]["nam"]+" ("+args.time+")\n\n"
 
+if not os.path.exists(outdir):
+  os.makedirs(outdir)
+  
 #print rl.REGIONS[args.region]["nam"]
 #print rl.REGIONS[args.region]["geo"]
 #for key,val in rl.REGIONS[args.region].items():

@@ -51,7 +51,6 @@ if args.verbose == True:
   print ("   - File4Global: %s" % args.gfile)
 
 # -------------------------------------------------------------------
-
 outdir     = './PYSTA/'
 basestr    = args.satellite+'_'+args.date
 ofilebase  = 'GlobalZonalMeans_avhrrGAC_'+basestr
@@ -61,6 +60,9 @@ fill_value = -9999.
 pattern    = 'ECC_GAC_avhrr*'+args.satellite+'*'+args.date+'T*'
 fil_list   = mysub.find(pattern, args.path)
 nfiles     = len(fil_list)
+
+if not os.path.exists(outdir):
+  os.makedirs(outdir)
 
 if args.gfile != None:
   #full_gfpath = os.path.join(outdir, args.gfile)
