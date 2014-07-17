@@ -23,8 +23,8 @@ BACKFIL=visAVHRRv3.0_`date -I`_backup.tgz
 
 
 # An additional possibility to backup your data 
-SUBS = #OUT #TMP STA
-FILS = *.py Makefile
+SUBS = .git/ #OUT #TMP #STA
+FILS = *.py Makefile .gitignore
 tar:
 	tar cvfz ../$(BACKFIL) $(FILS) $(SUBS)
 
