@@ -24,7 +24,8 @@ AVHRR GAC Level 1c data processed in the framework of cloud_cci (gyGAC).
 For the VIS channels, statistics is based on daytime observations only,
 i.e. SZA less than 80. For the IR channels day/twilight/night 
 observations are considered. Additionally, 2 different PNG files
-are created based on the statistics.''' % os.path.basename(__file__))
+are created based on the statistics. Orbits are processed in
+serial mode.''' % os.path.basename(__file__))
 
 # -------------------------------------------------------------------
 
