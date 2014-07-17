@@ -5,5 +5,5 @@
 *.png
 *.txt
 PYSTAT/**
-PYSTAT*/
+PYSTAT/
 OUT/

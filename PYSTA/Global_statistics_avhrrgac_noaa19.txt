@@ -1,2 +1,0 @@
-# Global statistics for AVHRR GAC on NOAA-19
-# channel | date | time | mean | stdv | nobs 
