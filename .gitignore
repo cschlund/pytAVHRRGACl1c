@@ -1,3 +1,7 @@
 # Ignore following files
 *.pyc
 *~
+*.sta
+*.png
+./PYSTAT/
+./OUT/
