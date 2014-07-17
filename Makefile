@@ -18,7 +18,7 @@ BACKADR=/home/cschlund/programs/python
 ##hc,qc home directory
 # BACKADR3=/home/home/cornelia/proc
 ##Backup file
-BACKFIL=visAVHRRv3.0_`date -I`_backup.tgz
+BACKFIL=visAVHRRGACl1c_`date -I`_backup.tgz
 #######################################################################
 
 
