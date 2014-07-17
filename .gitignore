@@ -4,5 +4,6 @@
 *.sta
 *.png
 *.txt
-./PYSTAT/
-./OUT/
+PYSTAT/**
+PYSTAT*/
+OUT/
