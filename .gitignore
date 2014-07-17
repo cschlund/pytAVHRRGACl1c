@@ -3,5 +3,6 @@
 *~
 *.sta
 *.png
+*.txt
 ./PYSTAT/
 ./OUT/
