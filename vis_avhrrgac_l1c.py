@@ -44,12 +44,17 @@ if args.verbose == True:
   print ("   - Region   : %s" % args.region)
   print ("   - Time     : %s\n" % args.time)
 
+strlst   = mysub.split_filename(args.filename)
+platform = strlst[3]
+strsdate = strlst[5][0:8]
+stredate = strlst[6][0:8]
+avhrrstr = strsdate+ ": AVHRR GAC L1c / "+mysub.full_sat_name(platform)[0]
 
 basfil = os.path.basename(args.filename)
 bastxt = os.path.splitext(basfil)[0]
 outdir = './OUT/'
 outfil = bastxt+'_'+args.channel+'_'+args.region+'_'+args.time+'.png'
-outtit = "AVHRR GAC L1c - "+rl.REGIONS[args.region]["nam"]+" ("+args.time+")\n\n"
+outtit = avhrrstr+" - "+rl.REGIONS[args.region]["nam"]+" ("+args.time+")\n\n"
 
 if not os.path.exists(outdir):
   os.makedirs(outdir)
