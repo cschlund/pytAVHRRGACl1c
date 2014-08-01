@@ -5,7 +5,7 @@
 # July 2014: cal_zonal_means, plt_zonal_means
 # -------------------------------------------------------------------
 
-import os, fnmatch
+import os, sys, fnmatch
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import host_subplot
@@ -186,9 +186,9 @@ def cal_zonal_means(lat, tar, zone_size):
   #print tar.mean(dtype=np.float64), zonal_means.mean(dtype=np.float64)
   
   if nobs.sum() != np.ma.count(tar):
-    print ( '''   *** Something went wrong in
-    def cal_zonal_means(lat, tar, zone_size): %s NE %s''' 
-    % (nobs.sum(), np.ma.count(tar)) )
+    print ( "\n --- FAILED: Something went wrong in def cal_zonal_means(lat, tar, zone_size): %s != %s \n" 
+    % (int(nobs.sum()), np.ma.count(tar)) )
+    sys.exit(0)
 
   return (zonal_means, zonal_stdev, nobs)
   
