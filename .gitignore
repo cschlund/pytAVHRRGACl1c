@@ -2,6 +2,7 @@
 *.pyc
 *~
 *.sta
+*.log
 *.png
 *.txt
 PYSTAT/**
