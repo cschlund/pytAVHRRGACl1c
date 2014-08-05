@@ -32,6 +32,7 @@ serial mode.''' % os.path.basename(__file__))
 parser.add_argument('-d', '--date', help='Date String, e.g. 20090126', required=True)
 parser.add_argument('-s', '--satellite', help='Satellite, e.g. metop02', required=True)
 parser.add_argument('-p', '--path', help='Path, e.g. /path/to/files', required=True)
+parser.add_argument('-o', '--outdir', help='Path, e.g. /path/to/output', required=True)
 parser.add_argument('-b', '--binsize', help='Define binsize for latitudinal belts', default=5)
 parser.add_argument('-v', '--verbose', help='increase output verbosity', action="store_true")
 parser.add_argument('-g', '--gfile', help='''/path/to/Global_statistics_avhrrgac_satellite.txt, 
@@ -47,12 +48,14 @@ if args.verbose == True:
   print ("   - Date       : %s" % args.date)
   print ("   - Satellite  : %s" % args.satellite)
   print ("   - Path       : %s" % args.path)
+  print ("   - Output Path: %s" % args.outdir)
   print ("   - Binsize    : %s" % args.binsize)
   print ("   - Verbose    : %s" % args.verbose)
   print ("   - File4Global: %s" % args.gfile)
 
 # -------------------------------------------------------------------
-outdir     = './PYSTA/'
+#outdir     = './PYSTA/'
+outdir     = args.outdir
 basestr    = args.satellite+'_'+args.date
 ofilebase  = 'GlobalZonalMeans_avhrrGAC_'+basestr
 oplotbase  = 'Plot_'+ofilebase
@@ -61,7 +64,12 @@ fill_value = -9999.
 pattern    = 'ECC_GAC_avhrr*'+args.satellite+'*'+args.date+'T*'
 fil_list   = mysub.find(pattern, args.path)
 nfiles     = len(fil_list)
+message    = "*** No files available for "+args.date+", "+args.satellite
 qflag      = True	# quality flag if input data is not fishy
+
+if nfiles == 0:
+  print message
+  sys.exit(0)
 
 if not os.path.exists(outdir):
   os.makedirs(outdir)
@@ -351,7 +359,7 @@ if qflag is True:
 	  all_zonal_list[2][chakey][selkey], 
 	  all_global_list[0][chakey][selkey], 
 	  zone_size, 
-	  outdir+oplotbase+'_'+chakey+'_'+selkey+'.png',
+	  os.path.join(outdir,oplotbase+'_'+chakey+'_'+selkey+'.png'),
 	  args.date+' ('+selkey+')',
 	  mysub.full_target_name(chakey),
 	  mysub.full_sat_name(args.satellite)[0])
@@ -377,7 +385,7 @@ if qflag is True:
 	  all_zonal_list[1][chakey][selkey],
 	  all_zonal_list[2][chakey][selkey], 
 	  zone_centers, zone_size,
-	  outdir+oplotbas2+'_'+chakey+'_'+selkey+'.png',
+	  os.path.join(outdir,oplotbas2+'_'+chakey+'_'+selkey+'.png'),
 	  args.date+' ('+selkey+')',
 	  mysub.full_target_name(chakey),
 	  mysub.full_sat_name(args.satellite)[0])
@@ -421,7 +429,7 @@ if qflag is True:
 
 	# write2file
 	mysub.write_zonal_means(
-	  outdir+ofilebase+'_'+chakey+'_'+selkey+'.sta', 
+	  os.path.join(outdir,ofilebase+'_'+chakey+'_'+selkey+'.sta'), 
 	  zone_centers, fill_value,
 	  mysub.full_sat_name(args.satellite)[0], 
 	  args.date+' ('+selkey+')', 
