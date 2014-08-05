@@ -185,10 +185,10 @@ def cal_zonal_means(lat, tar, zone_size):
   #print "   * Total number of datapoints: {0}".format(np.ma.count(tar))
   #print tar.mean(dtype=np.float64), zonal_means.mean(dtype=np.float64)
   
-  if nobs.sum() != np.ma.count(tar):
-    print ( "\n --- FAILED: Something went wrong in def cal_zonal_means(lat, tar, zone_size): %s != %s \n" 
-    % (int(nobs.sum()), np.ma.count(tar)) )
-    sys.exit(0)
+  #if nobs.sum() != np.ma.count(tar):
+    #print ( " --- FAILED: Something went wrong in def cal_zonal_means(lat, tar, zone_size): %s != %s " 
+    #% (int(nobs.sum()), np.ma.count(tar)) )
+    ##sys.exit(0)
 
   return (zonal_means, zonal_stdev, nobs)
   

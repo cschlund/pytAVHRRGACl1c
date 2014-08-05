@@ -66,9 +66,9 @@ def readfiles(tup):
   patt = '*sunsatangles*'+args.satellite+'*'+dat_str+'*'
   afil = mysub.find(patt, dirf)[0]
   
-  if args.verbose == True:
-    print ("   * %s = %s/%s" 
-    % (idx, os.path.basename(fil),os.path.basename(afil)))
+  #if args.verbose == True:
+    #print ("   * %s = %s/%s" 
+    #% (idx, os.path.basename(fil),os.path.basename(afil)))
   
   # open H5 files
   f = h5py.File(fil, "r+")
@@ -91,34 +91,50 @@ def readfiles(tup):
       try:
 	check = global_mean[channel][select]
 	
-	if args.verbose == True:
-	  print ("   * %s = %s (%s)" % (idx, mysub.full_target_name(channel), select))
+	#if args.verbose == True:
+	  #print ("   * %s = %s (%s)" % (idx, mysub.full_target_name(channel), select))
 
-	(lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, False)
-	#(lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, args.verbose)
+	try:
+	  (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, False)
+	  #(lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, args.verbose)
+	  
+	  # check is channel is filled with measurements
+	  if np.ma.count(tar) == 0:
+	    break
+	  
+	  # global statistics
+	  gn = tar.count()
+	  gm = tar.mean(dtype=np.float64)
+	  gs = tar.std(dtype=np.float64)
+	  
+	  #zonal statistics
+	  (zm, zs, zn) = mysub.cal_zonal_means(lat, tar, zone_size)
 	
-	# check is channel is filled with measurements
-	if np.ma.count(tar) == 0:
-	  break
+	  if zn.sum() != gn:
+	    print (" --- FAILED: Input is fishy due to: %s(zonal nobs) != %s (global nobs) " 
+	    % (int(zn.sum()), gn) )
+	    print ("        Fil: %s" % fil)
+	    print ("       Afil: %s" % afil)
+	    print ("    Cha/Sel: %s/%s " % (channel,select))
+	    return None
 	
-	# global statistics
-	gn = tar.count()
-	gm = tar.mean(dtype=np.float64)
-	gs = tar.std(dtype=np.float64)
-	
-	#zonal statistics
-	(zm, zs, zn) = mysub.cal_zonal_means(lat, tar, zone_size)
-      
-	gmean[channel][select] = gm
-	gstdv[channel][select] = gs
-	gnobs[channel][select] = gn
-	
-	zmean[channel][select] = zm
-	zstdv[channel][select] = zs
-	znobs[channel][select] = zn
-	
-	# clear variables
-	del(gm, gs, gn, zm, zs, zn)
+	  gmean[channel][select] = gm
+	  gstdv[channel][select] = gs
+	  gnobs[channel][select] = gn
+	  
+	  zmean[channel][select] = zm
+	  zstdv[channel][select] = zs
+	  znobs[channel][select] = zn
+	  
+	  # clear variables
+	  del(gm, gs, gn, zm, zs, zn)
+	  
+	except (IndexError, ValueError, RuntimeError, Exception) as err:
+	  print (" --- FAILED: %s" % err)
+	  print ("        Fil: %s" % fil)
+	  print ("       Afil: %s" % afil)
+	  print ("    Cha/Sel: %s/%s " % (channel,select))
+	  return None
 	  
       except KeyError:
 	break
@@ -188,6 +204,7 @@ if __name__ == '__main__':
   pattern    = 'ECC_GAC_avhrr*'+args.satellite+'*'+args.date+'T*'
   fil_list   = mysub.find(pattern, args.path)
   nfiles     = len(fil_list)
+  qflag      = True	# quality flag if input data is not fishy
 
   if not os.path.exists(outdir):
     os.makedirs(outdir)
@@ -207,8 +224,11 @@ if __name__ == '__main__':
   # -------------------------------------------------------------------
 
   # lists for generating total arrays
-  cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
-  sel_list  = ['day', 'night', 'twilight']
+  #cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
+  #sel_list  = ['day', 'night', 'twilight']
+  # for testing
+  cha_list  = ['ch1', 'ch4']
+  sel_list  = ['day']
 
   # -------------------------------------------------------------------
 
@@ -285,11 +305,12 @@ if __name__ == '__main__':
   pool = Pool(processes=nfiles)
   results = pool.map(func=readfiles, iterable=arglist)
   
-  # idx, gmean, gstdv, gnobs, zmean, zstdv, znobs
-  outputs = [(res[0], res[1], res[2], 
-	      res[3], res[4], res[5], res[6]) for res in results]
+  ## idx, gmean, gstdv, gnobs, zmean, zstdv, znobs
+  #outputs = [(res[0], res[1], res[2], 
+	      #res[3], res[4], res[5], res[6]) for res in results]
   
-  for out in outputs:
+  #for out in outputs:
+  for pos,out in enumerate(results):
     #print ("   + IDX  :%s " % out[0])
     #print ("   + gmean:%s " % out[1])
     #print ("   + gstdv:%s " % out[2])
@@ -297,214 +318,226 @@ if __name__ == '__main__':
     #print ("   + zmean:%s " % out[4])
     #print ("   + zstdv:%s " % out[5])
     #print ("   + znobs:%s " % out[6])
-    for cha in cha_list:
-      for sel in sel_list:
-	try:
-	  check = global_mean[cha][sel]
-	  global_mean[cha][sel][out[0]] = out[1][cha][sel]
-	  global_stdv[cha][sel][out[0]] = out[2][cha][sel]
-	  global_nobs[cha][sel][out[0]] = out[3][cha][sel]
+    if out is None:
+      print (" --- FAILED: %s. Input is fishy for %s --> %s" 
+      % (pos, args.date, fil_list[pos]))
+      qflag = False
+    else:
+      for cha in cha_list:
+	for sel in sel_list:
+	  try:
+	    check = global_mean[cha][sel]
+	    global_mean[cha][sel][out[0]] = out[1][cha][sel]
+	    global_stdv[cha][sel][out[0]] = out[2][cha][sel]
+	    global_nobs[cha][sel][out[0]] = out[3][cha][sel]
 
-	  zonal_mean[cha][sel][out[0],:] = out[4][cha][sel]
-	  zonal_stdv[cha][sel][out[0],:] = out[5][cha][sel]
-	  zonal_nobs[cha][sel][out[0],:] = out[6][cha][sel]
-	  
-	except KeyError:
-	  break
+	    zonal_mean[cha][sel][out[0],:] = out[4][cha][sel]
+	    zonal_stdv[cha][sel][out[0],:] = out[5][cha][sel]
+	    zonal_nobs[cha][sel][out[0],:] = out[6][cha][sel]
+	    
+	  except KeyError:
+	    break
   
   #print "   * Global arrays:"
   #for chakey in global_mean:
     #for selkey,selval in global_mean[chakey].items():
       #print chakey , "=>", selkey, " : ", selval
   #quit()
-  
-  # -------------------------------------------------------------------
 
-  # create lists of mean, stdv, nobs for globa/zonal
-  global_list = [global_mean, global_stdv, global_nobs]
-  zonal_list  = [zonal_mean, zonal_stdv, zonal_nobs]
-  
-  all_global_list = [all_global_mean, all_global_stdv, all_global_nobs]
-  all_zonal_list  = [all_zonal_mean, all_zonal_stdv, all_zonal_nobs]
+  if qflag is True:
+    # -------------------------------------------------------------------
 
-  # -------------------------------------------------------------------
-
-  # Global means/stdv/nobs
-  for position, item in enumerate(global_list):
-    for chakey in item:
-      for selkey,selval in item[chakey].items():
-	# mask zeros
-	mask = np.ma.equal(item[chakey][selkey], 0.)
-	data = np.ma.masked_where(mask, item[chakey][selkey])
-	#print chakey , "=>", selkey, " : ", selval, " ; ", data
-	    
-	if position is 2:
-	  ave = np.sum(data)
-	else:
-	  ave = data.mean()
-	
-	try:
-	  all_item = all_global_list[position]
-	  check = all_item[chakey][selkey]
-	  all_item[chakey][selkey] = ave
-	  del ave
-	  
-	except KeyError:
-	  break
-
-  #print "   * All Global arrays:"
-  #for position, elem in enumerate(all_global_list):
-    #for chakey in elem:
-      #for selkey,selval in elem[chakey].items():
-	#print chakey , "=>", selkey, " : ", selval
-  #quit()
-  # -------------------------------------------------------------------
-
-  # Zonal means/stdv/nobs
-  for position, item in enumerate(zonal_list):
-    for chakey in item:
-      for selkey,selval in item[chakey].items():
-	# mask zeros
-	mask = np.ma.equal(item[chakey][selkey], 0.)
-	data = np.ma.masked_where(mask, item[chakey][selkey])
-	#print chakey , "=>", selkey, " : ", selval, " ; ", data
-	
-	if position is 2:
-	  ave = np.sum(data, axis=0)
-	else:
-	  ave = data.mean(axis=0)
-	  
-	try:
-	  all_item = all_zonal_list[position]
-	  check = all_item[chakey][selkey]
-	  all_item[chakey][selkey][:] = ave
-	  del ave
-	  
-	except KeyError:
-	  break
-
-  #print "   * All Zonal arrays:"
-  #for position, elem in enumerate(all_zonal_list):
-    #for chakey in elem:
-      #for selkey,selval in elem[chakey].items():
-	#print chakey , "=>", selkey, " : ", selval
-
-  # -------------------------------------------------------------------
-
-  # plot output: histogram
-  if args.verbose == True:
-    print ("\n   *** Plot histogram for all channels !")
-
-  for chakey in cha_list:
-    for selkey in sel_list:
-      try:
-	check = all_zonal_mean[chakey][selkey]
-	if np.ma.count(check) == 0:
-	  continue
-	print ("      + %s (%s) "  % (mysub.full_target_name(chakey), selkey) )
-	mysub.plt_zonal_means(
-	  all_zonal_list[0][chakey][selkey], 
-	  all_zonal_list[2][chakey][selkey], 
-	  all_global_list[0][chakey][selkey], 
-	  zone_size, 
-	  outdir+oplotbase+'_'+chakey+'_'+selkey+'.png',
-	  args.date+' ('+selkey+')',
-	  mysub.full_target_name(chakey),
-	  mysub.full_sat_name(args.satellite)[0])
-      except KeyError:
-	break
-
-  # -------------------------------------------------------------------
-
-  # plot2 output: lat. plot
-  if args.verbose == True:
-    print ("\n   *** Plot2 zonal means for all channels !")
+    # create lists of mean, stdv, nobs for globa/zonal
+    global_list = [global_mean, global_stdv, global_nobs]
+    zonal_list  = [zonal_mean, zonal_stdv, zonal_nobs]
     
-  for chakey in cha_list:
-    for selkey in sel_list:
-      try:
-	check = all_zonal_mean[chakey][selkey]
-	if np.ma.count(check) == 0:
-	  continue
-	print ("      + %s (%s) "  % (mysub.full_target_name(chakey), selkey) )
-	mysub.plt_zonal_mean_stdv(
-	  all_zonal_list[0][chakey][selkey], 
-	  all_zonal_list[1][chakey][selkey],
-	  all_zonal_list[2][chakey][selkey], 
-	  zone_centers, zone_size,
-	  outdir+oplotbas2+'_'+chakey+'_'+selkey+'.png',
-	  args.date+' ('+selkey+')',
-	  mysub.full_target_name(chakey),
-	  mysub.full_sat_name(args.satellite)[0])
-      except KeyError:
-	break
+    all_global_list = [all_global_mean, all_global_stdv, all_global_nobs]
+    all_zonal_list  = [all_zonal_mean, all_zonal_stdv, all_zonal_nobs]
 
-  # -------------------------------------------------------------------
-  # save output
+    # -------------------------------------------------------------------
 
-  if args.verbose == True:
-    print ("\n   *** Write global/zonal output files for all channels !")
-
-
-  # --- Write global statistics ---
-  if args.gfile != None:
-    f = open(args.gfile, mode="a")
-
-  for chakey in cha_list:
-    for selkey in sel_list:
-      try:
-	check = all_zonal_mean[chakey][selkey]
-	if np.ma.count(check) == 0:
-	  continue
-	print ("      + %s (%s) "  % (mysub.full_target_name(chakey), selkey) )
-	
-	zm = all_zonal_list[0][chakey][selkey]
-	zn = all_zonal_list[2][chakey][selkey]
-	gn = all_global_list[2][chakey][selkey]
-	gmean_check = np.ma.dot(zm, zn)/gn
-	
-	print ("        - Global mean based on zonal means: %f = %f (global)" 
-	% (gmean_check, all_global_list[0][chakey][selkey]) )
-	print ("        - Global nobs based on zonal nobs: %d = %d (global)" 
-	% (np.sum(zn), gn))
-	
-	if np.sum(zn) != gn:
-	  print (" --- FAILED: Global nobs based on zonal nobs: %d = %d (global)" 
-	  % (np.sum(zn), gn))
-
-	# write2file
-	mysub.write_zonal_means(
-	  outdir+ofilebase+'_'+chakey+'_'+selkey+'.sta', 
-	  zone_centers, fill_value,
-	  mysub.full_sat_name(args.satellite)[0], 
-	  args.date+' ('+selkey+')', 
-	  mysub.full_target_name(chakey), 
-	  all_zonal_list[0][chakey][selkey], 
-	  all_zonal_list[1][chakey][selkey], 
-	  all_zonal_list[2][chakey][selkey],
-	  all_global_list[0][chakey][selkey],
-	  all_global_list[1][chakey][selkey],
-	  all_global_list[2][chakey][selkey] )
+    # Global means/stdv/nobs
+    for position, item in enumerate(global_list):
+      for chakey in item:
+	for selkey,selval in item[chakey].items():
+	  # mask zeros
+	  mask = np.ma.equal(item[chakey][selkey], 0.)
+	  data = np.ma.masked_where(mask, item[chakey][selkey])
+	  #print chakey , "=>", selkey, " : ", selval, " ; ", data
+	      
+	  if position is 2:
+	    ave = np.sum(data)
+	  else:
+	    ave = data.mean()
 	  
-	# write2gfile
-	if args.gfile != None:
-	  # channel | date | time | mean | stdv | nobs
-	  gformat = "%4s %10s %10s %12.6f %12.6f %12d\n"
+	  try:
+	    all_item = all_global_list[position]
+	    check = all_item[chakey][selkey]
+	    all_item[chakey][selkey] = ave
+	    del ave
+	    
+	  except KeyError:
+	    break
+
+    #print "   * All Global arrays:"
+    #for position, elem in enumerate(all_global_list):
+      #for chakey in elem:
+	#for selkey,selval in elem[chakey].items():
+	  #print chakey , "=>", selkey, " : ", selval
+    #quit()
+    # -------------------------------------------------------------------
+
+    # Zonal means/stdv/nobs
+    for position, item in enumerate(zonal_list):
+      for chakey in item:
+	for selkey,selval in item[chakey].items():
+	  # mask zeros
+	  mask = np.ma.equal(item[chakey][selkey], 0.)
+	  data = np.ma.masked_where(mask, item[chakey][selkey])
+	  #print chakey , "=>", selkey, " : ", selval, " ; ", data
 	  
-	  glm = np.ma.filled(all_global_list[0][chakey][selkey], fill_value)
-	  gls = np.ma.filled(all_global_list[1][chakey][selkey], fill_value)
-	  gln = np.ma.filled(all_global_list[2][chakey][selkey], fill_value)
+	  if position is 2:
+	    ave = np.sum(data, axis=0)
+	  else:
+	    ave = data.mean(axis=0)
+	    
+	  try:
+	    all_item = all_zonal_list[position]
+	    check = all_item[chakey][selkey]
+	    all_item[chakey][selkey][:] = ave
+	    del ave
+	    
+	  except KeyError:
+	    break
 
-	  if glm != fill_value and gls != fill_value:
-	    line = gformat % (chakey, args.date, selkey, glm, gls, gln)
-	    f.write(line)
-      except KeyError:
-	break
+    #print "   * All Zonal arrays:"
+    #for position, elem in enumerate(all_zonal_list):
+      #for chakey in elem:
+	#for selkey,selval in elem[chakey].items():
+	  #print chakey , "=>", selkey, " : ", selval
 
-  # --- Write global statistics ---
-  if args.gfile != None:
-    f.close()
+    # -------------------------------------------------------------------
 
+    # plot output: histogram
+    if args.verbose == True:
+      print ("\n   *** Plot histogram for all channels !")
+
+    for chakey in cha_list:
+      for selkey in sel_list:
+	try:
+	  check = all_zonal_mean[chakey][selkey]
+	  if np.ma.count(check) == 0:
+	    continue
+	  #if args.verbose == True:
+	    #print ("      + %s (%s) "  % (mysub.full_target_name(chakey), selkey) )
+	  mysub.plt_zonal_means(
+	    all_zonal_list[0][chakey][selkey], 
+	    all_zonal_list[2][chakey][selkey], 
+	    all_global_list[0][chakey][selkey], 
+	    zone_size, 
+	    outdir+oplotbase+'_'+chakey+'_'+selkey+'.png',
+	    args.date+' ('+selkey+')',
+	    mysub.full_target_name(chakey),
+	    mysub.full_sat_name(args.satellite)[0])
+	except KeyError:
+	  break
+
+    # -------------------------------------------------------------------
+
+    # plot2 output: lat. plot
+    if args.verbose == True:
+      print ("\n   *** Plot2 zonal means for all channels !")
+      
+    for chakey in cha_list:
+      for selkey in sel_list:
+	try:
+	  check = all_zonal_mean[chakey][selkey]
+	  if np.ma.count(check) == 0:
+	    continue
+	  #if args.verbose == True:
+	    #print ("      + %s (%s) "  % (mysub.full_target_name(chakey), selkey) )
+	  mysub.plt_zonal_mean_stdv(
+	    all_zonal_list[0][chakey][selkey], 
+	    all_zonal_list[1][chakey][selkey],
+	    all_zonal_list[2][chakey][selkey], 
+	    zone_centers, zone_size,
+	    outdir+oplotbas2+'_'+chakey+'_'+selkey+'.png',
+	    args.date+' ('+selkey+')',
+	    mysub.full_target_name(chakey),
+	    mysub.full_sat_name(args.satellite)[0])
+	except KeyError:
+	  break
+
+    # -------------------------------------------------------------------
+    # save output
+
+    if args.verbose == True:
+      print ("\n   *** Write global/zonal output files for all channels !")
+
+
+    # --- Write global statistics ---
+    if args.gfile != None:
+      f = open(args.gfile, mode="a")
+
+    for chakey in cha_list:
+      for selkey in sel_list:
+	try:
+	  check = all_zonal_mean[chakey][selkey]
+	  if np.ma.count(check) == 0:
+	    continue
+	  if args.verbose == True:
+	    print ("      + %s (%s) "  % (mysub.full_target_name(chakey), selkey) )
+	  
+	  zm = all_zonal_list[0][chakey][selkey]
+	  zn = all_zonal_list[2][chakey][selkey]
+	  gn = all_global_list[2][chakey][selkey]
+	  gmean_check = np.ma.dot(zm, zn)/gn
+	  
+	  if args.verbose == True:
+	    print ("        - Global mean based on zonal means: %f = %f (global)" 
+	    % (gmean_check, all_global_list[0][chakey][selkey]) )
+	    print ("        - Global nobs based on zonal nobs: %d = %d (global)" 
+	    % (np.sum(zn), gn))
+	  
+	  #if np.sum(zn) != gn:
+	    #print (" --- FAILED: Global nobs based on zonal nobs: %d = %d (global)" 
+	    #% (np.sum(zn), gn))
+
+	  # write2file
+	  mysub.write_zonal_means(
+	    outdir+ofilebase+'_'+chakey+'_'+selkey+'.sta', 
+	    zone_centers, fill_value,
+	    mysub.full_sat_name(args.satellite)[0], 
+	    args.date+' ('+selkey+')', 
+	    mysub.full_target_name(chakey), 
+	    all_zonal_list[0][chakey][selkey], 
+	    all_zonal_list[1][chakey][selkey], 
+	    all_zonal_list[2][chakey][selkey],
+	    all_global_list[0][chakey][selkey],
+	    all_global_list[1][chakey][selkey],
+	    all_global_list[2][chakey][selkey] )
+	    
+	  # write2gfile
+	  if args.gfile != None:
+	    # channel | date | time | mean | stdv | nobs
+	    gformat = "%4s %10s %10s %12.6f %12.6f %12d\n"
+	    
+	    glm = np.ma.filled(all_global_list[0][chakey][selkey], fill_value)
+	    gls = np.ma.filled(all_global_list[1][chakey][selkey], fill_value)
+	    gln = np.ma.filled(all_global_list[2][chakey][selkey], fill_value)
+
+	    if glm != fill_value and gls != fill_value:
+	      line = gformat % (chakey, args.date, selkey, glm, gls, gln)
+	      f.write(line)
+	except KeyError:
+	  break
+
+    # --- Write global statistics ---
+    if args.gfile != None:
+      f.close()
+      
+  else:
+    print (" --- FAILED: No output due to fishy input !")
 
   # -------------------------------------------------------------------
   print ( "\n *** %s finished for %s and %s\n" 
