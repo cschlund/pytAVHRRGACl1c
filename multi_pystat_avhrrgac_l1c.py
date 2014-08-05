@@ -232,11 +232,11 @@ if __name__ == '__main__':
   # -------------------------------------------------------------------
 
   # lists for generating total arrays
-  #cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
-  #sel_list  = ['day', 'night', 'twilight']
-  # for testing
-  cha_list  = ['ch1', 'ch4']
-  sel_list  = ['day']
+  cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
+  sel_list  = ['day', 'night', 'twilight']
+  ## for testing
+  #cha_list  = ['ch1', 'ch4']
+  #sel_list  = ['day']
 
   # -------------------------------------------------------------------
 
