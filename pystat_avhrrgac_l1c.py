@@ -172,7 +172,7 @@ for cha in cha_list:
 for idx, fil in enumerate(fil_list):
   
   #ECC_GAC_avhrr_noaa07_99999_19840422T1731580Z_19840422T1902035Z.h5
-  afil = fil.replace("avhrr", "sunsatangles")
+  afil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
   
   if args.verbose == True and args.test == True:
     print ("\n   * fil : %s" % fil)

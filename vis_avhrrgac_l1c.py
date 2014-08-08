@@ -69,7 +69,7 @@ if not os.path.exists(outdir):
 
 #search for corresponding sunsatangles file
 #ECC_GAC_avhrr_noaa07_99999_19840422T1731580Z_19840422T1902035Z.h5
-afil = args.filename.replace("avhrr", "sunsatangles")
+afil = args.filename.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
   
 # open H5 files
 f = h5py.File(args.filename, "r+")

@@ -55,7 +55,7 @@ def readfiles(tup):
 
   #/path/to/19840422_n07/ECC_GAC_avhrr_noaa07_99999_19840422T1731580Z_19840422T1755450Z.h5
   #/path/to/19840422_n07/ECC_GAC_sunsatangles_noaa07_99999_19840422T1731580Z_19840422T1755450Z.h5
-  afil = fil.replace("avhrr", "sunsatangles")
+  afil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
   
   if args.verbose == True and args.test == True:
     print ("   * %s = %s/%s" 
