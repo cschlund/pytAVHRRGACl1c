@@ -52,23 +52,14 @@ def readfiles(tup):
       
       if cha is 'ch1' or cha is 'ch2' or cha is 'ch3a':
 	break
-	
-      
-  str_list = mysub.split_filename(fil)
-  for item in str_list:
-    if 'T' in item or 'Z' in item:
-      dat_str = item
-      break
 
-  #search for corresponding sunsatangles file
-  dirf = os.path.dirname(fil)
-  basf = os.path.basename(fil)
-  patt = '*sunsatangles*'+args.satellite+'*'+dat_str+'*'
-  afil = mysub.find(patt, dirf)[0]
+  #/path/to/19840422_n07/ECC_GAC_avhrr_noaa07_99999_19840422T1731580Z_19840422T1755450Z.h5
+  #/path/to/19840422_n07/ECC_GAC_sunsatangles_noaa07_99999_19840422T1731580Z_19840422T1755450Z.h5
+  afil = fil.replace("avhrr", "sunsatangles")
   
-  #if args.verbose == True:
-    #print ("   * %s = %s/%s" 
-    #% (idx, os.path.basename(fil),os.path.basename(afil)))
+  if args.verbose == True and args.test == True:
+    print ("   * %s = %s/%s" 
+    % (idx, os.path.basename(fil),os.path.basename(afil)))
   
   # open H5 files
   f = h5py.File(fil, "r+")
@@ -91,8 +82,8 @@ def readfiles(tup):
       try:
 	check = global_mean[channel][select]
 	
-	#if args.verbose == True:
-	  #print ("   * %s = %s (%s)" % (idx, mysub.full_target_name(channel), select))
+	if args.verbose == True and args.test == True:
+	  print ("   * %s = %s (%s)" % (idx, mysub.full_target_name(channel), select))
 
 	try:
 	  (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, False)
@@ -177,6 +168,7 @@ if __name__ == '__main__':
   parser.add_argument('-p', '--path', help='Path, e.g. /path/to/files', required=True)
   parser.add_argument('-o', '--outdir', help='Path, e.g. /path/to/output', required=True)
   parser.add_argument('-b', '--binsize', help='Define binsize for latitudinal belts', default=5)
+  parser.add_argument('-t', '--test', help='Run test with reduced channel and select list', action="store_true")
   parser.add_argument('-v', '--verbose', help='increase output verbosity', action="store_true")
   parser.add_argument('-g', '--gfile', help='''/path/to/Global_statistics_avhrrgac_satellite.txt, 
   which collects global means/stdvs for each satellite, # channel | date | time | mean | stdv | nobs''')
@@ -188,6 +180,7 @@ if __name__ == '__main__':
   if args.verbose == True:
     print ("\n *** Parameter passed" )
     print (" ---------------------- ")
+    print ("   - TEST       : %s" % args.test)
     print ("   - Date       : %s" % args.date)
     print ("   - Satellite  : %s" % args.satellite)
     print ("   - Path       : %s" % args.path)
@@ -230,14 +223,14 @@ if __name__ == '__main__':
       f.close()
     
   # -------------------------------------------------------------------
-
   # lists for generating total arrays
-  cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
-  sel_list  = ['day', 'night', 'twilight']
-  ## for testing
-  #cha_list  = ['ch1', 'ch4']
-  #sel_list  = ['day']
-
+  if args.test is True:
+    cha_list  = ['ch1', 'ch4']
+    sel_list  = ['day']
+  else:
+    cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
+    sel_list  = ['day', 'night', 'twilight']
+    
   # -------------------------------------------------------------------
 
   # define latitudinal zone size :

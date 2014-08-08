@@ -34,6 +34,7 @@ parser.add_argument('-s', '--satellite', help='Satellite, e.g. metop02', require
 parser.add_argument('-p', '--path', help='Path, e.g. /path/to/files', required=True)
 parser.add_argument('-o', '--outdir', help='Path, e.g. /path/to/output', required=True)
 parser.add_argument('-b', '--binsize', help='Define binsize for latitudinal belts', default=5)
+parser.add_argument('-t', '--test', help='Run test with reduced channel and select list', action="store_true")
 parser.add_argument('-v', '--verbose', help='increase output verbosity', action="store_true")
 parser.add_argument('-g', '--gfile', help='''/path/to/Global_statistics_avhrrgac_satellite.txt, 
 which collects global means/stdvs for each satellite, # channel | date | time | mean | stdv | nobs''')
@@ -45,6 +46,7 @@ args = parser.parse_args()
 if args.verbose == True:
   print ("\n *** Parameter passed" )
   print (" ---------------------- ")
+  print ("   - TEST       : %s" % args.test)
   print ("   - Date       : %s" % args.date)
   print ("   - Satellite  : %s" % args.satellite)
   print ("   - Path       : %s" % args.path)
@@ -89,10 +91,12 @@ if args.gfile != None:
 # -------------------------------------------------------------------
 
 # lists for generating total arrays
-#cha_list  = ['ch1', 'ch4']
-#sel_list  = ['day']
-cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
-sel_list  = ['day', 'night', 'twilight']
+if args.test is True:
+  cha_list  = ['ch1', 'ch4']
+  sel_list  = ['day']
+else:
+  cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
+  sel_list  = ['day', 'night', 'twilight']
 
 # -------------------------------------------------------------------
 
@@ -167,21 +171,12 @@ for cha in cha_list:
 # loop over all orbits of that day = date
 for idx, fil in enumerate(fil_list):
   
-  str_list = mysub.split_filename(fil)
-  for item in str_list:
-    if 'T' in item or 'Z' in item:
-      dat_str = item
-      break
-
-  #search for corresponding sunsatangles file
-  dirf = os.path.dirname(fil)
-  basf = os.path.basename(fil)
-  patt = '*sunsatangles*'+args.satellite+'*'+dat_str+'*'
-  afil = mysub.find(patt, dirf)[0]
+  #ECC_GAC_avhrr_noaa07_99999_19840422T1731580Z_19840422T1902035Z.h5
+  afil = fil.replace("avhrr", "sunsatangles")
   
-  #if args.verbose == True:
-    #print ("\n   * fil : %s" % fil)
-    #print ("   * afil: %s" % afil)
+  if args.verbose == True and args.test == True:
+    print ("\n   * fil : %s" % fil)
+    print ("   * afil: %s" % afil)
   
   # open H5 files
   f = h5py.File(fil, "r+")
@@ -204,8 +199,8 @@ for idx, fil in enumerate(fil_list):
       try:
 	check = global_mean[channel][select]
 	
-	#if args.verbose == True:
-	  #print ("   * %s (%s)" % (mysub.full_target_name(channel), select))
+	if args.verbose == True and args.test == True:
+	  print ("   * %s (%s)" % (mysub.full_target_name(channel), select))
 
 	try:
 	  (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, False)

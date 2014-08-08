@@ -65,26 +65,12 @@ if not os.path.exists(outdir):
   #print key, "=>", val
 
 # -------------------------------------------------------------------
-# SPLIT infile in order to find the corresp. sunsatangles file
-istrlst = mysub.split_filename(args.filename)
-datelst = []
-
-for item in istrlst:
-  if 'met' in item or 'noa' in item:
-    platform = item
-    satlabel = mysub.full_sat_name(item)
-  if 'T' in item or 'Z' in item:
-    datelst.append(item)
-
-# -------------------------------------------------------------------
 # READ H5 input
 
 #search for corresponding sunsatangles file
-dirf = os.path.dirname(args.filename)
-basf = os.path.basename(args.filename)
-patt = '*sunsatangles*'+platform+'*'+datelst[0]+'*'
-afil = mysub.find(patt, dirf)[0]
-
+#ECC_GAC_avhrr_noaa07_99999_19840422T1731580Z_19840422T1902035Z.h5
+afil = args.filename.replace("avhrr", "sunsatangles")
+  
 # open H5 files
 f = h5py.File(args.filename, "r+")
 a = h5py.File(afil, "r+")
