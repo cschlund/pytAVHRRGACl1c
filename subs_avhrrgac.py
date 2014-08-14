@@ -5,22 +5,21 @@
 # July 2014: cal_zonal_means, plt_zonal_means
 # -------------------------------------------------------------------
 
-import os, sys, fnmatch
+import os, sys, fnmatch, datetime
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as AA
 from matplotlib import gridspec
 
-
+# -------------------------------------------------------------------
 def split_filename(fil):
   dirname  = os.path.dirname(fil)  
   basename = os.path.basename(fil)
   basefile = os.path.splitext(basename)
   return basefile[0].split('_')
   
-  
-
+# -------------------------------------------------------------------
 def find(pattern, path):
     result = []
     for root, dirs, files in os.walk(path):
@@ -29,8 +28,7 @@ def find(pattern, path):
                 result.append(os.path.join(root, name))
     return result
     
-    
-
+# -------------------------------------------------------------------
 def full_sat_name(sat):
   if sat == 'm02' or sat == 'metop02':
     name = "MetOp-2"
@@ -71,8 +69,7 @@ def full_sat_name(sat):
   return(name, abbr)
   
 # -------------------------------------------------------------------
-
-def full_target_name(target):
+def full_cha_name(target):
   if target == 'rf1' or target == 'ch1':
     name = "Channel 1 reflectance"
   if target == 'rf2' or target == 'ch2':
@@ -86,47 +83,6 @@ def full_target_name(target):
   if target == 'bt5' or target == 'ch5':
     name = "Channel 5 brightness temperature [K]"
   return(name)
-
-# -------------------------------------------------------------------
-
-# STA/m02/Zonal_20070115_20121215_avhrr_m02_L1c_esa_cci_c_20121215_rf3.sta
-def split_sta_filename(ifile):
-  
-  if "/" in ifile:
-    list_of_strings = ifile.split('/')
-    filename = list_of_strings[len(list_of_strings)-1]
-    
-    if filename.endswith('.sta'):
-      print ' *', filename
-    else:
-      print " ! Wrong input file: <*.sta>\n"
-      return None
-
-  else:
-    filename = ifile
-    
-    if filename.endswith('.sta'):
-      print ' *', filename
-    else:
-      print " ! Wrong input file: <*.sta>\n"
-      return None
-
-  #['Zonal', '20090115', '20091215', 'avhrr', 'metop02', 'L1c', 'cmsaf', '20090115', 'rf1.sta']
-  #['Zonal', '20070115', '20121215', 'avhrr', 'm02', 'L1c', 'esa', 'cci', 'c', '20080115', 'rf1.sta']
-
-  lastele = filename.split('_')[len(filename.split('_'))-1]
-  datestr = filename.split('_')[len(filename.split('_'))-2]
-  targstr = lastele.split('.')[0]
-  satestr = filename.split('_')[4]
-  noaastr = full_sat_name(satestr)[1]
-  
-  if 'cmsaf' in filename:
-    print ' * CMSAF:', targstr, datestr, noaastr
-    return('cmsaf_pps', targstr, datestr, noaastr, satestr)
-  else:
-    print ' * ESA Cloud_cci:', targstr, datestr, noaastr
-    return('cloud_cci', targstr, datestr, noaastr, satestr)
-  
 
 # -------------------------------------------------------------------
 # calculate zonal means of input (i.e. orbit)
@@ -191,7 +147,6 @@ def cal_zonal_means(lat, tar, zone_size):
     ##sys.exit(0)
 
   return (zonal_means, zonal_stdev, nobs)
-  
   
 # -------------------------------------------------------------------
 # plot global, zonal means
@@ -331,7 +286,6 @@ def plt_zonal_mean_stdv(zonal_mean, zonal_stdv, zonal_nobs,
   plt.close()
 
   return
-  
 
 # -------------------------------------------------------------------
 # write zonal/global output
@@ -385,3 +339,47 @@ def write_zonal_means(ofil, zones, fill_value, pstr, dstr, cstr,
     obj.write(line)
     
   obj.close()
+
+# -------------------------------------------------------------------
+# read Global_statistics_AVHRRGACl1c_*.txt
+# Global statistics for AVHRR GAC on NOAA-15
+# channel | date | time | mean | stdv | nobs
+def read_globstafile(fil,cha,sel):
+
+  obj = open(fil, mode="r")
+  lines = obj.readlines()
+  obj.close()
+
+  # Global statistics for AVHRR GAC on NOAA-15
+  # channel | date | time | mean | stdv | nobs
+  lstar = []
+  lsdat = []
+  lstim = []
+  lsave = []
+  lsstd = []
+  lsrec = []
+  
+  for ll in lines:
+    line = ll.strip('\n')
+    
+    if '#' in line:
+      continue
+    if '-9999.0000' in line:
+      continue
+    
+    string = line.split( )
+    
+    if string[0] == cha:
+      if string[2] == sel:
+	lstar.append(string[0])
+	date = datetime.datetime.strptime(string[1], '%Y%m%d').date()
+	lsdat.append(date)
+	lstim.append(string[2])
+	lsave.append(float(string[3]))
+	lsstd.append(float(string[4]))
+	lsrec.append(int(string[5]))
+	
+  return (lstar,lsdat,lstim,lsave,lsstd,lsrec)
+
+  
+  

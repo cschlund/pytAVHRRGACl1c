@@ -39,7 +39,7 @@ args = parser.parse_args()
 if args.verbose == True:
   print ("\n *** Parameter passed" )
   print (" ---------------------- ")
-  print ("   - Channel  : %s" % mysub.full_target_name(args.channel))
+  print ("   - Channel  : %s" % mysub.full_cha_name(args.channel))
   print ("   - Filename : %s" % args.filename)
   print ("   - Region   : %s" % args.region)
   print ("   - Time     : %s\n" % args.time)
@@ -134,7 +134,7 @@ for mask in (wmask, emask):
 
 # add colorbar with units:
 cbar = m.colorbar(pcolor)
-cbar.set_label(mysub.full_target_name(args.channel))
+cbar.set_label(mysub.full_cha_name(args.channel))
 
 # add title:
 ax.set_title(outtit)

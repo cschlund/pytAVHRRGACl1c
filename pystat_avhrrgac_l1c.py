@@ -200,7 +200,7 @@ for idx, fil in enumerate(fil_list):
 	check = global_mean[channel][select]
 	
 	if args.verbose == True and args.test == True:
-	  print ("   * %s (%s)" % (mysub.full_target_name(channel), select))
+	  print ("   * %s (%s)" % (mysub.full_cha_name(channel), select))
 
 	try:
 	  (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, False)
@@ -348,7 +348,7 @@ if qflag is True:
 	if np.ma.count(check) == 0:
 	  continue
 	#if args.verbose == True:
-	  #print ("      + %s (%s) "  % (mysub.full_target_name(chakey), selkey) )
+	  #print ("      + %s (%s) "  % (mysub.full_cha_name(chakey), selkey) )
 	mysub.plt_zonal_means(
 	  all_zonal_list[0][chakey][selkey], 
 	  all_zonal_list[2][chakey][selkey], 
@@ -356,7 +356,7 @@ if qflag is True:
 	  zone_size, 
 	  os.path.join(outdir,oplotbase+'_'+chakey+'_'+selkey+'.png'),
 	  args.date+' ('+selkey+')',
-	  mysub.full_target_name(chakey),
+	  mysub.full_cha_name(chakey),
 	  mysub.full_sat_name(args.satellite)[0])
       except KeyError:
 	break
@@ -374,7 +374,7 @@ if qflag is True:
 	if np.ma.count(check) == 0:
 	  continue
 	#if args.verbose == True:
-	  #print ("      + %s (%s) "  % (mysub.full_target_name(chakey), selkey) )
+	  #print ("      + %s (%s) "  % (mysub.full_cha_name(chakey), selkey) )
 	mysub.plt_zonal_mean_stdv(
 	  all_zonal_list[0][chakey][selkey], 
 	  all_zonal_list[1][chakey][selkey],
@@ -382,7 +382,7 @@ if qflag is True:
 	  zone_centers, zone_size,
 	  os.path.join(outdir,oplotbas2+'_'+chakey+'_'+selkey+'.png'),
 	  args.date+' ('+selkey+')',
-	  mysub.full_target_name(chakey),
+	  mysub.full_cha_name(chakey),
 	  mysub.full_sat_name(args.satellite)[0])
       except KeyError:
 	break
@@ -405,7 +405,7 @@ if qflag is True:
 	if np.ma.count(check) == 0:
 	  continue
 	if args.verbose == True:
-	  print ("      + %s (%s) "  % (mysub.full_target_name(chakey), selkey) )
+	  print ("      + %s (%s) "  % (mysub.full_cha_name(chakey), selkey) )
 	
 	zm = all_zonal_list[0][chakey][selkey]
 	zn = all_zonal_list[2][chakey][selkey]
@@ -428,7 +428,7 @@ if qflag is True:
 	  zone_centers, fill_value,
 	  mysub.full_sat_name(args.satellite)[0], 
 	  args.date+' ('+selkey+')', 
-	  mysub.full_target_name(chakey), 
+	  mysub.full_cha_name(chakey), 
 	  all_zonal_list[0][chakey][selkey], 
 	  all_zonal_list[1][chakey][selkey], 
 	  all_zonal_list[2][chakey][selkey],
