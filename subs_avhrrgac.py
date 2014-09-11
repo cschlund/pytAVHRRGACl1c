@@ -30,40 +30,43 @@ def find(pattern, path):
     
 # -------------------------------------------------------------------
 def full_sat_name(sat):
-  if sat == 'm02' or sat == 'metop02':
+  if sat == 'm01' or sat == 'metop01' or sat == 'M1':
+    name = "MetOp-1"
+    abbr = "metop01"
+  if sat == 'm02' or sat == 'metop02' or sat == 'M2':
     name = "MetOp-2"
     abbr = "metop02"
-  if sat == 'n07' or sat == 'noaa07':
+  if sat == 'n07' or sat == 'noaa07' or sat == 'NC':
     name = "NOAA-7"
-    abbr = "noaa7"
-  if sat == 'n09' or sat == 'noaa09':
+    abbr = "noaa07"
+  if sat == 'n09' or sat == 'noaa09' or sat == 'NF':
     name = "NOAA-9"
-    abbr = "noaa9"
-  if sat == 'n10' or sat == 'noaa10':
+    abbr = "noaa09"
+  if sat == 'n10' or sat == 'noaa10' or sat == 'NG':
     name = "NOAA-10"
     abbr = "noaa10"
-  if sat == 'n11' or sat == 'noaa11':
+  if sat == 'n11' or sat == 'noaa11' or sat == 'NH':
     name = "NOAA-11"
     abbr = "noaa11"
-  if sat == 'n12' or sat == 'noaa12':
+  if sat == 'n12' or sat == 'noaa12' or sat == 'ND':
     name = "NOAA-12"
     abbr = "noaa12"
-  if sat == 'n14' or sat == 'noaa14':
+  if sat == 'n14' or sat == 'noaa14' or sat == 'NJ':
     name = "NOAA-14"
     abbr = "noaa14"
-  if sat == 'n15' or sat == 'noaa15':
+  if sat == 'n15' or sat == 'noaa15' or sat == 'NK':
     name = "NOAA-15"
     abbr = "noaa15"
-  if sat == 'n16' or sat == 'noaa16':
+  if sat == 'n16' or sat == 'noaa16' or sat == 'NL':
     name = "NOAA-16"
     abbr = "noaa16"
-  if sat == 'n17' or sat == 'noaa17':
+  if sat == 'n17' or sat == 'noaa17' or sat == 'NM':
     name = "NOAA-17"
     abbr = "noaa17"
-  if sat == 'n18' or sat == 'noaa18':
+  if sat == 'n18' or sat == 'noaa18' or sat == 'NN':
     name = "NOAA-18"
     abbr = "noaa18"
-  if sat == 'n19' or sat == 'noaa19':
+  if sat == 'n19' or sat == 'noaa19' or sat == 'NP':
     name = "NOAA-19"
     abbr = "noaa19"
   return(name, abbr)
