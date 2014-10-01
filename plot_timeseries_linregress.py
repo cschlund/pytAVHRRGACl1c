@@ -20,7 +20,7 @@ import matplotlib
 from scipy import stats
 
 min_nobs_day_night = 2.5e7
-min_nobs_twilight  = 0.6e7
+min_nobs_twilight  = 0.4e7
 
 parser = argparse.ArgumentParser(description='''%s 
 displays daily global means of 1 satellite, 1 channel and
@@ -152,10 +152,15 @@ for channel in cha_list:
       msk = np.ma.less(rec, min_nobs)
       mave = np.ma.masked_where(msk, ave)
       mstd = np.ma.masked_where(msk, std)
+      #mave = np.ma.filled(mave, -1)
+      #mstd = np.ma.filled(mstd, -1)
     else:
       mave = ave
       mstd = std
 
+    #print mave
+    #print mstd
+    
     # linear regression:
 
     # convert date list to a set of numbers counting the number of days

@@ -61,6 +61,7 @@ colorlst = ['Red','DodgerBlue','DarkOrange','Lime',
 # -------------------------------------------------------------------
 if args.channel == None or args.time == None:
   cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
+  #cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5']
   sel_list  = ['day', 'night', 'twilight']
 else:
   cha_list = [args.channel]
@@ -161,7 +162,9 @@ for channel in cha_list:
 	ax_rec.plot(lsdat, lsrec, color=colorlst[cnt], linewidth=2)
 
 
-    try:
+    # input data for plotting avail.
+    if len(maxave) > 0:
+
       bname = mysub.full_cha_name(channel)
 
       # plot title
@@ -197,14 +200,11 @@ for channel in cha_list:
       leg.get_frame().set_alpha(0.5)
       plt.savefig(outfile)
       #plt.show()
-      plt.close()
+      #plt.close()
       
       print ("   *** %s done!" % outfile)
     
-    except (IndexError, ValueError, RuntimeError, Exception) as err:
-      print ("   --- FAILED: %s --- " % err)
-      continue
-    
+    plt.close()
     
     if channel is 'ch1' or channel is 'ch2' or channel is 'ch3a':
       break
