@@ -65,14 +65,6 @@ if args.channel == None or args.time == None:
 else:
   cha_list = [args.channel]
   sel_list = [args.time]
-  
-# -------------------------------------------------------------------
-if args.sdate != None and args.edate != None:
-  sd = datetime.datetime.strptime(args.sdate, '%Y%m%d').date()
-  ed = datetime.datetime.strptime(args.edate, '%Y%m%d').date()
-  ax_val.set_xlim([sd,ed])
-  ax_std.set_xlim([sd,ed])
-  ax_rec.set_xlim([sd,ed])
 
 # -------------------------------------------------------------------
 pattern  = "Global_statistics_AVHRRGACl1c_*.txt"
@@ -85,17 +77,29 @@ for channel in cha_list:
 
     if args.zoom == True:
       filename = 'Plot_TimeSeries_'+'pyGAC_'+channel+'_'+time+'_zoom.png'
+      
+    if args.sdate != None and args.edate != None:
+      datestr  = '_' + args.sdate + '_' + args.edate
+      filename = 'Plot_TimeSeries_'+'pyGAC_'+channel+'_'+time+datestr+'.png'
+      
     else:
       filename = 'Plot_TimeSeries_'+'pyGAC_'+channel+'_'+time+'.png'
     
     ptitle   = 'AVHRRGAC time series (pyGAC): '
-    outfile  = args.outdir+filename
+    outfile  = os.path.join(args.outdir,filename)
     fig      = plt.figure()
 
     ax_val = fig.add_subplot(311)
     ax_std = fig.add_subplot(312)
     ax_rec = fig.add_subplot(313)
-	
+
+    if args.sdate != None and args.edate != None:
+      sd = datetime.datetime.strptime(args.sdate, '%Y%m%d').date()
+      ed = datetime.datetime.strptime(args.edate, '%Y%m%d').date()
+      ax_val.set_xlim([sd,ed])
+      ax_std.set_xlim([sd,ed])
+      ax_rec.set_xlim([sd,ed])
+  
     allave = []
     maxave = []
     allstd = []
@@ -110,7 +114,7 @@ for channel in cha_list:
       for s in str_lst:
 	if 'noaa' in s or 'metop' in s:
 	  satname = s
-      
+    
       cnt += 1
       flag = True
       
@@ -120,7 +124,16 @@ for channel in cha_list:
       if len(lstar) == 0:
 	print ("   *** No data for %s (%s) on %s " %(channel, time, satname))
 	continue
-    
+      
+
+      if args.sdate != None and args.edate != None:
+	if min(lsdat) > sd and max(lsdat) > ed:
+	  continue
+	if min(lsdat) < sd and max(lsdat) < ed:
+	  continue
+	#print min(lsdat), max(lsdat), sd, ed
+
+      
       # for zoom range calculation
       allave.append(np.mean(lsave))
       maxave.append(np.max(lsave))
@@ -148,44 +161,50 @@ for channel in cha_list:
 	ax_rec.plot(lsdat, lsrec, color=colorlst[cnt], linewidth=2)
 
 
-    bname = mysub.full_cha_name(channel)
+    try:
+      bname = mysub.full_cha_name(channel)
 
-    # plot title
-    ax_val.set_title(ptitle+bname+' ('+time+')\n')
-    
-    # global mean
-    ax_val.set_ylabel('Global Mean\n')
-    if args.zoom == False:
-      ax_val.set_ylim(0, 1.1*np.ma.max(maxave))
-    
-    # standard deviation
-    ax_std.set_ylabel('Standard Deviation\n')
-    if args.zoom == False:
-      ax_std.set_ylim(0, 1.1*np.ma.max(maxstd))
-    
-    # number of observations
-    ax_rec.set_xlabel('Time\n')
-    ax_rec.set_ylabel('# of Observations\n')
-    ax_rec.set_ylim(0, 1.1*np.ma.max(maxrec))
-    
-    # make grid
-    ax_val.grid()
-    ax_std.grid()
-    ax_rec.grid()
-
+      # plot title
+      ax_val.set_title(ptitle+bname+' ('+time+')\n')
       
-    if len(fil_list) > 5:
-      leg = ax_val.legend(bbox_to_anchor=(1.125, 1.05), fontsize=11)
-    else:
-      plt.tight_layout()
-      leg = ax_val.legend(loc='best', fancybox=True)
+      # global mean
+      ax_val.set_ylabel('Global Mean\n')
+      if args.zoom == False:
+	ax_val.set_ylim(0, 1.1*np.ma.max(maxave))
+      
+      # standard deviation
+      ax_std.set_ylabel('Standard Deviation\n')
+      if args.zoom == False:
+	ax_std.set_ylim(0, 1.1*np.ma.max(maxstd))
+      
+      # number of observations
+      ax_rec.set_xlabel('Time\n')
+      ax_rec.set_ylabel('# of Observations\n')
+      ax_rec.set_ylim(0, 1.1*np.ma.max(maxrec))
+      
+      # make grid
+      ax_val.grid()
+      ax_std.grid()
+      ax_rec.grid()
 
-    leg.get_frame().set_alpha(0.5)
-    plt.savefig(outfile)
-    #plt.show()
-    plt.close()
+	
+      if len(fil_list) > 5:
+	leg = ax_val.legend(bbox_to_anchor=(1.125, 1.05), fontsize=11)
+      else:
+	plt.tight_layout()
+	leg = ax_val.legend(loc='best', fancybox=True)
+
+      leg.get_frame().set_alpha(0.5)
+      plt.savefig(outfile)
+      #plt.show()
+      plt.close()
+      
+      print ("   *** %s done!" % outfile)
     
-    print ("   *** %s done!" % outfile)
+    except (IndexError, ValueError, RuntimeError, Exception) as err:
+      print ("   --- FAILED: %s --- " % err)
+      continue
+    
     
     if channel is 'ch1' or channel is 'ch2' or channel is 'ch3a':
       break

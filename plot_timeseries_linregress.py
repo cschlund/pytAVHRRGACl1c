@@ -69,14 +69,14 @@ else:
   cha_list = [args.channel]
   sel_list = [args.time]
 
-# -------------------------------------------------------------------
-if args.sdate != None and args.edate != None:
-  sd = datetime.datetime.strptime(args.sdate, '%Y%m%d').date()
-  ed = datetime.datetime.strptime(args.edate, '%Y%m%d').date()
+## -------------------------------------------------------------------
+#if args.sdate != None and args.edate != None:
+  #sd = datetime.datetime.strptime(args.sdate, '%Y%m%d').date()
+  #ed = datetime.datetime.strptime(args.edate, '%Y%m%d').date()
   
-  ax_val.set_xlim([sd,ed])
-  ax_std.set_xlim([sd,ed])
-  ax_rec.set_xlim([sd,ed])
+  #ax_val.set_xlim([sd,ed])
+  #ax_std.set_xlim([sd,ed])
+  #ax_rec.set_xlim([sd,ed])
   
 # -------------------------------------------------------------------
 str_lst = mysub.split_filename(args.inpfil)
@@ -107,14 +107,31 @@ for channel in cha_list:
 
     basename = satname+'_'+channel+'_'+time
     filename = 'Plot_TimeSeries_LiFIT_'+basename+'.png' #eps,pdf
+    
+    if args.sdate != None and args.edate != None:
+      datestr  = '_' + args.sdate + '_' + args.edate
+      basename = satname+'_'+channel+'_'+time+datestr
+      filename = 'Plot_TimeSeries_LiFIT_'+basename+'.png' #eps,pdf
+    else:
+      basename = satname+'_'+channel+'_'+time
+      filename = 'Plot_TimeSeries_LiFIT_'+basename+'.png' #eps,pdf
+      
     ptitle   = 'AVHRRGAC '+bname+' ('+time+') on '+platf+'\n'
-    outfile  = args.outdir+filename
+    outfile  = os.path.join(args.outdir,filename)
 
     fig = plt.figure()
     ax_val = fig.add_subplot(311)
     ax_std = fig.add_subplot(312)
     ax_rec = fig.add_subplot(313)
     
+    if args.sdate != None and args.edate != None:
+      sd = datetime.datetime.strptime(args.sdate, '%Y%m%d').date()
+      ed = datetime.datetime.strptime(args.edate, '%Y%m%d').date()
+      
+      ax_val.set_xlim([sd,ed])
+      ax_std.set_xlim([sd,ed])
+      ax_rec.set_xlim([sd,ed])
+  
     # list to array
     rec = np.asarray(lsrec)
     ave = np.asarray(lsave)
@@ -188,12 +205,12 @@ for channel in cha_list:
     ax_val.plot(dat, mave, 'o',  color=col_lst[8])
     ax_val.plot(dat, mave, label='Data', color=col_lst[8], linewidth=2)
     ax_val.plot(dat,yp, '--', color=col_lst[2], 
-    label="Linear fit: y = %.5f * x + %.5f)" %(slope, intercept), lw=2.0)
+    label="Linear fit: y = %.5f * x + %.5f" %(slope, intercept), lw=2.0)
     #ax_val.plot(dat, projection, 'g--', lw=2.0)
     ax_std.plot(dat, mstd, 'o', color=col_lst[1])
     ax_std.plot(dat, mstd, label='Data', color=col_lst[1], linewidth=2)
     ax_std.plot(dat,yp2, '--', color=col_lst[2], 
-    label="Linear fit: y = %.5f * x + %.5f)" %(slope2, intercept2), lw=2.0)
+    label="Linear fit: y = %.5f * x + %.5f" %(slope2, intercept2), lw=2.0)
 
     # records not filtered (show all data)
     ax_rec.plot(dat, rec, 'o', color=col_lst[6])
