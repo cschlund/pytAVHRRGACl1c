@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# how to use the script: 
-#   > python script.py -h
-#
 # C.Schlundt: July, 2014
 #
-# -------------------------------------------------------------------
 
 import numpy as np
 import h5py
+import sqlite3
+import datetime
 import os, sys, getopt
 import argparse
 import subs_avhrrgac as mysub
@@ -154,24 +152,34 @@ if __name__ == '__main__':
 
   parser = argparse.ArgumentParser(description='''%s
   calculates statistics (daily zonal and global means) of 
-  AVHRR GAC Level 1c data processed in the framework of cloud_cci (gyGAC).
+  AVHRR GAC L1c data processed in the framework of Cloud_cci (pyGAC).
   For the VIS channels, statistics is based on daytime observations only,
   i.e. SZA less than 80. For the IR channels day/twilight/night 
   observations are considered. Additionally, 2 different PNG files
   are created based on the statistics. Orbits are processed in 
   parallel mode.''' % os.path.basename(__file__))
 
-  # -------------------------------------------------------------------
 
-  parser.add_argument('-d', '--date', help='Date String, e.g. 20090126', required=True)
-  parser.add_argument('-s', '--satellite', help='Satellite, e.g. metop02', required=True)
-  parser.add_argument('-p', '--path', help='Path, e.g. /path/to/files', required=True)
-  parser.add_argument('-o', '--outdir', help='Path, e.g. /path/to/output', required=True)
-  parser.add_argument('-b', '--binsize', help='Define binsize for latitudinal belts', default=5)
-  parser.add_argument('-t', '--test', help='Run test with reduced channel and select list', action="store_true")
-  parser.add_argument('-v', '--verbose', help='increase output verbosity', action="store_true")
-  parser.add_argument('-g', '--gfile', help='''/path/to/Global_statistics_avhrrgac_satellite.txt, 
-  which collects global means/stdvs for each satellite, # channel | date | time | mean | stdv | nobs''')
+  parser.add_argument('-d', '--date', \
+		  help='Date String, e.g. 20090126', required=True)
+  parser.add_argument('-s', '--satellite', \
+		  help='Satellite, e.g. metop02', required=True)
+  parser.add_argument('-i', '--inpdir', \
+		  help='Path, e.g. /path/to/input', required=True)
+  parser.add_argument('-o', '--outdir', \
+		  help='Path, e.g. /path/to/output', required=True)
+  parser.add_argument('-b', '--binsize', \
+		  help='Define binsize for latitudinal belts', \
+		  default=5)
+  parser.add_argument('-t', '--test', \
+		  help='Run test with reduced channel and select list', \
+		  action="store_true")
+  parser.add_argument('-v', '--verbose', \
+		  help='increase output verbosity', \
+		  action="store_true")
+  parser.add_argument('-g', '--gsqlite', \
+		  help='''/path/to/AVHRR_GAC_global_pystat.sqlite3, "\
+		  "which archives global means/stdvs for each satellite''')
 
   args = parser.parse_args()
 
@@ -183,14 +191,14 @@ if __name__ == '__main__':
     print ("   - TEST       : %s" % args.test)
     print ("   - Date       : %s" % args.date)
     print ("   - Satellite  : %s" % args.satellite)
-    print ("   - Path       : %s" % args.path)
+    print ("   - Input Path : %s" % args.inpdir)
     print ("   - Output Path: %s" % args.outdir)
     print ("   - Binsize    : %s" % args.binsize)
     print ("   - Verbose    : %s" % args.verbose)
-    print ("   - File4Global: %s" % args.gfile)
+    print ("   - DB_Sqlite3 : %s" % args.gsqlite)
 
   # -------------------------------------------------------------------
-  #outdir     = './PYSTA/'
+
   outdir     = args.outdir
   basestr    = args.satellite+'_'+args.date
   ofilebase  = 'GlobalZonalMeans_avhrrGAC_'+basestr
@@ -198,10 +206,12 @@ if __name__ == '__main__':
   oplotbas2  = 'Plot2_'+ofilebase
   fill_value = -9999.
   pattern    = 'ECC_GAC_avhrr*'+args.satellite+'*'+args.date+'T*'
-  fil_list   = mysub.find(pattern, args.path)
+  fil_list   = mysub.find(pattern, args.inpdir)
   nfiles     = len(fil_list)
   message    = "*** No files available for "+args.date+", "+args.satellite
   qflag      = True	# quality flag if input data is not fishy
+  datestring = datetime.datetime.strptime(args.date, '%Y%m%d').date()
+  platstring = mysub.full_sat_name(args.satellite)[2]
 
   if nfiles == 0:
      print message
@@ -210,17 +220,22 @@ if __name__ == '__main__':
   if not os.path.exists(outdir):
     os.makedirs(outdir)
 
-  if args.gfile != None:
-    #full_gfpath = os.path.join(outdir, args.gfile)
-    check_gfile = os.path.exists(args.gfile)
+    
+  # -------------------------------------------------------------------
+  # -- Sqlite database for global statistics (all satellites)  
+  if args.gsqlite != None:
+    
+    db = sqlite3.connect(args.gsqlite)
+    db.isolation_level = 'EXCLUSIVE'
+    db.execute('BEGIN EXCLUSIVE')
+    #exclusive access starts here. Nothing else can r/w the db, do your magic here.
 
-    if check_gfile is False:
-      f = open(args.gfile, mode="w")
-      hlin1 = '# Global statistics for AVHRR GAC on '+mysub.full_sat_name(args.satellite)[0]+'\n'
-      hlin2 = '# channel | date | time | mean | stdv | nobs \n'
-      f.write(hlin1)
-      f.write(hlin2)
-      f.close()
+    with db:
+      cursor = db.cursor()
+    
+      db.execute("CREATE TABLE IF NOT EXISTS pystat(satellite TEXT, "\
+      "datestring TEXT, channel TEXT, time TEXT, "\
+      "mean FLOAT, stdv FLOAT, nobs INTEGER)")
     
   # -------------------------------------------------------------------
   # lists for generating total arrays
@@ -476,9 +491,9 @@ if __name__ == '__main__':
       print ("\n   *** Write global/zonal output files for all channels !")
 
 
-    # --- Write global statistics ---
-    if args.gfile != None:
-      f = open(args.gfile, mode="a")
+    ## --- Write global statistics ---
+    #if args.gfile != None:
+    #  f = open(args.gfile, mode="a")
 
     for chakey in cha_list:
       for selkey in sel_list:
@@ -517,26 +532,33 @@ if __name__ == '__main__':
 	    all_global_list[0][chakey][selkey],
 	    all_global_list[1][chakey][selkey],
 	    all_global_list[2][chakey][selkey] )
+
 	    
-	  # write2gfile
-	  if args.gfile != None:
-	    # channel | date | time | mean | stdv | nobs
-	    gformat = "%4s %10s %10s %12.6f %12.6f %12d\n"
-	    
+	  # -- Write to sqlite db ---------------------------------------------
+	  if args.gsqlite != None:
 	    glm = np.ma.filled(all_global_list[0][chakey][selkey], fill_value)
 	    gls = np.ma.filled(all_global_list[1][chakey][selkey], fill_value)
 	    gln = np.ma.filled(all_global_list[2][chakey][selkey], fill_value)
-
-	    if glm != fill_value and gls != fill_value:
-	      line = gformat % (chakey, args.date, selkey, glm, gls, gln)
-	      f.write(line)
+	    
+	    act = "INSERT INTO pystat VALUES("\
+		  "\'{0}\', \'{1}\', \'{2}\', \'{3}\', "\
+		  "\'{4}\', \'{5}\',\'{6}\')".format(platstring,
+		  datestring, chakey, selkey, glm, gls, gln)
+		  
+	    db.execute(act)
+	  # -- Write to sqlite db ---------------------------------------------
+		
 	except KeyError:
 	  break
 
-    # --- Write global statistics ---
-    if args.gfile != None:
-      f.close()
-      
+	  
+    # -- Write to sqlite db -----------------------------------------------------
+    if args.gsqlite != None:
+      db.commit()
+      db.close()
+    # -- Write to sqlite db -----------------------------------------------------
+    
+    
   else:
     print (" --- FAILED: No output due to fishy input !")
 

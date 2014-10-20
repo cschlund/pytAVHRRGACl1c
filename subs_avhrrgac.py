@@ -1,4 +1,3 @@
-
 #
 # subroutines for plotting AVHRR GAC L1c data
 # C. Schlundt, May 2014
@@ -30,46 +29,72 @@ def find(pattern, path):
     
 # -------------------------------------------------------------------
 def full_sat_name(sat):
-  if sat == 'm01' or sat == 'metop01' or sat == 'M1':
+  if sat == 'm01' or sat == 'metop01' or sat == 'M1' or sat == 'METOPB':
     name = "MetOp-1"
     abbr = "metop01"
-  if sat == 'm02' or sat == 'metop02' or sat == 'M2':
+    lite = "METOPB"
+    
+  if sat == 'm02' or sat == 'metop02' or sat == 'M2' or sat == 'METOPA':
     name = "MetOp-2"
     abbr = "metop02"
-  if sat == 'n07' or sat == 'noaa07' or sat == 'NC':
+    lite = "METOPA"
+    
+  if sat == 'n07' or sat == 'noaa07' or sat == 'NC' or sat == 'NOAA7':
     name = "NOAA-7"
     abbr = "noaa07"
-  if sat == 'n09' or sat == 'noaa09' or sat == 'NF':
+    lite = "NOAA7"
+    
+  if sat == 'n09' or sat == 'noaa09' or sat == 'NF' or sat == 'NOAA9':
     name = "NOAA-9"
     abbr = "noaa09"
-  if sat == 'n10' or sat == 'noaa10' or sat == 'NG':
+    lite = "NOAA9"
+    
+  if sat == 'n10' or sat == 'noaa10' or sat == 'NG' or sat == 'NOAA10':
     name = "NOAA-10"
     abbr = "noaa10"
-  if sat == 'n11' or sat == 'noaa11' or sat == 'NH':
+    lite = "NOAA10"
+    
+  if sat == 'n11' or sat == 'noaa11' or sat == 'NH' or sat == 'NOAA11':
     name = "NOAA-11"
     abbr = "noaa11"
-  if sat == 'n12' or sat == 'noaa12' or sat == 'ND':
+    lite = "NOAA11"
+    
+  if sat == 'n12' or sat == 'noaa12' or sat == 'ND' or sat == 'NOAA12':
     name = "NOAA-12"
     abbr = "noaa12"
-  if sat == 'n14' or sat == 'noaa14' or sat == 'NJ':
+    lite = "NOAA12"
+    
+  if sat == 'n14' or sat == 'noaa14' or sat == 'NJ' or sat == 'NOAA14':
     name = "NOAA-14"
     abbr = "noaa14"
-  if sat == 'n15' or sat == 'noaa15' or sat == 'NK':
+    lite = "NOAA14"
+    
+  if sat == 'n15' or sat == 'noaa15' or sat == 'NK' or sat == 'NOAA15':
     name = "NOAA-15"
     abbr = "noaa15"
-  if sat == 'n16' or sat == 'noaa16' or sat == 'NL':
+    lite = "NOAA15"
+    
+  if sat == 'n16' or sat == 'noaa16' or sat == 'NL' or sat == 'NOAA16':
     name = "NOAA-16"
     abbr = "noaa16"
-  if sat == 'n17' or sat == 'noaa17' or sat == 'NM':
+    lite = "NOAA16"
+    
+  if sat == 'n17' or sat == 'noaa17' or sat == 'NM' or sat == 'NOAA17':
     name = "NOAA-17"
     abbr = "noaa17"
-  if sat == 'n18' or sat == 'noaa18' or sat == 'NN':
+    lite = "NOAA17"
+    
+  if sat == 'n18' or sat == 'noaa18' or sat == 'NN' or sat == 'NOAA18':
     name = "NOAA-18"
     abbr = "noaa18"
-  if sat == 'n19' or sat == 'noaa19' or sat == 'NP':
+    lite = "NOAA18"
+    
+  if sat == 'n19' or sat == 'noaa19' or sat == 'NP' or sat == 'NOAA19':
     name = "NOAA-19"
     abbr = "noaa19"
-  return(name, abbr)
+    lite = "NOAA19"
+    
+  return(name, abbr, lite)
   
 # -------------------------------------------------------------------
 def full_cha_name(target):
