@@ -160,9 +160,9 @@ if __name__ == '__main__':
   parallel mode.''' % os.path.basename(__file__))
 
 
-  parser.add_argument('-d', '--date', \
+  parser.add_argument('-d', '--date', type=mysub.datestring, \
 		  help='Date String, e.g. 20090126', required=True)
-  parser.add_argument('-s', '--satellite', \
+  parser.add_argument('-s', '--satellite', type=mysub.satstring, \
 		  help='Satellite, e.g. metop02', required=True)
   parser.add_argument('-i', '--inpdir', \
 		  help='Path, e.g. /path/to/input', required=True)
@@ -198,7 +198,7 @@ if __name__ == '__main__':
     print ("   - DB_Sqlite3 : %s" % args.gsqlite)
 
   # -------------------------------------------------------------------
-
+  
   outdir     = args.outdir
   basestr    = args.satellite+'_'+args.date
   ofilebase  = 'GlobalZonalMeans_avhrrGAC_'+basestr
@@ -212,7 +212,7 @@ if __name__ == '__main__':
   qflag      = True	# quality flag if input data is not fishy
   datestring = datetime.datetime.strptime(args.date, '%Y%m%d').date()
   platstring = mysub.full_sat_name(args.satellite)[2]
-
+  
   if nfiles == 0:
      print message
      sys.exit(0)
@@ -220,7 +220,6 @@ if __name__ == '__main__':
   if not os.path.exists(outdir):
     os.makedirs(outdir)
 
-    
   # -------------------------------------------------------------------
   # -- Sqlite database for global statistics (all satellites)  
   if args.gsqlite != None:

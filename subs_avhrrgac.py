@@ -5,12 +5,13 @@
 # -------------------------------------------------------------------
 
 import os, sys, fnmatch, datetime
+import string
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as AA
 from matplotlib import gridspec
-
+  
 # -------------------------------------------------------------------
 def split_filename(fil):
   dirname  = os.path.dirname(fil)  
@@ -30,69 +31,74 @@ def find(pattern, path):
 # -------------------------------------------------------------------
 def full_sat_name(sat):
   if sat == 'm01' or sat == 'metop01' or sat == 'M1' or sat == 'METOPB':
-    name = "MetOp-1"
-    abbr = "metop01"
-    lite = "METOPB"
+    name = "MetOp-1"	# plotting name
+    abbr = "metop01"	# pygac output name
+    lite = "METOPB"	# AVHRR GAC sqlite3 db name
     
-  if sat == 'm02' or sat == 'metop02' or sat == 'M2' or sat == 'METOPA':
+  elif sat == 'm02' or sat == 'metop02' or sat == 'M2' or sat == 'METOPA':
     name = "MetOp-2"
     abbr = "metop02"
     lite = "METOPA"
     
-  if sat == 'n07' or sat == 'noaa07' or sat == 'NC' or sat == 'NOAA7':
+  elif sat == 'n07' or sat == 'noaa07' or sat == 'NC' or sat == 'NOAA7':
     name = "NOAA-7"
     abbr = "noaa07"
     lite = "NOAA7"
     
-  if sat == 'n09' or sat == 'noaa09' or sat == 'NF' or sat == 'NOAA9':
+  elif sat == 'n09' or sat == 'noaa09' or sat == 'NF' or sat == 'NOAA9':
     name = "NOAA-9"
     abbr = "noaa09"
     lite = "NOAA9"
     
-  if sat == 'n10' or sat == 'noaa10' or sat == 'NG' or sat == 'NOAA10':
+  elif sat == 'n10' or sat == 'noaa10' or sat == 'NG' or sat == 'NOAA10':
     name = "NOAA-10"
     abbr = "noaa10"
     lite = "NOAA10"
     
-  if sat == 'n11' or sat == 'noaa11' or sat == 'NH' or sat == 'NOAA11':
+  elif sat == 'n11' or sat == 'noaa11' or sat == 'NH' or sat == 'NOAA11':
     name = "NOAA-11"
     abbr = "noaa11"
     lite = "NOAA11"
     
-  if sat == 'n12' or sat == 'noaa12' or sat == 'ND' or sat == 'NOAA12':
+  elif sat == 'n12' or sat == 'noaa12' or sat == 'ND' or sat == 'NOAA12':
     name = "NOAA-12"
     abbr = "noaa12"
     lite = "NOAA12"
     
-  if sat == 'n14' or sat == 'noaa14' or sat == 'NJ' or sat == 'NOAA14':
+  elif sat == 'n14' or sat == 'noaa14' or sat == 'NJ' or sat == 'NOAA14':
     name = "NOAA-14"
     abbr = "noaa14"
     lite = "NOAA14"
     
-  if sat == 'n15' or sat == 'noaa15' or sat == 'NK' or sat == 'NOAA15':
+  elif sat == 'n15' or sat == 'noaa15' or sat == 'NK' or sat == 'NOAA15':
     name = "NOAA-15"
     abbr = "noaa15"
     lite = "NOAA15"
     
-  if sat == 'n16' or sat == 'noaa16' or sat == 'NL' or sat == 'NOAA16':
+  elif sat == 'n16' or sat == 'noaa16' or sat == 'NL' or sat == 'NOAA16':
     name = "NOAA-16"
     abbr = "noaa16"
     lite = "NOAA16"
     
-  if sat == 'n17' or sat == 'noaa17' or sat == 'NM' or sat == 'NOAA17':
+  elif sat == 'n17' or sat == 'noaa17' or sat == 'NM' or sat == 'NOAA17':
     name = "NOAA-17"
     abbr = "noaa17"
     lite = "NOAA17"
     
-  if sat == 'n18' or sat == 'noaa18' or sat == 'NN' or sat == 'NOAA18':
+  elif sat == 'n18' or sat == 'noaa18' or sat == 'NN' or sat == 'NOAA18':
     name = "NOAA-18"
     abbr = "noaa18"
     lite = "NOAA18"
     
-  if sat == 'n19' or sat == 'noaa19' or sat == 'NP' or sat == 'NOAA19':
+  elif sat == 'n19' or sat == 'noaa19' or sat == 'NP' or sat == 'NOAA19':
     name = "NOAA-19"
     abbr = "noaa19"
     lite = "NOAA19"
+    
+  else:
+    print "\n * The satellite name you've chosen is not "\
+    "available in the current list!\n"
+    exit(0)
     
   return(name, abbr, lite)
   
@@ -100,18 +106,37 @@ def full_sat_name(sat):
 def full_cha_name(target):
   if target == 'rf1' or target == 'ch1':
     name = "Channel 1 reflectance"
-  if target == 'rf2' or target == 'ch2':
+  elif target == 'rf2' or target == 'ch2':
     name = "Channel 2 reflectance"
-  if target == 'rf3' or target == 'ch3a':
+  elif target == 'rf3' or target == 'ch3a':
     name = "Channel 3a reflectance"
-  if target == 'bt3' or target == 'ch3b':
+  elif target == 'bt3' or target == 'ch3b':
     name = "Channel 3b brightness temperature [K]"
-  if target == 'bt4' or target == 'ch4':
+  elif target == 'bt4' or target == 'ch4':
     name = "Channel 4 brightness temperature [K]"
-  if target == 'bt5' or target == 'ch5':
+  elif target == 'bt5' or target == 'ch5':
     name = "Channel 5 brightness temperature [K]"
+  else:
+    print "\n * Wrong target name! see help message !\n"
+    exit(0)
   return(name)
 
+# -------------------------------------------------------------------
+def datestring(dstr):
+  if '-' in dstr:
+    correct_date_string = string.replace(dstr,'-','')
+  elif '_' in dstr:
+    correct_date_string = string.replace(dstr,'_','')
+  elif '/' in dstr:
+    correct_date_string = string.replace(dstr,'/','')
+  else:
+    correct_date_string = dstr
+  return correct_date_string
+  
+# -------------------------------------------------------------------
+def satstring(sstr):
+  return full_sat_name(sstr)[1]
+  
 # -------------------------------------------------------------------
 # calculate zonal means of input (i.e. orbit)
 # S. Finkensieper, July 2014
