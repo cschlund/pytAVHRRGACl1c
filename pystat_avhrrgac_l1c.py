@@ -44,8 +44,8 @@ parser.add_argument('-t', '--test', \
 parser.add_argument('-v', '--verbose', \
 	  help='increase output verbosity', action="store_true")
 parser.add_argument('-g', '--gsqlite', \
-	  help='''/path/to/AVHRR_GAC_global_pystat.sqlite3, "\
-	  "which archives global means/stdvs for each satellite''')
+	  help='''/path/to/AVHRR_GAC_global_pystat.sqlite3,
+	  which archives global means/stdvs for each satellite''')
 
 args = parser.parse_args()
 
@@ -82,6 +82,8 @@ platstring = mysub.full_sat_name(args.satellite)[2]
 if nfiles == 0:
   print message
   sys.exit(0)
+else:
+  fil_list.sort()
 
 if not os.path.exists(outdir):
   os.makedirs(outdir)

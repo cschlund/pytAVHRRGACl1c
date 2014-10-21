@@ -1,36 +1,38 @@
 
 # ------------------------------------------------------------------------------
-# 	README			C. Schlundt		2014-07-16
+# 	README			C. Schlundt		2014-10-21
 # ------------------------------------------------------------------------------
-
-usage: multi_pystat_avhrrgac_l1c.py [-h] -d DATE -s SATELLITE -p PATH
-                                    [-b BINSIZE] [-v] [-g GFILE]
+usage: multi_pystat_avhrrgac_l1c.py [-h] -d DATE -s SATELLITE -i INPDIR -o
+                                    OUTDIR [-b BINSIZE] [-t] [-v] [-g GSQLITE]
 
 multi_pystat_avhrrgac_l1c.py calculates statistics (daily zonal and global
-means) of AVHRR GAC Level 1c data processed in the framework of cloud_cci
-(gyGAC). For the VIS channels, statistics is based on daytime observations
-only, i.e. SZA less than 80. For the IR channels day/twilight/night
-observations are considered. Additionally, 2 different PNG files are created
-based on the statistics. Orbits are processed in parallel mode.
+means) of AVHRR GAC L1c data processed in the framework of Cloud_cci (pyGAC).
+For the VIS channels, statistics is based on daytime observations only, i.e.
+SZA less than 80. For the IR channels day/twilight/night observations are
+considered. Additionally, 2 different PNG files are created based on the
+statistics. Orbits are processed in parallel mode.
 
 optional arguments:
   -h, --help            show this help message and exit
   -d DATE, --date DATE  Date String, e.g. 20090126
   -s SATELLITE, --satellite SATELLITE
                         Satellite, e.g. metop02
-  -p PATH, --path PATH  Path, e.g. /path/to/files
+  -i INPDIR, --inpdir INPDIR
+                        Path, e.g. /path/to/input
+  -o OUTDIR, --outdir OUTDIR
+                        Path, e.g. /path/to/output
   -b BINSIZE, --binsize BINSIZE
                         Define binsize for latitudinal belts
+  -t, --test            Run test with reduced channel and select list
   -v, --verbose         increase output verbosity
-  -g GFILE, --gfile GFILE
-                        /path/to/Global_statistics_avhrrgac_satellite.txt,
-                        which collects global means/stdvs for each satellite,
-                        # channel | date | time | mean | stdv | nobs
+  -g GSQLITE, --gsqlite GSQLITE
+                        /path/to/AVHRR_GAC_global_pystat.sqlite3, which
+                        archives global means/stdvs for each satellite
 
 # ------------------------------------------------------------------------------
 
-usage: pystat_avhrrgac_l1c.py [-h] -d DATE -s SATELLITE -p PATH [-b BINSIZE]
-                              [-v] [-g GFILE]
+usage: pystat_avhrrgac_l1c.py [-h] -d DATE -s SATELLITE -i INPDIR -o OUTDIR
+                              [-b BINSIZE] [-t] [-v] [-g GSQLITE]
 
 pystat_avhrrgac_l1c.py calculates statistics (daily zonal and global means) of
 AVHRR GAC Level 1c data processed in the framework of cloud_cci (gyGAC). For
@@ -44,15 +46,17 @@ optional arguments:
   -d DATE, --date DATE  Date String, e.g. 20090126
   -s SATELLITE, --satellite SATELLITE
                         Satellite, e.g. metop02
-  -p PATH, --path PATH  Path, e.g. /path/to/files
+  -i INPDIR, --inpdir INPDIR
+                        Path, e.g. /path/to/files
+  -o OUTDIR, --outdir OUTDIR
+                        Path, e.g. /path/to/output
   -b BINSIZE, --binsize BINSIZE
                         Define binsize for latitudinal belts
+  -t, --test            Run test with reduced channel and select list
   -v, --verbose         increase output verbosity
-  -g GFILE, --gfile GFILE
-                        /path/to/Global_statistics_avhrrgac_satellite.txt,
-                        which collects global means/stdvs for each satellite,
-                        # channel | date | time | mean | stdv | nobs
-
+  -g GSQLITE, --gsqlite GSQLITE
+                        /path/to/AVHRR_GAC_global_pystat.sqlite3, which
+                        archives global means/stdvs for each satellite
 
 # ------------------------------------------------------------------------------
 

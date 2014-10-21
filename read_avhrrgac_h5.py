@@ -1,15 +1,29 @@
-
 #
 # reading avhrrgac level 1c H5 files
 # C. Schlundt, July 2014
-#
-# -------------------------------------------------------------------
+# H. Hoeschen, Oct. 2014, added get_data_size
+# 
 
 import h5py
 import os, sys
 import numpy as np
 import numpy.ma as ma
-import subs_avhrrgac as mysub
+
+
+#----------------------------------------------------------------------------
+def get_data_size(fil):
+  groups = fil.keys()
+  
+  for item in groups:
+    g = fil['/'+item+'/']
+    
+    for key in g:
+      if key == 'data':
+        xy = g[key].shape
+        x = xy[0]
+        y = xy[1]
+        return (x, y) 
+        break
 
 #----------------------------------------------------------------------------
 def show_properties(fil):
