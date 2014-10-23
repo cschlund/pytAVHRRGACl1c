@@ -29,6 +29,89 @@ def find(pattern, path):
     return result
     
 # -------------------------------------------------------------------
+def check_if_table_exists(cursor, tablename):
+    check = "select count(*) from sqlite_master "\
+            "where name = \'{0}\' ".format(tablename)
+    cursor.execute(check)
+    res = cursor.fetchone()
+    return res['count(*)']
+
+# -------------------------------------------------------------------
+def dict_factory(cursor, row):
+    """
+    Organize database queries by column names.
+    """
+    d = dict()
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+ 
+# -------------------------------------------------------------------
+def create_statistics_table(db):
+    act = "CREATE TABLE IF NOT EXISTS statistics ( "\
+          "satelliteID INTEGER, date DATE, "\
+          "channelID INTEGER, selectID INTEGER, "\
+          "FOREIGN KEY (satelliteID) REFERENCES satellites (id), "\
+          "FOREIGN KEY (channelID) REFERENCES channels (id), "\
+          "FOREIGN KEY (selectID) REFERENCES selects (id), "\
+          "PRIMARY KEY (satelliteID, date, channelID, selectID) )"
+    db.execute(act)
+
+# -------------------------------------------------------------------
+def alter_statistics_table(db, belts):
+    glob_list = ('GlobalMean', 'GlobalStdv', 'GlobalNobs')
+    zona_list = ('ZonalMean', 'ZonalStdv', 'ZonalNobs')
+    type_list = ('FLOAT', 'FLOAT', 'INTEGER')
+
+    for glo, typ in zip(glob_list, type_list):
+        act = "ALTER TABLE statistics ADD COLUMN "\
+              "{0} {1}".format(glo, typ)
+        db.execute(act)
+
+    for zon, typ in zip(zona_list, type_list):
+        for idx,lat in enumerate(belts):
+            bel = zon+str(idx)
+            act = "ALTER TABLE statistics ADD COLUMN "\
+                  "{0} {1}".format(bel, typ)
+            db.execute(act)
+
+# -------------------------------------------------------------------
+def create_id_name_table(db, table, lst):
+    if table is 'latitudes':
+        act = "CREATE TABLE {0} "\
+              "(id INTEGER PRIMARY KEY, belt FLOAT)".format(table)
+        db.execute(act)
+        for position, item in enumerate (lst):
+          act = "INSERT OR ABORT INTO {0} "\
+                "VALUES ({1}, {2})".format(table, position, item)
+          db.execute(act)
+    else:
+        act = "CREATE TABLE {0} "\
+              "(id INTEGER PRIMARY KEY, name TEXT)".format(table)
+        db.execute(act)
+        for position, item in enumerate (lst):
+          act = "INSERT OR ABORT INTO {0} "\
+                "VALUES ({1}, \'{2}\')".format(table, position, item)
+          db.execute(act)
+
+# -------------------------------------------------------------------
+def get_satellite_list():
+  satellites = ['NOAA7', 'NOAA9', 'NOAA11', 'NOAA12', 
+                'NOAA14', 'NOAA15', 'NOAA16', 'NOAA17', 
+                'NOAA18', 'NOAA19', 'METOPA', 'METOPB']
+  return satellites
+
+# -------------------------------------------------------------------
+def get_channel_list():
+    channels  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
+    return channels
+
+# -------------------------------------------------------------------
+def get_select_list():
+    selects  = ['day', 'night', 'twilight']
+    return selects
+
+# -------------------------------------------------------------------
 def full_sat_name(sat):
   if sat == 'm01' or sat == 'metop01' or sat == 'M1' or sat == 'METOPB':
     name = "MetOp-1"	# plotting name
@@ -435,4 +518,28 @@ def read_globstafile(fil,cha,sel):
   return (lstar,lsdat,lstim,lsave,lsstd,lsrec)
 
   
+# -------------------------------------------------------------------
+def set_fillvalue(fill_value, zonal_mean, zonal_stdv, zonal_nobs, 
+        global_mean, global_stdv, global_nobs):
   
+  # -- set bad values to fill_value
+  if global_nobs == 0:
+      glm = fill_value
+      gls = fill_value
+      gln = fill_value
+  else:
+      glm = global_mean
+      gls = global_stdv
+      gln = global_nobs
+
+  # -- set bad values to fill_value
+  mean = np.ma.filled(zonal_mean, fill_value)
+  stdv = np.ma.filled(zonal_stdv, fill_value)
+  nobs = np.ma.filled(zonal_nobs, fill_value)
+  
+  return(np.asscalar(glm), np.asscalar(gls), 
+         np.asscalar(gln.astype(int)), 
+         mean, stdv, nobs.astype(int))
+
+# -------------------------------------------------------------------
+
