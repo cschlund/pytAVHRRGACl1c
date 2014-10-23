@@ -5,6 +5,7 @@
 *.log
 *.png
 *.txt
+*.sqlite3
 PYSTAT/**
 PYSTAT/
 OUT/
