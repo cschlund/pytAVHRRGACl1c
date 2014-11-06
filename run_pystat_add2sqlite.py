@@ -49,7 +49,7 @@ def readfiles(tup):
       znobs[cha][sel] = np.ma.zeros(nzones)
       
       if cha is 'ch1' or cha is 'ch2' or cha is 'ch3a':
-	break
+    break
 
   #/path/to/19840422_n07/ECC_GAC_avhrr_noaa07_99999_19840422T1731580Z_19840422T1755450Z.h5
   #/path/to/19840422_n07/ECC_GAC_sunsatangles_noaa07_99999_19840422T1731580Z_19840422T1755450Z.h5
@@ -74,57 +74,57 @@ def readfiles(tup):
     #----------------------------------------------------------------
 
       try:
-	check = global_mean[channel][select]
-	
-	if args.verbose == True and args.test == True:
-	  print ("   * %s = %s (%s)" % (idx, mysub.full_cha_name(channel), select))
+    check = global_mean[channel][select]
+    
+    if args.verbose == True and args.test == True:
+      print ("   * %s = %s (%s)" % (idx, mysub.full_cha_name(channel), select))
 
-	try:
-	  (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, False)
-	  #(lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, args.verbose)
-	  
-	  # check is channel is filled with measurements
-	  if np.ma.count(tar) == 0:
-	    break
-	  
-	  # global statistics
-	  gn = tar.count()
-	  gm = tar.mean(dtype=np.float64)
-	  gs = tar.std(dtype=np.float64)
-	  
-	  #zonal statistics
-	  (zm, zs, zn) = mysub.cal_zonal_means(lat, tar, zone_size)
-	
-	  if zn.sum() != gn:
-	    print (" --- FAILED: Input is fishy due to: "\
+    try:
+      (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, False)
+      #(lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, args.verbose)
+      
+      # check is channel is filled with measurements
+      if np.ma.count(tar) == 0:
+        break
+      
+      # global statistics
+      gn = tar.count()
+      gm = tar.mean(dtype=np.float64)
+      gs = tar.std(dtype=np.float64)
+      
+      #zonal statistics
+      (zm, zs, zn) = mysub.cal_zonal_means(lat, tar, zone_size)
+    
+      if zn.sum() != gn:
+        print (" --- FAILED: Input is fishy due to: "\
                    "%s(zonal nobs) != %s (global nobs) " 
-	    % (int(zn.sum()), gn) )
-	    print ("        Fil: %s" % fil)
-	    print ("       Afil: %s" % afil)
-	    print ("    Cha/Sel: %s/%s " % (channel,select))
-	    return None
-	
-	  gmean[channel][select] = gm
-	  gstdv[channel][select] = gs
-	  gnobs[channel][select] = gn
-	  
-	  zmean[channel][select] = zm
-	  zstdv[channel][select] = zs
-	  znobs[channel][select] = zn
-	  
-	  # clear variables
-	  del(gm, gs, gn, zm, zs, zn)
-	  
-	except (IndexError, ValueError, RuntimeError, Exception) as err:
-	  print (" --- FAILED: %s" % err)
-	  print ("        Fil: %s" % fil)
-	  print ("       Afil: %s" % afil)
-	  print ("    Cha/Sel: %s/%s " % (channel,select))
-	  return None
-	  
+        % (int(zn.sum()), gn) )
+        print ("        Fil: %s" % fil)
+        print ("       Afil: %s" % afil)
+        print ("    Cha/Sel: %s/%s " % (channel,select))
+        return None
+    
+      gmean[channel][select] = gm
+      gstdv[channel][select] = gs
+      gnobs[channel][select] = gn
+      
+      zmean[channel][select] = zm
+      zstdv[channel][select] = zs
+      znobs[channel][select] = zn
+      
+      # clear variables
+      del(gm, gs, gn, zm, zs, zn)
+      
+    except (IndexError, ValueError, RuntimeError, Exception) as err:
+      print (" --- FAILED: %s" % err)
+      print ("        Fil: %s" % fil)
+      print ("       Afil: %s" % afil)
+      print ("    Cha/Sel: %s/%s " % (channel,select))
+      return None
+      
       except KeyError:
-	break
-	
+    break
+    
       #--------------------------------------------------------------
       # select loop
       #break
@@ -161,23 +161,23 @@ if __name__ == '__main__':
 
 
   parser.add_argument('-d', '--date', type=mysub.datestring, \
-		  help='Date String, e.g. 20090126', required=True)
+          help='Date String, e.g. 20090126', required=True)
   parser.add_argument('-s', '--satellite', type=mysub.satstring, \
-		  help='Satellite, e.g. metop02', required=True)
+          help='Satellite, e.g. metop02', required=True)
   parser.add_argument('-i', '--inpdir', \
-		  help='Path, e.g. /path/to/input', required=True)
+          help='Path, e.g. /path/to/input', required=True)
   parser.add_argument('-g', '--gsqlite', \
-		  help='/path/to/AVHRR_GAC_L1c_pystat.sqlite3', \
-		  required=True)
+          help='/path/to/AVHRR_GAC_L1c_pystat.sqlite3', \
+          required=True)
   parser.add_argument('-b', '--binsize', \
-		  help='Define binsize for latitudinal belts', \
-		  default=5)
+          help='Define binsize for latitudinal belts', \
+          default=5)
   parser.add_argument('-t', '--test', \
-		  help='Run test with reduced channel and select list', \
-		  action="store_true")
+          help='Run test with reduced channel and select list', \
+          action="store_true")
   parser.add_argument('-v', '--verbose', \
-		  help='increase output verbosity', \
-		  action="store_true")
+          help='increase output verbosity', \
+          action="store_true")
 
   args = parser.parse_args()
 
@@ -201,7 +201,7 @@ if __name__ == '__main__':
   fil_list   = mysub.find(pattern, args.inpdir)
   nfiles     = len(fil_list)
   message    = "*** No files available for "+args.date+", "+args.satellite
-  qflag      = True	# quality flag if input data is not fishy
+  qflag      = True # quality flag if input data is not fishy
 
   if nfiles == 0:
     print message
@@ -284,7 +284,7 @@ if __name__ == '__main__':
       all_zonal_nobs[cha][sel] = np.ma.zeros(nzones)
       
       if cha is 'ch1' or cha is 'ch2' or cha is 'ch3a':
-	break
+    break
 
   # -------------------------------------------------------------------
   # -- creating jobs as tuple
@@ -303,19 +303,19 @@ if __name__ == '__main__':
       qflag = False
     else:
       for cha in cha_list:
-	for sel in sel_list:
-	  try:
-	    check = global_mean[cha][sel]
-	    global_mean[cha][sel][out[0]] = out[1][cha][sel]
-	    global_stdv[cha][sel][out[0]] = out[2][cha][sel]
-	    global_nobs[cha][sel][out[0]] = out[3][cha][sel]
+    for sel in sel_list:
+      try:
+        check = global_mean[cha][sel]
+        global_mean[cha][sel][out[0]] = out[1][cha][sel]
+        global_stdv[cha][sel][out[0]] = out[2][cha][sel]
+        global_nobs[cha][sel][out[0]] = out[3][cha][sel]
 
-	    zonal_mean[cha][sel][out[0],:] = out[4][cha][sel]
-	    zonal_stdv[cha][sel][out[0],:] = out[5][cha][sel]
-	    zonal_nobs[cha][sel][out[0],:] = out[6][cha][sel]
-	    
-	  except KeyError:
-	    break
+        zonal_mean[cha][sel][out[0],:] = out[4][cha][sel]
+        zonal_stdv[cha][sel][out[0],:] = out[5][cha][sel]
+        zonal_nobs[cha][sel][out[0],:] = out[6][cha][sel]
+        
+      except KeyError:
+        break
   
 
   # -------------------------------------------------------------------
@@ -334,51 +334,51 @@ if __name__ == '__main__':
     # -- Global means/stdv/nobs
     for position, item in enumerate(global_list):
       for chakey in item:
-	for selkey,selval in item[chakey].items():
+    for selkey,selval in item[chakey].items():
 
-	  # mask zeros
-	  mask = np.ma.equal(item[chakey][selkey], 0.)
-	  data = np.ma.masked_where(mask, item[chakey][selkey])
-	  #print chakey , "=>", selkey, " : ", selval, " ; ", data
-	      
-	  if position is 2:
-	    ave = np.sum(data)
-	  else:
-	    ave = data.mean()
-	  
-	  try:
-	    all_item = all_global_list[position]
-	    check = all_item[chakey][selkey]
-	    all_item[chakey][selkey] = ave
-	    del ave
-	    
-	  except KeyError:
-	    break
+      # mask zeros
+      mask = np.ma.equal(item[chakey][selkey], 0.)
+      data = np.ma.masked_where(mask, item[chakey][selkey])
+      #print chakey , "=>", selkey, " : ", selval, " ; ", data
+          
+      if position is 2:
+        ave = np.sum(data)
+      else:
+        ave = data.mean()
+      
+      try:
+        all_item = all_global_list[position]
+        check = all_item[chakey][selkey]
+        all_item[chakey][selkey] = ave
+        del ave
+        
+      except KeyError:
+        break
 
 
     # -- Zonal means/stdv/nobs
     for position, item in enumerate(zonal_list):
       for chakey in item:
-	for selkey,selval in item[chakey].items():
+    for selkey,selval in item[chakey].items():
 
-	  # mask zeros
-	  mask = np.ma.equal(item[chakey][selkey], 0.)
-	  data = np.ma.masked_where(mask, item[chakey][selkey])
-	  #print chakey , "=>", selkey, " : ", selval, " ; ", data
-	  
-	  if position is 2:
-	    ave = np.sum(data, axis=0)
-	  else:
-	    ave = data.mean(axis=0)
-	    
-	  try:
-	    all_item = all_zonal_list[position]
-	    check = all_item[chakey][selkey]
-	    all_item[chakey][selkey][:] = ave
-	    del ave
-	    
-	  except KeyError:
-	    break
+      # mask zeros
+      mask = np.ma.equal(item[chakey][selkey], 0.)
+      data = np.ma.masked_where(mask, item[chakey][selkey])
+      #print chakey , "=>", selkey, " : ", selval, " ; ", data
+      
+      if position is 2:
+        ave = np.sum(data, axis=0)
+      else:
+        ave = data.mean(axis=0)
+        
+      try:
+        all_item = all_zonal_list[position]
+        check = all_item[chakey][selkey]
+        all_item[chakey][selkey][:] = ave
+        del ave
+        
+      except KeyError:
+        break
 
 
     # -- save output 
