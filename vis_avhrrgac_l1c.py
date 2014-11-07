@@ -14,7 +14,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import regionslist as rl
 import h5py
-#from netCDF4 import Dataset as NetCDFFile
 import os, sys, getopt
 import argparse
 import subs_avhrrgac as mysub
@@ -23,26 +22,28 @@ import read_avhrrgac_h5 as rh5
 
 avail = sorted(rl.REGIONS.keys())
 defin = ', '.join(map(str, avail))
+chalist = '|'.join(mysub.get_channel_list())
+sellist = '|'.join(mysub.get_select_list())
 
 parser = argparse.ArgumentParser(description='''This script 
 displays one AVHRR GAC Level 1c orbit processed in the framework 
 of cloud_cci (gyGAC).''')
 
-parser.add_argument('-c', '--channel', help='Available channels are: ch1/ch2/ch3b/ch4/ch5/ch3a', required=True)
+parser.add_argument('-c', '--channel', help=chalist, required=True)
 parser.add_argument('-f', '--filename', help='/path/to/ECC_GAC_file.h5', required=True)
 parser.add_argument('-r', '--region', help=defin, default='glo')
-parser.add_argument('-t', '--time', help='day (sza < 80) / night (sza >= 90) / twilight / all (default)', default='all')
+parser.add_argument('-t', '--time', help=sellist+', default is all', default='all')
 parser.add_argument('-v', '--verbose', help='increase output verbosity', action="store_true")
 
 args = parser.parse_args()
 
 if args.verbose == True:
-  print ("\n *** Parameter passed" )
-  print (" ---------------------- ")
-  print ("   - Channel  : %s" % mysub.full_cha_name(args.channel))
-  print ("   - Filename : %s" % args.filename)
-  print ("   - Region   : %s" % args.region)
-  print ("   - Time     : %s\n" % args.time)
+    print ("\n *** Parameter passed" )
+    print (" ---------------------- ")
+    print ("   - Channel  : %s" % mysub.full_cha_name(args.channel))
+    print ("   - Filename : %s" % args.filename)
+    print ("   - Region   : %s" % args.region)
+    print ("   - Time     : %s\n" % args.time)
 
 strlst   = mysub.split_filename(args.filename)
 platform = strlst[3]
@@ -57,12 +58,12 @@ outfil = bastxt+'_'+args.channel+'_'+args.region+'_'+args.time+'.png'
 outtit = avhrrstr+" - "+rl.REGIONS[args.region]["nam"]+" ("+args.time+")\n\n"
 
 if not os.path.exists(outdir):
-  os.makedirs(outdir)
+    os.makedirs(outdir)
   
 #print rl.REGIONS[args.region]["nam"]
 #print rl.REGIONS[args.region]["geo"]
 #for key,val in rl.REGIONS[args.region].items():
-  #print key, "=>", val
+    #print key, "=>", val
 
 # -------------------------------------------------------------------
 # READ H5 input
@@ -80,8 +81,8 @@ a = h5py.File(afil, "r+")
 #rh5.show_properties(a)
   
 # get data
-(lat, lon, tar) = rh5.read_avhrrgac(f, a, args.time,
-		  args.channel, args.verbose)
+(lat, lon, tar) = rh5.read_avhrrgac(f, a, args.time, 
+        args.channel, args.verbose)
 
 # close H5 files
 a.close()
