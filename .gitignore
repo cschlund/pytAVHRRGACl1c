@@ -6,8 +6,6 @@
 *.png
 *.txt
 *.sqlite3
-add2sqlite.py
-multi_pystat_avhrrgac_l1c.py.old
 PYSTAT/**
 PYSTAT/
 OUT/

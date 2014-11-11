@@ -23,9 +23,14 @@ Input files are *L1b_pass.log and *L1c_proc.log files, which are
 compared to figure out which L1b orbit failed.''' 
 % os.path.basename(__file__))
 
-parser.add_argument('-i', '--ipass', help='log file containing the L1b files passed to pyGAC', required=True)
-parser.add_argument('-o', '--oproc', help='log file containing the L1c files produced by pyGAC', required=True)
-parser.add_argument('-v', '--verbose', help='increase output verbosity', action="store_true")
+parser.add_argument('-i', '--ipass', 
+        help='log file containing the L1b files passed to pyGAC', 
+        required=True)
+parser.add_argument('-o', '--oproc', 
+        help='log file containing the L1c files produced by pyGAC', 
+        required=True)
+parser.add_argument('-v', '--verbose', 
+        help='increase output verbosity', action="store_true")
 
 args = parser.parse_args()
 
@@ -58,10 +63,10 @@ for lin in out:
     sepa = line.split()
     nele = len(sepa)
     last = sepa[nele-1]
-    if '_avhrr_' in last:
-	alst.append(last)
+    if '_avhrr_' in last: 
+        alst.append(last)
     if '_sunsatangles_' in last:
-	slst.append(last)
+        slst.append(last)
     
 if len(inp) != len(alst) and len(inp) != len(slst):
     print ("   * %d L1b NE %d L1c_avhrr (%d L1c_sunsatangles) !" 
@@ -104,25 +109,25 @@ for idx, lin in enumerate(inp):
     #pattern = 'ECC_GAC_avhrr_{0}_\d{{5}}_{1}{2}\d{{3}}Z_\d{{8}}{3}\d{{3}}Z.h5'.format(plat, date, stim, etim)
     pattern = 'ECC_GAC_avhrr_{0}_\d{{5}}_{1}{2}\d{{5}}Z_\d{{8}}{3}\d{{5}}Z.h5'.format(plat, date, stim, etim)
   
-    for fil in alst:
-	mflag = False
-	match = re.search(pattern=pattern, string=fil) 
-	if match:
-	    mflag = True
-	    mfile = match.group()
-	    alst.remove(mfile)
-	    break
-  
-    # If-statement after search() tests if it succeeded
-    if mflag == True:                      
-	print ("   + FOUND: %s") % (mfile)
-    else:
-	print ("   + DID NOT FIND! ------------------------------------")
-	#exit(1)
-    
+    for fil in alst: 
+        mflag = False
+        match = re.search(pattern=pattern, string=fil) 
+        
+        if match:
+            mflag = True
+            mfile = match.group()
+            alst.remove(mfile)
+            break
+
+        # If-statement after search() tests if it succeeded
+        if mflag == True:
+            print ("   + FOUND: %s") % (mfile) 
+        else: 
+            print ("   + DID NOT FIND! ------------------------------------") 
+            #exit(1) 
+
 print (" \n!!! remaining files (not found) : %s" % alst)
 # -------------------------------------------------------------------
 print ( "\n *** %s finished for \n     %s and \n     %s\n" 
   % (sys.argv[0], args.ipass, args.oproc) )
 # -------------------------------------------------------------------
-# end

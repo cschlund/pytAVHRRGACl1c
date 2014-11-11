@@ -19,7 +19,7 @@ import argparse
 import subs_avhrrgac as mysub
 import read_avhrrgac_h5 as rh5
 
-
+# -------------------------------------------------------------------
 avail = sorted(rl.REGIONS.keys())
 defin = ', '.join(map(str, avail))
 chalist = '|'.join(mysub.get_channel_list())
@@ -37,6 +37,8 @@ parser.add_argument('-v', '--verbose', help='increase output verbosity', action=
 
 args = parser.parse_args()
 
+# -------------------------------------------------------------------
+# -- some screen output if wanted
 if args.verbose == True:
     print ("\n *** Parameter passed" )
     print (" ---------------------- ")
@@ -44,6 +46,9 @@ if args.verbose == True:
     print ("   - Filename : %s" % args.filename)
     print ("   - Region   : %s" % args.region)
     print ("   - Time     : %s\n" % args.time)
+
+# -------------------------------------------------------------------
+# -- some settings
 
 strlst   = mysub.split_filename(args.filename)
 platform = strlst[3]
@@ -57,39 +62,40 @@ outdir = './OUT/'
 outfil = bastxt+'_'+args.channel+'_'+args.region+'_'+args.time+'.png'
 outtit = avhrrstr+" - "+rl.REGIONS[args.region]["nam"]+" ("+args.time+")\n\n"
 
-if not os.path.exists(outdir):
+if not os.path.exists(outdir): 
     os.makedirs(outdir)
   
+# -------------------------------------------------------------------
+# -- for testing
+
 #print rl.REGIONS[args.region]["nam"]
 #print rl.REGIONS[args.region]["geo"]
 #for key,val in rl.REGIONS[args.region].items():
     #print key, "=>", val
 
 # -------------------------------------------------------------------
-# READ H5 input
+# -- READ H5 input
 
-#search for corresponding sunsatangles file
-#ECC_GAC_avhrr_noaa07_99999_19840422T1731580Z_19840422T1902035Z.h5
+# search for corresponding sunsatangles file
 afil = args.filename.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
   
 # open H5 files
 f = h5py.File(args.filename, "r+")
 a = h5py.File(afil, "r+")
 
-#if ver == True:
-#rh5.show_properties(f)
-#rh5.show_properties(a)
+#if ver == True: 
+#    rh5.show_properties(f)
+#    rh5.show_properties(a)
   
 # get data
-(lat, lon, tar) = rh5.read_avhrrgac(f, a, args.time, 
-        args.channel, args.verbose)
+(lat, lon, tar) = rh5.read_avhrrgac(f, a, args.time, args.channel, args.verbose)
 
 # close H5 files
 a.close()
 f.close()
 
 # -------------------------------------------------------------------
-# INIT plot
+# -- INIT plot
 
 # initialize figure
 fig = plt.figure()
@@ -117,7 +123,7 @@ m.drawmeridians(lons, labels=[False, False, True, True])
 wmask = lon > 5     # cut all values where lon > 5
 emask = lon < -5    # cut all values where lon < -5
 
-for mask in (wmask, emask):
+for mask in (wmask, emask): 
     # mask lat, lon & data arrays:
     mlon = np.ma.masked_where(mask, lon)
     mlat = np.ma.masked_where(mask, lat)

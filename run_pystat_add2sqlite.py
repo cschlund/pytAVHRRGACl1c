@@ -15,6 +15,7 @@ import read_avhrrgac_h5 as rh5
 from multiprocessing import Pool
 
 # -------------------------------------------------------------------
+# read level 1c files
 
 def readfiles(tup):
     idx, fil = tup #tuple
@@ -32,12 +33,13 @@ def readfiles(tup):
     znobs = dict()
 
     for cha in cha_list:
-	gmean[cha] = dict()
-	gstdv[cha] = dict()
-	gnobs[cha] = dict()
-	zmean[cha] = dict()
-	zstdv[cha] = dict()
-	znobs[cha] = dict() 
+        gmean[cha] = dict()
+        gstdv[cha] = dict()
+        gnobs[cha] = dict()
+        zmean[cha] = dict()
+        zstdv[cha] = dict()
+        znobs[cha] = dict() 
+
         for sel in sel_list: 
             gmean[cha][sel] = 0.
             gstdv[cha][sel] = 0.
@@ -45,6 +47,7 @@ def readfiles(tup):
             zmean[cha][sel] = np.ma.zeros(nzones)
             zstdv[cha][sel] = np.ma.zeros(nzones)
             znobs[cha][sel] = np.ma.zeros(nzones)
+
             if cha is 'ch1' or cha is 'ch2' or cha is 'ch3a': 
                 break
 
@@ -60,85 +63,74 @@ def readfiles(tup):
     f = h5py.File(fil, "r+")
     a = h5py.File(afil, "r+")
 
-    #------------------------------------------------------------------
+
     # cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
     for channel in cha_list:
-    #------------------------------------------------------------------
-    
-        #--------------------------------------------------------------
+
         # sel_list  = ['day', 'night', 'twilight']
         for select in sel_list:
-        #--------------------------------------------------------------
 
-	    try: 
-		check = global_mean[channel][select] 
+            try: 
+                check = global_mean[channel][select] 
 
-		if args.verbose == True and args.test == True: 
-		    print ("   * %s = %s (%s)" % 
-			    (idx, mysub.full_cha_name(channel), select)) 
+                if args.verbose == True and args.test == True: 
+                    print ("   * %s = %s (%s)" % 
+                          (idx, mysub.full_cha_name(channel), select)) 
 
-		try: 
-		    (lat, lon, tar) = rh5.read_avhrrgac(f, a, 
-					select, channel, False) 
-		    #(lat, lon, tar) = rh5.read_avhrrgac(f, a, 
-		    #                    select, channel, args.verbose)
+                try: 
+                    (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, False) 
+                    #(lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, args.verbose)
 
-		    # check is channel is filled with measurements
-		    if np.ma.count(tar) == 0:
-			break
-		    
-		    # global statistics
-		    gn = tar.count()
-		    gm = tar.mean(dtype=np.float64)
-		    gs = tar.std(dtype=np.float64)
-		    
-		    #zonal statistics
-		    (zm, zs, zn) = mysub.cal_zonal_means(lat, tar, zone_size)
-		  
-		    if zn.sum() != gn: 
-			print (" --- FAILED: Input is fishy due to: "\
-			"%s(zonal nobs) != %s (global nobs) " % 
-			(int(zn.sum()), gn) ) 
-			print ("        Fil: %s" % fil) 
-			print ("       Afil: %s" % afil) 
-			print ("    Cha/Sel: %s/%s " % (channel,select)) 
-			return None
-		  
-		    gmean[channel][select] = gm
-		    gstdv[channel][select] = gs
-		    gnobs[channel][select] = gn
-		    
-		    zmean[channel][select] = zm
-		    zstdv[channel][select] = zs
-		    znobs[channel][select] = zn
-		    
-		    # clear variables
-		    del(gm, gs, gn, zm, zs, zn)
+                    # check is channel is filled with measurements
+                    if np.ma.count(tar) == 0: 
+                        break
 
-		except (IndexError, ValueError, RuntimeError, Exception) as err: 
-		    print (" --- FAILED: %s" % err)
-		    print ("        Fil: %s" % fil)
-		    print ("       Afil: %s" % afil)
-		    print ("    Cha/Sel: %s/%s " % (channel,select))
-		    return None
+                    # global statistics
+                    gn = tar.count()
+                    gm = tar.mean(dtype=np.float64)
+                    gs = tar.std(dtype=np.float64)
 
-	    except KeyError: 
-		break
-      
-	#------------------------------------------------------------
-	# select loop
-	#break
-	#------------------------------------------------------------
-	
-    #----------------------------------------------------------------
+                    #zonal statistics
+                    (zm, zs, zn) = mysub.cal_zonal_means(lat, tar, zone_size)
+
+                    if zn.sum() != gn: 
+                        print (" --- FAILED: Input is fishy due to: %s(zonal nobs) != %s (global nobs) " % (int(zn.sum()), gn) ) 
+                        print ("        Fil: %s" % fil) 
+                        print ("       Afil: %s" % afil) 
+                        print ("    Cha/Sel: %s/%s " % (channel,select)) 
+                        return None
+
+                    gmean[channel][select] = gm
+                    gstdv[channel][select] = gs
+                    gnobs[channel][select] = gn
+
+                    zmean[channel][select] = zm
+                    zstdv[channel][select] = zs
+                    znobs[channel][select] = zn
+
+                    # clear variables
+                    del(gm, gs, gn, zm, zs, zn)
+
+                except (IndexError, ValueError, RuntimeError, Exception) as err: 
+                    print (" --- FAILED: %s" % err)
+                    print ("        Fil: %s" % fil)
+                    print ("       Afil: %s" % afil)
+                    print ("    Cha/Sel: %s/%s " % (channel,select))
+                    return None
+
+            except KeyError: 
+                break
+
+        # select loop
+        #break
+
     # channel loop
     #break
-    #----------------------------------------------------------------
-    
+
     # close H5 files
     a.close()
     f.close()
-    
+
     # return pro orbit=file
     return (idx, gmean, gstdv, gnobs, zmean, zstdv, znobs)
 
@@ -175,6 +167,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # -------------------------------------------------------------------
+    # -- make some screen output if wanted
 
     if args.verbose == True:
         print ("\n *** Parameter passed" )
@@ -186,7 +180,7 @@ if __name__ == '__main__':
         print ("   - Binsize    : %s" % args.binsize)
         print ("   - Verbose    : %s" % args.verbose)
         print ("   - DB_Sqlite3 : %s" % args.gsqlite)
- 
+
     # -------------------------------------------------------------------
     # -- some settings
 
@@ -204,29 +198,31 @@ if __name__ == '__main__':
         fil_list.sort()
         #for f in fil_list:
         #    print f
-     
+
     # -------------------------------------------------------------------
     # -- lists for generating total arrays
-    
-    if args.test is True:
-        cha_list  = ['ch1']
-        sel_list  = ['day']
-    else:
-        cha_list  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
-        sel_list  = ['day', 'night', 'twilight']
-      
 
+    if args.test is True:
+        cha_list = ['ch1']
+        sel_list = ['day']
+    else:
+        cha_list = mysub.get_channel_list()
+        sel_list = mysub.get_select_list()
+
+    # -------------------------------------------------------------------
     # -- define latitudinal zone size :
+
     global zone_size
     global nzones
-    
+
     zone_size = float(args.binsize)
     zone_rad = zone_size/2.0
 
+    # -------------------------------------------------------------------
     # -- determine zone centers:
+
     zone_centers = np.arange(-90 + zone_rad, 90 + zone_rad, zone_size)
     nzones = len(zone_centers)
-
 
     # -------------------------------------------------------------------
     # -- initialize global mean, stdv, nobs parameters
@@ -254,14 +250,14 @@ if __name__ == '__main__':
         zonal_mean[cha] = dict()
         zonal_stdv[cha] = dict()
         zonal_nobs[cha] = dict()
-        
+
         all_global_mean[cha] = dict()
         all_global_stdv[cha] = dict()
         all_global_nobs[cha] = dict()
         all_zonal_mean[cha] = dict()
         all_zonal_stdv[cha] = dict()
         all_zonal_nobs[cha] = dict()
-        
+
         for sel in sel_list:
             global_mean[cha][sel] = np.ma.zeros(nfiles)
             global_stdv[cha][sel] = np.ma.zeros(nfiles)
@@ -269,14 +265,14 @@ if __name__ == '__main__':
             zonal_mean[cha][sel] = np.ma.zeros((nfiles,nzones))
             zonal_stdv[cha][sel] = np.ma.zeros((nfiles,nzones))
             zonal_nobs[cha][sel] = np.ma.zeros((nfiles,nzones))
-            
+
             all_global_mean[cha][sel] = 0.
             all_global_stdv[cha][sel] = 0.
             all_global_nobs[cha][sel] = 0.
             all_zonal_mean[cha][sel] = np.ma.zeros(nzones)
             all_zonal_stdv[cha][sel] = np.ma.zeros(nzones)
             all_zonal_nobs[cha][sel] = np.ma.zeros(nzones)
-            
+
             if cha is 'ch1' or cha is 'ch2' or cha is 'ch3a': 
                 break
 
@@ -286,10 +282,10 @@ if __name__ == '__main__':
     arglist = []
     for pos, fil in enumerate(fil_list): 
         arglist.append((pos,fil))
-    
+
     pool = Pool(processes=nfiles)
     results = pool.map(func=readfiles, iterable=arglist)
-    
+
     for pos,out in enumerate(results): 
         if out is None: 
             print (" --- FAILED: %s. Input is fishy for %s --> %s" %
@@ -308,17 +304,15 @@ if __name__ == '__main__':
                         zonal_nobs[cha][sel][out[0],:] = out[6][cha][sel]
                     except KeyError:
                         break
-  
 
     # -------------------------------------------------------------------
-    # -- good data
+    # -- only store good data
     if qflag is True:
-    # -------------------------------------------------------------------
 
         # -- create lists of mean, stdv, nobs for globa/zonal
         global_list = [global_mean, global_stdv, global_nobs]
         zonal_list  = [zonal_mean, zonal_stdv, zonal_nobs]
-        
+
         all_global_list = [all_global_mean, all_global_stdv, all_global_nobs]
         all_zonal_list  = [all_zonal_mean, all_zonal_stdv, all_zonal_nobs]
 
@@ -359,7 +353,7 @@ if __name__ == '__main__':
                         ave = np.sum(data, axis=0) 
                     else: 
                         ave = data.mean(axis=0)
-            
+
                     try:
                         all_item = all_zonal_list[position]
                         check = all_item[chakey][selkey]
@@ -373,12 +367,12 @@ if __name__ == '__main__':
         # -- Sqlite database for global statistics (all satellites)  
 
         if args.verbose == True: 
-	    print ("\n   *** Write global/zonal "
+            print ("\n   *** Write global/zonal "
                    "output into %s " % args.gsqlite)
 
         lite_datstr = datetime.datetime.strptime(args.date, '%Y%m%d').date()
         lite_satstr = mysub.full_sat_name(args.satellite)[2]
-        
+
         all_satellites = mysub.get_satellite_list()
         all_channels   = mysub.get_channel_list()
         all_selects    = mysub.get_select_list()
@@ -388,7 +382,7 @@ if __name__ == '__main__':
         tab_sel = 'selects'
         tab_lat = 'latitudes'
         tab_sta = 'statistics'
-        
+
         try: 
             db = sqlite3.connect(args.gsqlite, \
               detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)    
@@ -399,7 +393,7 @@ if __name__ == '__main__':
             db.execute('BEGIN EXCLUSIVE')
 
             cursor = db.cursor()
-        
+
             # -- create table for satellites
             res = mysub.check_if_table_exists(cursor, tab_sat)
             if res is 0:
@@ -447,19 +441,19 @@ if __name__ == '__main__':
                         if args.verbose == True: 
                             print ("      + %s (%s) "  
                                     % (mysub.full_cha_name(chakey), selkey) )
-                        
+
                         zm = all_zonal_list[0][chakey][selkey]
                         zn = all_zonal_list[2][chakey][selkey]
                         gn = all_global_list[2][chakey][selkey]
                         gmean_check = np.ma.dot(zm, zn)/gn
-                        
+
                         if args.verbose == True: 
-			    print ("        - Global mean based "
+                            print ("        - Global mean based "
                                    "on zonal means: %f = %f (global)" % 
-                                    (gmean_check, all_global_list[0][chakey][selkey]) )
-			    print ("        - Global nobs based "
+                                    (gmean_check, all_global_list[0][chakey][selkey]) ) 
+                            print ("        - Global nobs based "
                                    "on zonal nobs: %d = %d (global)" % (np.sum(zn), gn))
-                        
+
 
                         # -- get chaID
                         get_id = "SELECT id FROM {0} "\
@@ -486,7 +480,7 @@ if __name__ == '__main__':
                                            all_global_list[0][chakey][selkey],
                                            all_global_list[1][chakey][selkey],
                                            all_global_list[2][chakey][selkey] )
-                         
+
 
                         # -- convert numpy arrays to lists
                         zonal_mean_list = mean.tolist()
@@ -510,21 +504,21 @@ if __name__ == '__main__':
 
                     except KeyError:
                         break
-                  
+
 
         except sqlite3.Error, e: 
             if db: 
                 db.rollback()
-            print "\n *** Error: %s" % e.args[0]
-            print (" *** Query %s for list %s" % (sql_query, full_list))
-            sys.exit(1)
+                print "\n *** Error: %s" % e.args[0]
+                print (" *** Query %s for list %s" % (sql_query, full_list))
+                sys.exit(1)
 
 
         finally: 
             if db: 
                 db.commit()
                 db.close()
-      
+
 
     # -------------------------------------------------------------------
     else: 

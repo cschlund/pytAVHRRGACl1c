@@ -63,7 +63,7 @@ pattern    = 'ECC_GAC_avhrr*'+args.satellite+'*'+args.date+'T*'
 fil_list   = subs.find(pattern, args.inpdir)
 nfiles     = len(fil_list)
 message    = "*** No files available for "+\
-                args.date+", "+args.satellite
+             args.date+", "+args.satellite
 
 if nfiles == 0:
     print message
@@ -79,7 +79,7 @@ try:
     con = lite.connect(args.sqlite)
     con.isolation_level = 'EXCLUSIVE'
     con.execute('BEGIN EXCLUSIVE')
-    cur = con.cursor()
+    cur = con.cursor() 
 
     # new columns to be added
     alist = [ "ALTER TABLE orbits ADD COLUMN start_time_l1c TIMESTAMP ", 
@@ -87,7 +87,7 @@ try:
               "ALTER TABLE orbits ADD COLUMN across_scanline INTEGER ", 
               "ALTER TABLE orbits ADD COLUMN along_scanline INTEGER ", 
               "ALTER TABLE orbits ADD COLUMN number_of_missing_scanlines INTEGER ", 
-              "ALTER TABLE orbits ADD COLUMN missing_scanlines TEXT " ]
+              "ALTER TABLE orbits ADD COLUMN missing_scanlines TEXT " ] 
 
     for act in alist: 
         try:
@@ -98,7 +98,7 @@ try:
     
     # -- loop over file list
     for fil in fil_list:
-        qfil = None
+        qfil = None 
 
         # -- get x and y dimension of orbit
         f = h5py.File(fil, "r+")

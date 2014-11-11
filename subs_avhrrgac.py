@@ -120,24 +120,24 @@ def get_color_list():
             
 # -------------------------------------------------------------------
 def full_sat_name(sat):
-    if sat == 'm01' or sat == 'metop01' or sat == 'M1' or sat == 'METOPB':
-        name = "MetOp-1"	# plotting name
-        abbr = "metop01"	# pygac output name
-        lite = "METOPB"	# AVHRR GAC sqlite3 db name
+    if sat == 'm01' or sat == 'metopb'or sat == 'metop01' or sat == 'M1' or sat == 'METOPB':
+        name = "MetOp-B"	# plotting name
+        abbr = "metopb"	    # pygac output name
+        lite = "METOPB"	    # AVHRR GAC sqlite3 db name
       
-    elif sat == 'm02' or sat == 'metop02' or sat == 'M2' or sat == 'METOPA':
-        name = "MetOp-2"
-        abbr = "metop02"
+    elif sat == 'm02' or sat == 'metopa' or sat == 'metop02' or sat == 'M2' or sat == 'METOPA':
+        name = "MetOp-A"
+        abbr = "metopa"
         lite = "METOPA"
       
-    elif sat == 'n07' or sat == 'noaa07' or sat == 'NC' or sat == 'NOAA7':
+    elif sat == 'n07' or sat == 'noaa7' or sat == 'noaa07' or sat == 'NC' or sat == 'NOAA7':
         name = "NOAA-7"
-        abbr = "noaa07"
+        abbr = "noaa7"
         lite = "NOAA7"
       
-    elif sat == 'n09' or sat == 'noaa09' or sat == 'NF' or sat == 'NOAA9':
+    elif sat == 'n09' or sat == 'noaa9' or sat == 'noaa09' or sat == 'NF' or sat == 'NOAA9':
         name = "NOAA-9"
-        abbr = "noaa09"
+        abbr = "noaa9"
         lite = "NOAA9"
       
     elif sat == 'n10' or sat == 'noaa10' or sat == 'NG' or sat == 'NOAA10':
