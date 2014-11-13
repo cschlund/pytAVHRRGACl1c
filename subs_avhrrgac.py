@@ -30,6 +30,10 @@ def find(pattern, path):
     
 # -------------------------------------------------------------------
 def check_if_table_exists(cursor, tablename):
+    """
+    run_pystat_add2sqlite.py: check if table already exists.
+    """
+
     check = "select count(*) from sqlite_master "\
             "where name = \'{0}\' ".format(tablename)
     cursor.execute(check)
@@ -46,8 +50,75 @@ def dict_factory(cursor, row):
         d[col[0]] = row[idx]
     return d
  
+# --------------------------------------------------------------------
+def get_new_cols(): 
+    """
+    These columns will be added to already existing database
+    providing information about overlapping scanlines and
+    midnight orbit scanline
+    [ GAC_overlap.py ]
+    """
+
+    new_cols = ["start_scanline_begcut", "end_scanline_begcut", 
+                "start_scanline_endcut", "end_scanline_endcut",
+                "midnight_orbit_scanline"]
+    return new_cols
+
+# --------------------------------------------------------------------
+def update_database(cols, vals, db):
+    """
+    GAC_overlap.py: update database
+                    cols = get_new_cols()
+                    vals = [start_begcut, end_begcut,
+                            start_endcut, end_endcut,
+                            midnight_orbit_calc, 
+                            stime_safe, etime_safe, satellite]
+    """
+
+    act = "UPDATE orbits SET " \
+          "{0} = {1}, {2} = {3}, {4} = {5}, " \
+          "{6} = {7}, {8} = {9} WHERE blacklist=0 AND " \
+          "start_time_l1c=\'{10}\' AND " \
+          "end_time_l1c=\'{11}\' AND " \
+          "sat=\'{12}\'".format(
+                  cols[0], vals[0], cols[1], vals[1],
+                  cols[2], vals[2], cols[3], vals[3],
+                  cols[4], vals[4], vals[5], vals[6], vals[7])
+
+    db.execute(act)
+
+# --------------------------------------------------------------------
+def get_record_lists(satellite, db): 
+    """
+    GAC_overlap.py: get start, end and along track information
+    from a sqlite3 database: table orbits
+    """
+
+    start_dates=[] 
+    end_dates=[] 
+    data_along=[] 
+
+    get_data = "SELECT start_time_l1c, end_time_l1c, "\
+               "along_scanline FROM orbits WHERE "\
+               "sat=\'{satellite}\' ORDER BY "\
+               "start_time_l1c".format(satellite=satellite)
+
+    results = db.execute(get_data)
+
+    for result in results: 
+        if result['start_time_l1c'] != None: 
+            start_dates.append(result['start_time_l1c']) 
+            end_dates.append(result['end_time_l1c']) 
+            data_along.append(result['along_scanline'])
+
+    return(start_dates, end_dates, data_along)
+
 # -------------------------------------------------------------------
 def create_statistics_table(db):
+    """
+    run_pystat_add2sqlite.py: create statistics table.
+    """
+
     act = "CREATE TABLE IF NOT EXISTS statistics ( "\
           "satelliteID INTEGER, date DATE, "\
           "channelID INTEGER, selectID INTEGER, "\
@@ -59,6 +130,10 @@ def create_statistics_table(db):
 
 # -------------------------------------------------------------------
 def alter_statistics_table(db, belts):
+    """
+    run_pystat_add2sqlite.py: add statistics to existing table
+    """
+
     glob_list = ('GlobalMean', 'GlobalStdv', 'GlobalNobs')
     zona_list = ('ZonalMean', 'ZonalStdv', 'ZonalNobs')
     type_list = ('FLOAT', 'FLOAT', 'INTEGER')
@@ -77,6 +152,10 @@ def alter_statistics_table(db, belts):
 
 # -------------------------------------------------------------------
 def create_id_name_table(db, table, lst):
+    """
+    run_pystat_add2sqlite.py: create new table.
+    """
+
     if table is 'latitudes':
         act = "CREATE TABLE {0} "\
               "(id INTEGER PRIMARY KEY, belt FLOAT)".format(table)
@@ -96,6 +175,10 @@ def create_id_name_table(db, table, lst):
 
 # -------------------------------------------------------------------
 def get_satellite_list():
+    """
+    SATELLITE list: sqlite3 nomenclature
+    """
+
     satellites = ['NOAA7', 'NOAA9', 'NOAA11', 'NOAA12', 
                   'NOAA14', 'NOAA15', 'NOAA16', 'NOAA17', 
                   'NOAA18', 'NOAA19', 'METOPA', 'METOPB']
@@ -103,92 +186,127 @@ def get_satellite_list():
 
 # -------------------------------------------------------------------
 def get_channel_list():
+    """
+    List of AVHRR GAC channels.
+    """
+
     channels  = ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
     return channels
 
 # -------------------------------------------------------------------
 def get_select_list():
+    """
+    List of selected times in pystat calculation and 
+    later for the routines which are plotting statistics.
+    """
+
     selects  = ['day', 'night', 'twilight']
     return selects
 
 # -------------------------------------------------------------------
 def get_color_list():
+    """
+    List of colors used in the plotting routines.
+    """
+
     colorlst = ['Red','DodgerBlue','DarkOrange','Lime',
-		'Navy','Magenta','DarkGreen','Turquoise',
-		'DarkMagenta','Sienna','Gold','Olive',
-		'MediumSlateBlue','DimGray']
+		        'Navy','Magenta','DarkGreen','Turquoise',
+		        'DarkMagenta','Sienna','Gold','Olive',
+		        'MediumSlateBlue','DimGray']
             
 # -------------------------------------------------------------------
 def full_sat_name(sat):
-    if sat == 'm01' or sat == 'metopb'or sat == 'metop01' or sat == 'M1' or sat == 'METOPB':
-        name = "MetOp-B"	# plotting name
-        abbr = "metopb"	    # pygac output name
-        lite = "METOPB"	    # AVHRR GAC sqlite3 db name
+    """
+    List of satellite names occurring in L1b and L1c filenames,
+    as well as in sqlite3 databases.
+            name = for plotting routines (name on the PLOT)
+            abbr = pygac nomenclature
+            lite = sqlite3 nomenclature
+    """
+
+    m1_list = ["m01", "metopb", "metop01", "M1", "METOPB"]
+    m2_list = ["m02", "metopa", "metop02", "M1", "METOPA"]
+    nc_list = ["n07", "noaa7",  "noaa07",  "NC", "NOAA7"]
+    nf_list = ["n09", "noaa9",  "noaa09",  "NF", "NOAA9"]
+    ng_list = ["n10",           "noaa10",  "NG", "NOAA10"]
+    nh_list = ["n11",           "noaa11",  "NH", "NOAA11"]
+    nd_list = ["n12",           "noaa12",  "ND", "NOAA12"]
+    nj_list = ["n14",           "noaa14",  "NJ", "NOAA14"]
+    nk_list = ["n15",           "noaa15",  "NK", "NOAA15"]
+    nl_list = ["n16",           "noaa16",  "NL", "NOAA16"]
+    nm_list = ["n17",           "noaa17",  "NM", "NOAA17"]
+    nn_list = ["n18",           "noaa18",  "NN", "NOAA18"]
+    np_list = ["n19",           "noaa19",  "NP", "NOAA19"]
+
+    if sat in m1_list:
+        name = "MetOp-B"
+        abbr = "metopb"	
+        lite = "METOPB"	
       
-    elif sat == 'm02' or sat == 'metopa' or sat == 'metop02' or sat == 'M2' or sat == 'METOPA':
+    elif sat in m2_list:
         name = "MetOp-A"
         abbr = "metopa"
         lite = "METOPA"
       
-    elif sat == 'n07' or sat == 'noaa7' or sat == 'noaa07' or sat == 'NC' or sat == 'NOAA7':
+    elif sat in nc_list:
         name = "NOAA-7"
         abbr = "noaa7"
         lite = "NOAA7"
       
-    elif sat == 'n09' or sat == 'noaa9' or sat == 'noaa09' or sat == 'NF' or sat == 'NOAA9':
+    elif sat in nf_list:
         name = "NOAA-9"
         abbr = "noaa9"
         lite = "NOAA9"
       
-    elif sat == 'n10' or sat == 'noaa10' or sat == 'NG' or sat == 'NOAA10':
+    elif sat in ng_list:
         name = "NOAA-10"
         abbr = "noaa10"
         lite = "NOAA10"
       
-    elif sat == 'n11' or sat == 'noaa11' or sat == 'NH' or sat == 'NOAA11':
+    elif sat in nh_list:
         name = "NOAA-11"
         abbr = "noaa11"
         lite = "NOAA11"
       
-    elif sat == 'n12' or sat == 'noaa12' or sat == 'ND' or sat == 'NOAA12':
+    elif sat in nd_list:
         name = "NOAA-12"
         abbr = "noaa12"
         lite = "NOAA12"
       
-    elif sat == 'n14' or sat == 'noaa14' or sat == 'NJ' or sat == 'NOAA14':
+    elif sat in nj_list:
         name = "NOAA-14"
         abbr = "noaa14"
         lite = "NOAA14"
       
-    elif sat == 'n15' or sat == 'noaa15' or sat == 'NK' or sat == 'NOAA15':
+    elif sat in nk_list:
         name = "NOAA-15"
         abbr = "noaa15"
         lite = "NOAA15"
       
-    elif sat == 'n16' or sat == 'noaa16' or sat == 'NL' or sat == 'NOAA16':
+    elif sat in nl_list:
         name = "NOAA-16"
         abbr = "noaa16"
         lite = "NOAA16"
       
-    elif sat == 'n17' or sat == 'noaa17' or sat == 'NM' or sat == 'NOAA17':
+    elif sat in nm_list:
         name = "NOAA-17"
         abbr = "noaa17"
         lite = "NOAA17"
       
-    elif sat == 'n18' or sat == 'noaa18' or sat == 'NN' or sat == 'NOAA18':
+    elif sat in nn_list:
         name = "NOAA-18"
         abbr = "noaa18"
         lite = "NOAA18"
       
-    elif sat == 'n19' or sat == 'noaa19' or sat == 'NP' or sat == 'NOAA19':
+    elif sat in np_list:
         name = "NOAA-19"
         abbr = "noaa19"
         lite = "NOAA19"
       
     else:
-        print "\n * The satellite name you've chosen is not "\
+        message = "\n * The satellite name you've chosen is not "\
         "available in the current list!\n"
-        exit(0)
+        sys.exit(message)
       
     return(name, abbr, lite)
   
