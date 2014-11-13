@@ -51,6 +51,53 @@ def dict_factory(cursor, row):
     return d
  
 # --------------------------------------------------------------------
+def calc_midnight(stime, etime): 
+    """
+    Check for midnight orbit & check if day has changed
+    """
+
+    if stime.day < etime.day: 
+        
+        # calculate how much time has passed 
+        # between start time and midnight 
+
+        midnight = datetime.datetime.strptime( 
+                    str(etime.day*1000000), '%d%H%M%S')
+        midnight = midnight + datetime.timedelta(microseconds=0)
+        midnight_diff = midnight-stime
+        
+        # calculate the orbit line under the 
+        # assumption of 2 scanlines/second
+
+        midnight_diff_msec  = midnight_diff.seconds+\
+                              midnight_diff.microseconds/1000000
+        midnight_orbit_calc = midnight_diff_msec*2
+
+    else:
+        
+        # set midnight variable to -1 if the day hasn't changed 
+        midnight_orbit_calc = -1
+
+    return midnight_orbit_calc
+
+# --------------------------------------------------------------------
+def calc_overlap(stime, etime):
+    """
+    GAC_overlap.py: calculation of overlapping scanlines
+    """
+
+    # time difference between 
+    # start of next orbit and end of current orbit
+    # assumption: 2 scanlines per second
+
+    timediff      = etime - stime
+    timediff_msec = timediff.days*24*60*60+timediff.seconds\
+                    +timediff.microseconds/1000000
+    overlap_rows  = timediff_msec*2
+
+    return overlap_rows
+
+# --------------------------------------------------------------------
 def get_new_cols(): 
     """
     These columns will be added to already existing database
@@ -65,26 +112,43 @@ def get_new_cols():
     return new_cols
 
 # --------------------------------------------------------------------
-def update_database(cols, vals, db):
+def update_db_without_midnight(vals, db):
     """
     GAC_overlap.py: update database
-                    cols = get_new_cols()
-                    vals = [start_begcut, end_begcut,
-                            start_endcut, end_endcut,
-                            midnight_orbit_calc, 
-                            stime_safe, etime_safe, satellite]
+                    vals = [string, start_line, string, end_line,
+                            stime, etime, satellite]
     """
 
     act = "UPDATE orbits SET " \
-          "{0} = {1}, {2} = {3}, {4} = {5}, " \
-          "{6} = {7}, {8} = {9} WHERE blacklist=0 AND " \
-          "start_time_l1c=\'{10}\' AND " \
-          "end_time_l1c=\'{11}\' AND " \
-          "sat=\'{12}\'".format(
-                  cols[0], vals[0], cols[1], vals[1],
-                  cols[2], vals[2], cols[3], vals[3],
-                  cols[4], vals[4], vals[5], vals[6], vals[7])
+          "{0} = {1}, {2} = {3} WHERE blacklist=0 AND " \
+          "start_time_l1c=\'{4}\' AND " \
+          "end_time_l1c=\'{5}\' AND " \
+          "sat=\'{6}\'".format(
+                  vals[0], vals[1], vals[2], vals[3], vals[4],
+                  vals[5], vals[6])
 
+    #print ("    - without_midnight: %s" % act)
+    db.execute(act)
+
+# --------------------------------------------------------------------
+def update_db_with_midnight(vals, db):
+    """
+    GAC_overlap.py: update database
+                    vals = [string, start_line, string, end_line,
+                            string, midnight_calc,
+                            stime, etime, satellite]
+    """
+
+    act = "UPDATE orbits SET " \
+          "{0} = {1}, {2} = {3}, {4} = {5} "\
+          "WHERE blacklist=0 AND " \
+          "start_time_l1c=\'{6}\' AND " \
+          "end_time_l1c=\'{7}\' AND " \
+          "sat=\'{8}\'".format(
+                  vals[0], vals[1], vals[2], vals[3], vals[4],
+                  vals[5], vals[6], vals[7], vals[8])
+
+    # print ("    - with_midnight: %s" % act)
     db.execute(act)
 
 # --------------------------------------------------------------------
