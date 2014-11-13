@@ -14,6 +14,137 @@ import read_avhrrgac_h5 as rh5
 import subs_avhrrgac as subs
 import numpy as np
 
+# -------------------------------------------------------------------
+def update_database(): 
+
+    for sate in sat_list: 
+
+        satellite = subs.full_sat_name(sate)[2] 
+
+        if args.verbose == True: 
+            print ("\n      - Get records for: %s" % satellite)
+
+        (start_dates, end_dates, 
+         data_along) = subs.get_record_lists(satellite,db)
+
+        if not start_dates and not end_dates and not data_along:
+            record_flag = False
+        else:
+            record_flag = True
+
+
+        if record_flag == True:
+
+            if args.verbose == True: 
+                print ("      - Checking for midnight orbit "\
+                       "and number of overlapping lines")
+ 
+
+            # -- loop over end dates
+            for position, end_time in enumerate(end_dates): 
+
+                # -- start and end date/time of current orbit
+                stime_current = start_dates[position]
+                etime_current = end_dates[position]
+
+                # -- check for midnight
+                midnight_orbit_current = subs.calc_midnight(stime_current,
+                                                            etime_current)
+
+                # -- range: first orbit until last but one
+                if (position+1) < len(end_dates):
+
+                    # -- start time of next orbit
+                    stime_next = start_dates[position+1]
+                    etime_next = end_dates[position+1]
+
+
+                    # -- very first orbit: 
+                    #    no cutting at the beginning of orbit
+                    #    i. e. start = 0 and end = along_track_dimension
+                    if position == 0:
+                        val_list = [add_cols[0], 0, 
+                                    add_cols[1], data_along[position],
+                                    stime_current, etime_current, satellite]
+
+                        subs.update_db_without_midnight(val_list, db)
+
+
+                    # -- check for overlap
+                    if etime_current >= stime_next:
+                        
+                        # number of overlapping scanlines
+                        overlap_rows = subs.calc_overlap(stime_next,
+                                                         etime_current)
+                        
+                        # CUT ORBIT AT THE BEGINNING of next orbit
+                        # write to db corresponding to next orbit
+                        start_next = overlap_rows
+                        end_next   = data_along[position+1]
+
+                        # CUT ORBIT AT THE END of current orbit
+                        # write to db corrsp. to current orbit
+                        start_current = 0
+                        end_current   = data_along[position] - \
+                                        overlap_rows
+
+                        # -- update database next orbit
+                        val_list = [add_cols[0], start_next, 
+                                    add_cols[1], end_next,
+                                    stime_next, etime_next, satellite]
+
+                        subs.update_db_without_midnight(val_list, db)
+              
+                        # -- update database current orbit
+                        val_list = [add_cols[2], start_current, 
+                                    add_cols[3], end_current,
+                                    add_cols[4], midnight_orbit_current,
+                                    stime_current, etime_current, satellite]
+
+                        subs.update_db_with_midnight(val_list, db)
+
+
+                    # -- if no overlap was found: no cutting, i.e.
+                    #    start = 0, end = along_track_dimension
+                    else: 
+
+                        # -- update database next orbit
+                        val_list = [add_cols[0], 0, 
+                                    add_cols[1], data_along[position+1],
+                                    stime_next, etime_next, satellite]
+
+                        subs.update_db_without_midnight(val_list, db)
+              
+                        # -- update database current orbit
+                        val_list = [add_cols[2], 0, 
+                                    add_cols[3], data_along[position],
+                                    add_cols[4], midnight_orbit_current,
+                                    stime_current, etime_current, satellite]
+
+                        subs.update_db_with_midnight(val_list, db)
+
+
+                # -- very last orbit 
+                else: 
+
+                    val_list = [add_cols[2], 0, 
+                                add_cols[3], data_along[position],
+                                add_cols[4], midnight_orbit_current,
+                                stime_current, etime_current, satellite]
+
+                    subs.update_db_with_midnight(val_list, db)
+
+                # end of if position < len(end_dates) 
+
+            # end of for loop: etime in end_dates
+
+        # end if record_flag == True:
+        else:
+            print ("      ! No data records found for %s" % satellite)
+
+    # end of for loop: sate in sat_list
+
+# -------------------------------------------------------------------
 
 if __name__ == '__main__': 
 
@@ -38,9 +169,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # ----------------------------------------------------------------
-    # -- some screen output if wanted
 
+    # -- some screen output if wanted
     if args.verbose == True: 
         print ("\n *** Parameter passed" )
         print (" ---------------------- ")
@@ -48,19 +178,16 @@ if __name__ == '__main__':
         print ("   - Verbose    : %s" % args.verbose)
         print ("   - DB_Sqlite3 : %s\n" % args.sqlcomp)
 
-    # ----------------------------------------------------------------
+    
     # -- either use full sat list or only one
-
     if args.sat == None:
         sat_list = subs.get_satellite_list()
     else:
         sat_list = [args.sat]
 
-    # ----------------------------------------------------------------
+    
     # -- settings for sqlite  
-
     try:
-        # -- connect to database
         db = sqlite3.connect(args.sqlcomp, 
                 detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)    
         db.row_factory=subs.dict_factory
@@ -73,189 +200,11 @@ if __name__ == '__main__':
             except: 
                 pass
 
-
         if args.verbose == True: 
             print ("   + Read %s " % args.sqlcomp)
 
+        update_database()
 
-        # -- loop over satellite list
-        for sate in sat_list: 
-            satellite = subs.full_sat_name(sate)[2] 
-
-            if args.verbose == True: 
-                print ("\n      - Get records for: %s" % satellite)
-
-            (start_dates, end_dates, 
-             data_along) = subs.get_record_lists(satellite,db)
-
-            if not start_dates and not end_dates and not data_along:
-                record_flag = False
-            else:
-                record_flag = True
-
-
-            if record_flag == True:
-
-                if args.verbose == True: 
-                    print ("      - Checking for midnight orbit "\
-                           "and number of overlapping lines")
- 
-                counter = 0
-                endcut_helper = 0
-
-                # -- loop over end dates
-                for etime in end_dates: 
-
-                    # ***********************************************************
-                    #                                                           #
-                    #       if start of next orbit is earlier                   #
-                    #       than end of current orbit                           #
-                    #                                                           #
-                    # ***********************************************************
-
-                    if (counter+1)<len(end_dates) and counter>0: 
-
-                        # -- start and end date/time of current orbit
-                        stime_safe = start_dates[counter]
-                        etime_safe = end_dates[counter]
-
-
-                        # -- check for midnight orbit & check if day has changed
-                        if stime_safe.day < etime_safe.day: 
-                            
-                            # calculate how much time has passed 
-                            # between start time and midnight 
-                            midnight = datetime.datetime.strptime( 
-                                        str(etime_safe.day*1000000), '%d%H%M%S')
-                            midnight = midnight + datetime.timedelta(microseconds=0)
-                            midnight_diff = midnight-stime_safe
-                            
-                            # calculate the orbit line under the 
-                            # assumption of 2 scanlines/second
-                            midnight_diff_msec  = midnight_diff.seconds+\
-                                                  midnight_diff.microseconds/1000000
-                            midnight_orbit_calc = midnight_diff_msec*2
-
-                        else:
-                            
-                            # set midnight variable to -1 if the day hasn't changed 
-                            midnight_orbit_calc = -1
-
-
-                        # -- check for overlap
-                        if etime >= start_dates[counter+1]:
-                            
-                            # time difference between 
-                            # start of next orbit and end of current orbit
-                            # assumption: 2 scanlines per second
-                            timediff      = etime-start_dates[counter+1]
-                            timediff_msec = timediff.days*24*60*60+timediff.seconds\
-                                            +timediff.microseconds/1000000
-                            overlap_rows  = timediff_msec*2
-                            
-                            # CUT ORBIT AT THE BEGINNING of next orbit
-                            start_begcut = overlap_rows
-                            end_begcut   = data_along[counter+1]
-
-                            # CUT ORBIT AT THE END of current orbit
-                            start_endcut = 0
-                            end_endcut   = data_along[counter] - overlap_rows
-
-                            # -- update database
-                            val_list = [start_begcut, end_begcut,
-                                        start_endcut, end_endcut,
-                                        midnight_orbit_calc, 
-                                        stime_safe, etime_safe, satellite]
-
-                            subs.update_database(add_cols, val_list, db)
-                  
-
-                        # -- if no overlap was found: no cutting !
-                        else: 
-
-                            # -- update database
-                            val_list = [0, data_along[counter+1],
-                                        0, data_along[counter+1],
-                                        midnight_orbit_calc, 
-                                        stime_safe, etime_safe, satellite]
-
-                            subs.update_database(add_cols, val_list, db)
-
-
-                    # ***********************************************************
-                    #                                                           #
-                    #   Special case if very first orbit: counter == 0          #
-                    #   important if the end of each orbit will be cut.         #
-                    #                                                           #
-                    #   (The last orbit is no special case, since the program   #
-                    #   was originally written as 1. calculating overlap,       #
-                    #                             2. finding new beginning)     #
-                    #                                                           #
-                    # ***********************************************************
-
-                    elif counter == 0: 
-
-                        # -- start and end date/time of next orbit
-                        stime_safe = start_dates[counter+1] 
-                        etime_safe = end_dates[counter+1] 
-
-
-                        # -- check for midnight orbit, details see above 
-                        if stime_safe.day<etime_safe.day: 
-
-                            midnight = datetime.datetime.strptime(
-                                        str(etime_safe.day*1000000), '%d%H%M%S')
-                            midnight = midnight + datetime.timedelta(microseconds=0)
-
-                            midnight_diff       = midnight-stime_safe
-                            midnight_diff_msec  = midnight_diff.seconds+\
-                                                  midnight_diff.microseconds/1000000
-                            midnight_orbit_calc = midnight_diff_msec*2 
-
-                        else:
-
-                            midnight_orbit_calc = -1
-
-
-                        # -- calculating overlapping scanlines, details see above
-                        timediff      = end_dates[counter]-start_dates[counter+1]
-                        timediff_msec = timediff.days*24*60*60+timediff.seconds+\
-                                        timediff.microseconds/1000000
-                        overlap_rows  = timediff_msec*2
-
-                        # CUT ORBIT AT THE BEGINNING of next orbit
-                        start_begcut = 0
-                        end_begcut   = data_along[counter]
-
-                        # CUT ORBIT AT THE END of current orbit
-                        start_endcut = 0
-                        end_endcut   = data_along[counter] - overlap_rows
-
-                        # -- update database
-                        val_list = [start_begcut, end_begcut,
-                                    start_endcut, end_endcut,
-                                    midnight_orbit_calc, 
-                                    start_dates[counter], end_dates[counter], 
-                                    satellite]
-
-                        subs.update_database(add_cols, val_list, db)
-
-                  
-                    # end of if (counter+1)<len(end_dates) and counter>0: 
-                    # elif counter == 0: 
-
-                    # -- pick next orbits
-                    counter=counter+1 
-
-                # end of for loop: etime in end_dates
-
-            # end if record_flag == True:
-            else:
-                print ("      ! No data records found for %s" % satellite)
-
-        # end of for loop: sate in sat_list
-
-    # ----------------------------------------------------------------
 
     except sqlite3.Error, e:
         if db: 
@@ -264,7 +213,6 @@ if __name__ == '__main__':
         print "\n *** Error %s ***\n" % e.args[0]
         sys.exit(1)
     
-    # ----------------------------------------------------------------
     
     finally:
         if db: 
@@ -275,6 +223,4 @@ if __name__ == '__main__':
             db.commit()
             db.close()
     
-    # ----------------------------------------------------------------
-
 # end of main code
