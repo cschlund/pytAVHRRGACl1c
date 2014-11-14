@@ -69,6 +69,7 @@ optional arguments:
   -v, --verbose         increase output verbosity
 
 # ============================================================================
+
 usage: vis_avhrrgac_l1c.py [-h] -c CHANNEL -f FILENAME [-r REGION] [-t TIME]
                            [-v]
 
@@ -87,6 +88,7 @@ optional arguments:
   -v, --verbose         increase output verbosity
 
 # ============================================================================
+
 usage: plot_timeseries.py [-h] -i INPDIR -o OUTDIR [-c CHANNEL] [-t TIME] [-z]
                           [-s SDATE] [-e EDATE] [-v]
 
@@ -110,6 +112,7 @@ optional arguments:
   -v, --verbose         increase output verbosity
 
 # ============================================================================
+
 usage: plot_timeseries_linregress.py [-h] -i INPFIL -o OUTDIR [-c CHANNEL]
                                      [-t TIME] [-s SDATE] [-e EDATE] [-v]
                                      [-n NOFILTER]
@@ -134,4 +137,25 @@ optional arguments:
   -n NOFILTER, --nofilter NOFILTER
                         do not set minimum number of observations, i.e. take
                         all days into account
+
 # ============================================================================
+
+usage: GAC_overlap.py [-h] [-s SAT] -g SQLCOMP [-v]
+
+GAC_overlap.py calculates the number of overlapping rows. Five columns are
+added: 'start_scanline_begcut' and 'end_scanline_begcut' in case the beginning
+of the orbits will be cut, 'start_scanline_endcut' and 'end_scanline_endcut'
+in case the end of the orbit will be cut, and 'midnight_orbit_scanline' giving
+the midnight orbit scan line.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s SAT, --sat SAT     Available are: NOAA7|NOAA9|NOAA11|NOAA12|NOAA14|NOAA15
+                        |NOAA16|NOAA17|NOAA18|NOAA19|METOPA|METOPB, default:
+                        use all
+  -g SQLCOMP, --sqlcomp SQLCOMP
+                        /path/to/sqlitefile.sqlite3
+  -v, --verbose         increase output verbosity
+
+# ============================================================================
+
