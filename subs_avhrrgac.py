@@ -1,16 +1,11 @@
 #
-# subroutines for plotting AVHRR GAC L1c data
-# C. Schlundt, May 2014
-# July 2014: cal_zonal_means, plt_zonal_means
-# -------------------------------------------------------------------
+# subroutines for pystat, sqlite updating/writing/creating
+#
 
-import os, sys, fnmatch, datetime
+import os, sys, 
+import fnmatch, datetime
 import string
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import host_subplot
-import mpl_toolkits.axisartist as AA
-from matplotlib import gridspec
   
 # -------------------------------------------------------------------
 def split_filename(fil):
@@ -376,6 +371,10 @@ def full_sat_name(sat):
   
 # -------------------------------------------------------------------
 def full_cha_name(target):
+    """
+    Decoding of channel abbreviations.
+    """
+
     if target == 'rf1' or target == 'ch1':
         name = "Channel 1 reflectance"
     elif target == 'rf2' or target == 'ch2':
@@ -389,12 +388,18 @@ def full_cha_name(target):
     elif target == 'bt5' or target == 'ch5':
         name = "Channel 5 brightness temperature [K]"
     else:
-        print "\n * Wrong target name! see help message !\n"
-        exit(0)
+        message = "\n * Wrong target name! see help message !\n"
+        sys.exit(message)
+
     return(name)
 
 # -------------------------------------------------------------------
 def datestring(dstr):
+    """
+    Convert date string containing '-' or '_' or '/'
+    into date string without any character.
+    """
+
     if '-' in dstr:
         correct_date_string = string.replace(dstr,'-','')
     elif '_' in dstr:
@@ -403,6 +408,7 @@ def datestring(dstr):
         correct_date_string = string.replace(dstr,'/','')
     else:
         correct_date_string = dstr
+
     return correct_date_string
   
 # -------------------------------------------------------------------
@@ -410,9 +416,12 @@ def satstring(sstr):
     return full_sat_name(sstr)[1]
   
 # -------------------------------------------------------------------
-# calculate zonal means of input (i.e. orbit)
-# S. Finkensieper, July 2014
 def cal_zonal_means(lat, tar, zone_size):
+    """
+    Calculation of daily zonal means. 
+    Called in run_pystat_add2sqlite.py
+    S. Finkensieper, July 2014
+    """
   
     # define latitudinal zone size :
     zone_rad = zone_size/2.0
@@ -457,245 +466,13 @@ def cal_zonal_means(lat, tar, zone_size):
         nobs[izone] = n
 
     return (zonal_means, zonal_stdev, nobs)
-  
-# -------------------------------------------------------------------
-# plot global, zonal means
-# S. Finkensieper, July 2014
-def plt_zonal_means(zonal_mean, zonal_nobs, global_mean, 
 
-    zone_size, ofil_name, date_str, chan_str, plat_str):
-    
-    glo_mask = np.ma.equal(global_mean, 0.)
-    zon_mask = np.ma.equal(zonal_mean, 0.)
-    
-    glm = np.ma.masked_where(glo_mask, global_mean)
-    
-    zonal_means = np.ma.masked_where(zon_mask, zonal_mean)
-    nobs = np.ma.masked_where(zon_mask, zonal_nobs)
-
-    if np.ma.count(zonal_means) == 0:
-        return 
-    
-    # define latitudinal zone size :
-    zone_rad = zone_size/2.0
-
-    # determine zone centers:
-    zone_centers = np.arange(-90 + zone_rad, 90 + zone_rad, zone_size)
-    nzones = len(zone_centers)
-
-    # create one host axes object and one child axes object which share their
-    # x-axis, but have individual y-axes:
-    ax_means = host_subplot(111, axes_class=AA.Axes)
-    ax_nobs = ax_means.twinx()
-
-    # plot zonal mean into the host axes:
-    width = zone_rad*0.5
-    ax_means.bar(zone_centers, zonal_means, 
-            label='Zonal Mean using lat. zone size of {0} degrees'.format(zone_size),
-            width=width, color='DarkOrange')
-
-    # plot number of observations into the child axes:
-    ax_nobs.bar(zone_centers + width, nobs, 
-            label='# of Observations (total: '+format(int(nobs.sum()))+')',
-            width=width, color='g')
-
-    # plot global mean on top of them:
-    ax_means.plot(zone_centers, np.ma.ones(nzones)*glm, 'b--', lw=2.0,
-      	label='Global Mean: '+format('%.4f' % glm))
-
-    # set axes labels:
-    ax_means.set_ylabel('Zonal Mean of '+chan_str)
-    ax_nobs.set_ylabel('# of Observations of AVHRR GAC / '+plat_str+' for '+date_str)
-    ax_means.set_xlabel('Latitudinal Zone Center [degrees]')
-
-    # set axes range:
-    ax_means.set_ylim(0, 1.2*np.ma.max(zonal_means))
-    ax_nobs.set_ylim(0, 1.2*np.ma.max(nobs))
-
-    # add title & legend:
-    #plt.title('Zonal means using a latitudinal zone size of {0} degrees'
-          #.format(zone_size))
-    plt.legend(loc='upper center')
-
-    # ensure 'tight layout' (prevents the axes labels from being placed outside
-    # the figure):
-    plt.tight_layout()
-
-    # save figure to file:
-    #plt.savefig('zonal_means.png', bbox_inches='tight')
-    with np.errstate(all='ignore'): 
-        plt.savefig(ofil_name)
-        plt.close()
-    #return
-  
-
-# -------------------------------------------------------------------
-# meine plotting routine
-def plt_zonal_mean_stdv(zonal_mean, zonal_stdv, zonal_nobs, 
-        zone_centers, zone_size, ofil_name, 
-        date_str, chan_str, plat_str):
-
-    zon_mask = np.ma.equal(zonal_mean, 0.)
-    
-    avearr = np.ma.masked_where(zon_mask, zonal_mean)
-    devarr = np.ma.masked_where(zon_mask, zonal_stdv)
-    cntarr = np.ma.masked_where(zon_mask, zonal_nobs)
-    belarr = np.ma.masked_where(zon_mask, zone_centers)
-    
-    xlabel = 'Latitude using zone size of {0} degrees'.format(zone_size)
-    mean_label = 'Zonal Mean'
-    stdv_label = 'Zonal Standard Deviation'
-    
-    if np.ma.count(avearr) == 0:
-        return 
-    
-    fig = plt.figure()
-    gs = gridspec.GridSpec(2, 1, height_ratios=[3,1])
-    ax_val = fig.add_subplot(gs[0])
-    ax_rec = fig.add_subplot(gs[1])
-
-    y1 = avearr + devarr
-    y2 = avearr - devarr
-    
-    allcnt = int(zonal_nobs.sum())
-    maxcnt = int(zonal_nobs.max())
-
-    # plot zonal mean & stdv
-    ax_val.plot(belarr, avearr, 'o', color='red')
-    ax_val.plot(belarr, avearr, color='red', linewidth=2)
-    ax_val.fill_between(belarr, y1, y2, facecolor='SkyBlue', alpha=0.5)
-    ax_val.set_title('AVHRR GAC / '+plat_str+' for '+date_str)
-    ax_val.set_ylabel('Zonal Mean of '+chan_str)
-    ax_val.grid()
-
-    # plot number of observations / lat. zone
-    ax_rec.plot(belarr, cntarr, 'o', color='black')
-    ax_rec.plot(belarr, cntarr, color='black', linewidth=2, 
-            label=format(allcnt)+' records')
-    ax_rec.set_ylabel('# of Observations')
-    ax_rec.set_xlabel(xlabel)
-    ax_rec.grid()
-
-    # set axes range:
-    ax_rec.set_ylim(0, 1.1*maxcnt)
-
-    # plot legend for mean & stdv
-    m = plt.Line2D((0,1), (1,1), c='red', lw=2)
-    s = plt.Rectangle((0,0), 1, 1, fc='SkyBlue')
-    leg = ax_val.legend([m, s], [mean_label, stdv_label], 
-            loc='best', fancybox=True)
-    leg.get_frame().set_alpha(0.5)
-    
-    # plot legend for observations
-    leg2 = ax_rec.legend(loc='upper center', fancybox=True)
-    leg.get_frame().set_alpha(0.5)
-    
-    # ensure 'tight layout' (prevents the axes labels from being 
-    # placed outside the figure):
-    plt.tight_layout()
-    plt.savefig(ofil_name)
-    plt.close()
-
-    return
-
-# -------------------------------------------------------------------
-# write zonal/global output
-def write_zonal_means(ofil, zones, fill_value, pstr, dstr, cstr, 
-        zonal_mean, zonal_stdv, zonal_nobs, 
-        global_mean, global_stdv, global_nobs):
-  
-    glo_mask = np.ma.equal(global_mean, 0.)
-    zon_mask = np.ma.equal(zonal_mean, 0.)
-    
-    glm = np.ma.masked_where(glo_mask, global_mean)
-    gls = np.ma.masked_where(glo_mask, global_stdv)
-    gln = np.ma.masked_where(glo_mask, global_nobs)
-    
-    glm = np.ma.filled(glm, fill_value)
-    gls = np.ma.filled(gls, fill_value)
-    gln = np.ma.filled(gln, fill_value)
-    
-    mean = np.ma.masked_where(zon_mask, zonal_mean)
-    stdv = np.ma.masked_where(zon_mask, zonal_stdv)
-    nobs = np.ma.masked_where(zon_mask, zonal_nobs)
-    
-    mean = np.ma.filled(mean, fill_value)
-    stdv = np.ma.filled(stdv, fill_value)
-    nobs = np.ma.filled(nobs, fill_value)
-    
-    if glm == fill_value:
-        return
-    
-    obj = open(ofil, mode="w")
-    
-    hlin1 = '# Global statistics of '+cstr+' for '+dstr+' on '+pstr+'\n'
-    hlin2 = '# mean | stdv | nobs \n'
-    
-    obj.write(hlin1)
-    obj.write(hlin2)
-    
-    line = "%f %f %d\n" % (glm, gls, gln)
-    obj.write(line)
-    
-    hlin3 = '# Zonal statistics of '+cstr+' for '+dstr+' on '+pstr+'\n'
-    hlin4 = '# mean | stdv | lat.center | nobs \n'
-    
-    obj.write(hlin3)
-    obj.write(hlin4)
-    
-    nitems = len(mean)
-    
-    for ix in range(len(mean)): 
-        line = "%f %f %f %d\n" % (mean[ix], stdv[ix], zones[ix], nobs[ix]) 
-        obj.write(line)
-      
-    obj.close()
-
-# -------------------------------------------------------------------
-# read Global_statistics_AVHRRGACl1c_*.txt
-# Global statistics for AVHRR GAC on NOAA-15
-# channel | date | time | mean | stdv | nobs
-def read_globstafile(fil,cha,sel):
-
-    obj = open(fil, mode="r")
-    lines = obj.readlines()
-    obj.close()
-
-    # Global statistics for AVHRR GAC on NOAA-15
-    # channel | date | time | mean | stdv | nobs
-    lstar = []
-    lsdat = []
-    lstim = []
-    lsave = []
-    lsstd = []
-    lsrec = []
-    
-    for ll in lines: 
-        line = ll.strip('\n')
-      
-        if '#' in line:
-            continue
-        if '-9999.0000' in line:
-            continue
-        
-        string = line.split( )
-        
-        if string[0] == cha: 
-            if string[2] == sel: 
-                lstar.append(string[0])
-                date = datetime.datetime.strptime(string[1], '%Y%m%d').date()
-                lsdat.append(date)
-                lstim.append(string[2])
-                lsave.append(float(string[3]))
-                lsstd.append(float(string[4]))
-                lsrec.append(int(string[5]))
-      
-    return (lstar,lsdat,lstim,lsave,lsstd,lsrec)
-
-  
 # -------------------------------------------------------------------
 def set_fillvalue(fill_value, zonal_mean, zonal_stdv, zonal_nobs, 
         global_mean, global_stdv, global_nobs):
+    """
+    Set fill value in case element is masked or no data.
+    """
   
     # -- set bad values to fill_value
     if global_nobs == 0: 
@@ -716,5 +493,103 @@ def set_fillvalue(fill_value, zonal_mean, zonal_stdv, zonal_nobs,
            np.asscalar(gln.astype(int)), 
            mean, stdv, nobs.astype(int))
 
+
+
+# -------------------------------------------------------------------
+# *** old subroutines: pystat writing ascii files ***
+# -------------------------------------------------------------------
+
+## -------------------------------------------------------------------
+## write zonal/global output
+#def write_zonal_means(ofil, zones, fill_value, pstr, dstr, cstr, 
+#        zonal_mean, zonal_stdv, zonal_nobs, 
+#        global_mean, global_stdv, global_nobs):
+#  
+#    glo_mask = np.ma.equal(global_mean, 0.)
+#    zon_mask = np.ma.equal(zonal_mean, 0.)
+#    
+#    glm = np.ma.masked_where(glo_mask, global_mean)
+#    gls = np.ma.masked_where(glo_mask, global_stdv)
+#    gln = np.ma.masked_where(glo_mask, global_nobs)
+#    
+#    glm = np.ma.filled(glm, fill_value)
+#    gls = np.ma.filled(gls, fill_value)
+#    gln = np.ma.filled(gln, fill_value)
+#    
+#    mean = np.ma.masked_where(zon_mask, zonal_mean)
+#    stdv = np.ma.masked_where(zon_mask, zonal_stdv)
+#    nobs = np.ma.masked_where(zon_mask, zonal_nobs)
+#    
+#    mean = np.ma.filled(mean, fill_value)
+#    stdv = np.ma.filled(stdv, fill_value)
+#    nobs = np.ma.filled(nobs, fill_value)
+#    
+#    if glm == fill_value:
+#        return
+#    
+#    obj = open(ofil, mode="w")
+#    
+#    hlin1 = '# Global statistics of '+cstr+' for '+dstr+' on '+pstr+'\n'
+#    hlin2 = '# mean | stdv | nobs \n'
+#    
+#    obj.write(hlin1)
+#    obj.write(hlin2)
+#    
+#    line = "%f %f %d\n" % (glm, gls, gln)
+#    obj.write(line)
+#    
+#    hlin3 = '# Zonal statistics of '+cstr+' for '+dstr+' on '+pstr+'\n'
+#    hlin4 = '# mean | stdv | lat.center | nobs \n'
+#    
+#    obj.write(hlin3)
+#    obj.write(hlin4)
+#    
+#    nitems = len(mean)
+#    
+#    for ix in range(len(mean)): 
+#        line = "%f %f %f %d\n" % (mean[ix], stdv[ix], zones[ix], nobs[ix]) 
+#        obj.write(line)
+#      
+#    obj.close()
+## -------------------------------------------------------------------
+## read Global_statistics_AVHRRGACl1c_*.txt
+## Global statistics for AVHRR GAC on NOAA-15
+## channel | date | time | mean | stdv | nobs
+#def read_globstafile(fil,cha,sel):
+#
+#    obj = open(fil, mode="r")
+#    lines = obj.readlines()
+#    obj.close()
+#
+#    # Global statistics for AVHRR GAC on NOAA-15
+#    # channel | date | time | mean | stdv | nobs
+#    lstar = []
+#    lsdat = []
+#    lstim = []
+#    lsave = []
+#    lsstd = []
+#    lsrec = []
+#    
+#    for ll in lines: 
+#        line = ll.strip('\n')
+#      
+#        if '#' in line:
+#            continue
+#        if '-9999.0000' in line:
+#            continue
+#        
+#        string = line.split( )
+#        
+#        if string[0] == cha: 
+#            if string[2] == sel: 
+#                lstar.append(string[0])
+#                date = datetime.datetime.strptime(string[1], '%Y%m%d').date()
+#                lsdat.append(date)
+#                lstim.append(string[2])
+#                lsave.append(float(string[3]))
+#                lsstd.append(float(string[4]))
+#                lsrec.append(int(string[5]))
+#      
+#    return (lstar,lsdat,lstim,lsave,lsstd,lsrec)
 # -------------------------------------------------------------------
 
