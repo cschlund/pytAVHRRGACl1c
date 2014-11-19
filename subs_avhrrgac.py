@@ -2,7 +2,7 @@
 # subroutines for pystat, sqlite updating/writing/creating
 #
 
-import os, sys, 
+import os, sys
 import fnmatch, datetime
 import string
 import numpy as np
@@ -268,10 +268,11 @@ def get_color_list():
     List of colors used in the plotting routines.
     """
 
-    colorlst = ['Red','DodgerBlue','DarkOrange','Lime',
-		        'Navy','Magenta','DarkGreen','Turquoise',
-		        'DarkMagenta','Sienna','Gold','Olive',
+    colorlst = ['Magenta','DodgerBlue','DarkOrange','Lime',
+		        'Sienna','Red','DarkGreen','Turquoise',
+		        'DarkMagenta','Navy','Gold','Olive',
 		        'MediumSlateBlue','DimGray']
+    return colorlst
             
 # -------------------------------------------------------------------
 def full_sat_name(sat):
@@ -356,7 +357,7 @@ def full_sat_name(sat):
         name = "NOAA-18"
         abbr = "noaa18"
         lite = "NOAA18"
-      
+     
     elif sat in np_list:
         name = "NOAA-19"
         abbr = "noaa19"
@@ -410,6 +411,24 @@ def datestring(dstr):
         correct_date_string = dstr
 
     return correct_date_string
+  
+# -------------------------------------------------------------------
+def date2str(dateobject):
+    """
+    Create a date string from a given datetime.date object.
+    """
+    return dateobject.strftime("%Y%m%d")
+
+# -------------------------------------------------------------------
+def str2date(datestr):
+    """
+    Create a datetime.date object from a given datestring.
+    """
+    return datetime.datetime.strptime(datestr, '%Y%m%d').date()
+
+# -------------------------------------------------------------------
+def lite_sat_string(sstr):
+    return full_sat_name(sstr)[2]
   
 # -------------------------------------------------------------------
 def satstring(sstr):
