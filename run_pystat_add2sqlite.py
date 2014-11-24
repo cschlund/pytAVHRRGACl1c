@@ -384,8 +384,9 @@ if __name__ == '__main__':
         tab_sta = 'statistics'
 
         try: 
-            db = sqlite3.connect(args.gsqlite, \
-              detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)    
+            db = sqlite3.connect(args.gsqlite, 
+              detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES,
+              timeout=36000)
 
             db.row_factory = mysub.dict_factory
 
