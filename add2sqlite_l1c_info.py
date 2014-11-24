@@ -76,7 +76,7 @@ else:
 # -- sqlite database containing L1b information updated with L1c inf.
 try:
     # connect to database
-    con = lite.connect(args.sqlite)
+    con = lite.connect(args.sqlite, timeout=36000)
     con.isolation_level = 'EXCLUSIVE'
     con.execute('BEGIN EXCLUSIVE')
     cur = con.cursor() 
