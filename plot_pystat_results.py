@@ -23,7 +23,6 @@ def plot_results():
 
     for channel in cha_list: 
         for select in sel_list: 
-
             if args.target == 'global': 
 
                 psql.plot_time_series(sat_list, channel, select, 
@@ -35,12 +34,17 @@ def plot_results():
                         select, start_date, end_date, args.outdir,
                         cur, args.verbose) 
 
+                if args.asciifiles != None:
+                    psql.plot_time_series_ascii_input(sat_list, 
+                            channel, select, start_date, end_date, 
+                            args.outdir, args.asciifiles, 
+                            args.verbose) 
+
             else: 
 
                     psql.plot_zonal_results(sat_list, channel, 
                         select, start_date, end_date, args.outdir,
                         cur, args.target, args.verbose) 
-
 
     return
 
@@ -81,6 +85,8 @@ if __name__ == '__main__':
                         linear regression (plot per satellite/channel/time).''')
     parser.add_argument('-ver', '--verbose', 
                         help='increase output verbosity', action="store_true")
+    parser.add_argument('-asc', '--asciifiles', type=str, 
+                        help='read old pystat results stored in ascii files')
     
     args = parser.parse_args()
     
@@ -132,6 +138,7 @@ if __name__ == '__main__':
         print ("   - Satellite  : %s" % sat_list)
         print ("   - Target plot: %s" % target_plt_name)
         print ("   - TimeS.LinF : %s" % args.linfit)
+        print ("   - Old asciiF : %s" % args.asciifiles)
         print ("   - Verbose    : %s\n" % args.verbose)
     
 
