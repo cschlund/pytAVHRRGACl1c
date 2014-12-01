@@ -139,7 +139,7 @@ def read_global_stats( sat, cha, sel, sd, ed, sql ):
 
 # -------------------------------------------------------------------
 def plot_time_series(sat_list, channel, select, start_date,
-                     end_date, outpath, cursor, verbose): 
+                     end_date, outpath, cursor, verbose, ascinpdir): 
     """
     Plot time series based on pystat results.
     """
@@ -159,8 +159,17 @@ def plot_time_series(sat_list, channel, select, start_date,
 
     sdate = mysub.date2str(start_date)
     edate = mysub.date2str(end_date)
-    fbase = 'Plot_TimeSeries_'+sdate+'_'+edate+'_'+\
-            channel+'_'+select+'.png'
+    if len(sat_list) == 1: 
+        sname = mysub.full_sat_name(sat_list[0])[2] 
+        slist = mysub.get_satellite_list()
+        colid = slist.index(sname)
+        cnt = colid
+        fbase = 'Plot_TimeSeries_'+sdate+'_'+edate+\
+                '_'+channel+'_'+select+'_'+\
+                sname+'.png'
+    else:
+        fbase = 'Plot_TimeSeries_'+sdate+'_'+edate+\
+                '_'+channel+'_'+select+'.png'
     ofile = os.path.join( outpath, fbase)
 
     fig    = plt.figure()
@@ -172,144 +181,52 @@ def plot_time_series(sat_list, channel, select, start_date,
     # -- loop over satellites
     for satellite in sat_list: 
 
+
+        # if ascii files inpdir is given
+        if ascinpdir != None: 
+            satname = mysub.full_sat_name(satellite)[1] 
+            ifile   = os.path.join( ascinpdir, 
+                      "Global_statistics_AVHRRGACl1c_"+satname+".txt" )
+
+            if os.path.isfile(ifile) == True: 
+                (asc_datelst,asc_meanlst,
+                 asc_stdvlst,asc_nobslst) = read_globstafile(ifile, 
+                         channel, select, start_date, end_date)
+
+
         ( datelst, meanlst, stdvlst, nobslst ) = read_global_stats( 
                 satellite, channel, select, start_date, end_date, 
                 cursor )
 
         if not datelst:
-            #if verbose == True:
-            #    print ("     ! no data record found for %s %s %s" %
-            #            (satellite, channel, select))
             pass
         else: 
             if len(datelst) > 10:
                 isdata_cnt += 1
 
-                #if verbose == True: 
-                #    print ("     - %s records found for %s %s %s" % 
-                #            (len(datelst), satellite, channel, select)) 
-
                 # date vs. global mean
                 #ax_val.plot(datelst, meanlst, 'o', color=color_list[cnt])
                 ax_val.plot(datelst, meanlst, label=satellite, 
                             color=color_list[cnt], linewidth=lwd)
+                if len(asc_datelst) > 10: 
+                    ax_val.plot(asc_datelst, asc_meanlst, 'o', 
+                            color=color_list[cnt], linewidth=lwd)
+
                 # date vs. global stdv
                 #ax_std.plot(datelst, stdvlst, 'o', color=color_list[cnt])
                 ax_std.plot(datelst, stdvlst, label=satellite, 
                             color=color_list[cnt], linewidth=lwd)
+                if len(asc_datelst) > 10: 
+                    ax_std.plot(asc_datelst, asc_stdvlst, 'o', 
+                            color=color_list[cnt], linewidth=lwd)
+                
                 # date vs. global nobs
                 #ax_rec.plot(datelst, nobslst, 'o', color=color_list[cnt])
                 ax_rec.plot(datelst, nobslst, label=satellite, 
                             color=color_list[cnt], linewidth=lwd)
-
-        # set new color for next satellite
-        cnt += 1
-
-    # -- end ofloop over satellites
-
-    if isdata_cnt > 0:
-        # label axes
-        ax_val.set_title(plot_label)
-        ax_val.set_ylabel(mean_label)
-        ax_std.set_ylabel(stdv_label)
-        ax_rec.set_ylabel(nobs_label)
-        ax_rec.set_xlabel(date_label)
-
-        # beautify the x-labels
-        plt.gcf().autofmt_xdate()
-
-        # make grid
-        ax_val.grid()
-        ax_std.grid()
-        ax_rec.grid()
-
-        # make legend
-        if cnt > 2:
-            leg = ax_val.legend(bbox_to_anchor=(1.125, 1.05), 
-                                fontsize=11)
-        else:
-            plt.tight_layout()
-            leg = ax_val.legend(loc='best', fancybox=True)
-
-        leg.get_frame().set_alpha(0.5)
-
-        # save figure
-        plt.savefig(ofile)
-        plt.close()
-
-        if verbose == True: 
-            print ("   + %s done!" % ofile)
-    else:
-        plt.close()
-
-    return
-# -------------------------------------------------------------------
-def plot_time_series_ascii_input(sat_list, channel, select, 
-        start_date, end_date, outpath, inpdir, verbose): 
-    """
-    Plot time series based on pystat results, old results,
-    which were stored in ascii files.
-    """
-
-    isdata_cnt = 0
-    chan_label = mysub.full_cha_name(channel)
-    plot_label = "AVHRR GAC L1C Time Series (MODc5 calib.): "+\
-                 chan_label+" ("+select+")\n"
-    mean_label = "Global Mean\n"
-    stdv_label = "Standard Deviation\n"
-    nobs_label = "# of Observations\n"
-    date_label = "\nTime"
-
-    color_list = mysub.get_color_list()
-    cnt = 0
-    lwd = 2
-
-    sdate = mysub.date2str(start_date)
-    edate = mysub.date2str(end_date)
-    fbase = 'Plot_TimeSeries_old_'+sdate+'_'+edate+'_'+\
-            channel+'_'+select+'.png'
-    ofile = os.path.join( outpath, fbase)
-
-    fig    = plt.figure()
-    ax_val = fig.add_subplot(311)
-    ax_std = fig.add_subplot(312)
-    ax_rec = fig.add_subplot(313)
-
-
-    # -- loop over files
-    for satellite in sat_list:
-
-        satname = mysub.full_sat_name(satellite)[1]
-        ifile   = os.path.join( inpdir, 
-                  "Global_statistics_AVHRRGACl1c_"+satname+".txt" )
-
-        if os.path.isfile(ifile) == True: 
-
-            (datelst,meanlst,stdvlst,
-             nobslst) = read_globstafile(ifile, channel, select,
-                                         start_date, end_date)
-
-            if not datelst:
-                pass
-            else: 
-                if len(datelst) > 10:
-                    isdata_cnt += 1
-
-                    # date vs. global mean
-                    #ax_val.plot(datelst, meanlst, 'o', color=color_list[cnt])
-                    ax_val.plot(datelst, meanlst, label=satellite, 
-                                color=color_list[cnt], linewidth=lwd)
-                    # date vs. global stdv
-                    #ax_std.plot(datelst, stdvlst, 'o', color=color_list[cnt])
-                    ax_std.plot(datelst, stdvlst, label=satellite, 
-                                color=color_list[cnt], linewidth=lwd)
-                    # date vs. global nobs
-                    #ax_rec.plot(datelst, nobslst, 'o', color=color_list[cnt])
-                    ax_rec.plot(datelst, nobslst, label=satellite, 
-                                color=color_list[cnt], linewidth=lwd)
-
-        else:
-            pass
+                if len(asc_datelst) > 10: 
+                    ax_rec.plot(asc_datelst, asc_nobslst, 'o', 
+                            color=color_list[cnt], linewidth=lwd)
 
         # set new color for next satellite
         cnt += 1
