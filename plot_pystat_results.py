@@ -27,18 +27,12 @@ def plot_results():
 
                 psql.plot_time_series(sat_list, channel, select, 
                         start_date, end_date, args.outdir,
-                        cur, args.verbose) 
+                        cur, args.verbose, args.asciifiles) 
 
                 if args.linfit == True: 
                     psql.plot_time_series_linfit(sat_list, channel, 
                         select, start_date, end_date, args.outdir,
                         cur, args.verbose) 
-
-                if args.asciifiles != None:
-                    psql.plot_time_series_ascii_input(sat_list, 
-                            channel, select, start_date, end_date, 
-                            args.outdir, args.asciifiles, 
-                            args.verbose) 
 
             else: 
 
