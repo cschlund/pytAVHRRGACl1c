@@ -46,10 +46,9 @@ def find_scanline_gaps(col, rows, data):
     for i in range(rows): 
         i += 1
         if i not in scanline_list:
-            gap_list.append(str(i))
+            gap_list.append(i)
 
-    gap_list_string = ';'.join(gap_list)
-    return gap_list_string
+    return gap_list
 
 
 #----------------------------------------------------------------------------
