@@ -15,6 +15,7 @@ import datetime
 import argparse
 import read_avhrrgac_h5 as rh5
 import subs_avhrrgac as subs
+from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
 
 # -------------------------------------------------------------------
 
@@ -74,121 +75,83 @@ else:
 
 # -------------------------------------------------------------------
 # -- sqlite database containing L1b information updated with L1c inf.
-try:
-    # connect to database
-    con = lite.connect(args.sqlite, timeout=36000)
-    con.isolation_level = 'EXCLUSIVE'
-    con.execute('BEGIN EXCLUSIVE')
-    cur = con.cursor() 
+# connect to database
+db = AvhrrGacDatabase(dbfile=args.sqlite, timeout=36000)
 
-    # new columns to be added
-    alist = [ "ALTER TABLE orbits ADD COLUMN start_time_l1c TIMESTAMP ", 
-              "ALTER TABLE orbits ADD COLUMN end_time_l1c TIMESTAMP ", 
-              "ALTER TABLE orbits ADD COLUMN across_scanline INTEGER ", 
-              "ALTER TABLE orbits ADD COLUMN along_scanline INTEGER ", 
-              "ALTER TABLE orbits ADD COLUMN number_of_missing_scanlines INTEGER ", 
-              "ALTER TABLE orbits ADD COLUMN missing_scanlines TEXT " ] 
+# columns are already created in the orig. db: 
+# AVHRR_GAC_archive.sqlite3
 
-    for act in alist: 
-        try:
-            cur.execute(act)
-        except:
-            pass # if already existing
-      
+# -- loop over file list
+for fil in fil_list:
+    qfil = None 
+
+    # -- get x and y dimension of orbit
+    f = h5py.File(fil, "r+")
+    fil_dim = rh5.get_data_size(f)
+    f.close()
     
-    # -- loop over file list
-    for fil in fil_list:
-        qfil = None 
-
-        # -- get x and y dimension of orbit
-        f = h5py.File(fil, "r+")
-        fil_dim = rh5.get_data_size(f)
-        f.close()
-        
-        if fil_dim != None:
-            data_across = fil_dim[1]
-            data_along  = fil_dim[0]
-            qfil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_qualflags_")
-        else:
-            print (" * Skip %s - fishy!" % fil)
-            break
-
-        # -- read quality flag file
+    if fil_dim != None:
+        data_across = fil_dim[1]
+        data_along  = fil_dim[0]
         qfil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_qualflags_")
-        q = h5py.File(qfil, "r+")
-        #rh5.show_properties(q)
-        (row, col, total_records, 
-         last_scanline, data) = rh5.read_qualflags(q)
-        q.close()
+    else:
+        print (" * Skip %s - fishy!" % fil)
+        break
 
-        if total_records == last_scanline:
-            number_of_missing_scanlines = 0
-            missing_scanlines = None
-        else:
-            number_of_missing_scanlines = abs(total_records - last_scanline)
-            missing_scanlines = rh5.find_scanline_gaps(0, last_scanline, data)
-            if args.verbose == True:
-                print ("   * File:%s, Row:%s, Col:%s, TotalRecords:%s, "
-                       "Last_ScanLine:%s, NumberOfMissingScanlines:%s, "
-                       "MissingScanlines:%s" % 
-                       (os.path.basename(qfil),row, col, total_records, 
-                        last_scanline, number_of_missing_scanlines, 
-                        missing_scanlines))
+    # -- read quality flag file
+    qfil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_qualflags_")
+    q = h5py.File(qfil, "r+")
+    #rh5.show_properties(q)
+    (row, col, total_records, 
+     last_scanline, data) = rh5.read_qualflags(q)
+    q.close()
 
-        # -- split filename
-        split_string      = subs.split_filename(fil)
-        satellite         = subs.full_sat_name(split_string[3])[2]
-        start_date_string = split_string[5][0:-1]
-        end_date_string   = split_string[6][0:-1]
-        
-        # -- get timestamp of first scanline
-        datetimestr1   = ''.join(start_date_string.split('T'))
-        microseconds1  = int(datetimestr1[-1])*1E5
-        stime_l1c_help = datetime.datetime.strptime(datetimestr1[0:-1], '%Y%m%d%H%M%S')
-        stime_query    = datetime.datetime.strptime(datetimestr1[0:-3], '%Y%m%d%H%M')
-        stime_l1c      = stime_l1c_help + \
-                          datetime.timedelta(microseconds=microseconds1)
-                  
-        # -- get timestamp of last scanline
-        datetimestr2   = ''.join(end_date_string.split('T'))
-        microseconds2  = int(datetimestr2[-1])*1E5
-        etime_l1c_help = datetime.datetime.strptime(datetimestr2[0:-1], '%Y%m%d%H%M%S')
-        etime_query    = datetime.datetime.strptime(datetimestr2[0:-3], '%Y%m%d%H%M')
-        etime_l1c      = etime_l1c_help + \
-                          datetime.timedelta(microseconds=microseconds2)
-        
-        # -- add to sqlite
-        act = "update orbits set " \
-          "start_time_l1c = \'{stime_l1c}\', end_time_l1c = \'{etime_l1c}\', "\
-          "across_scanline = {data_across}, along_scanline = {data_along}, " \
-          "number_of_missing_scanlines = {number_of_missing_scanlines}, " \
-          "missing_scanlines = \'{missing_scanlines}\' WHERE blacklist=0 AND "\
-          "start_time=\'{stime_query}\' AND end_time=\'{etime_query}\' AND " \
-          "sat=\'{satellite}\'".format(
-                  stime_l1c=stime_l1c, etime_l1c=etime_l1c,
-                  data_across=data_across, data_along=data_along,
-                  number_of_missing_scanlines=number_of_missing_scanlines,
-                  missing_scanlines=missing_scanlines,
-                  stime_query=stime_query, etime_query=etime_query,
-                  satellite=satellite)
+    if total_records == last_scanline:
+        number_of_missing_scanlines = 0
+        missing_scanlines = []
+    else:
+        number_of_missing_scanlines = abs(total_records - last_scanline)
+        missing_scanlines = rh5.find_scanline_gaps(0, last_scanline, data)
+        if args.verbose == True:
+            print ("   * File:%s, Row:%s, Col:%s, TotalRecords:%s, "
+                   "Last_ScanLine:%s, NumberOfMissingScanlines:%s, "
+                   "MissingScanlines:%s" % 
+                   (os.path.basename(qfil),row, col, total_records, 
+                    last_scanline, number_of_missing_scanlines, 
+                    missing_scanlines))
 
-        cur.execute(act)
-      
-    # -- end of loop over file list: now commit update
-    con.commit()
+    # -- split filename
+    split_string      = subs.split_filename(fil)
+    satellite         = subs.full_sat_name(split_string[3])[2]
+    start_date_string = split_string[5][0:-1]
+    end_date_string   = split_string[6][0:-1]
     
-    if args.verbose == True:
-        print "   * Number of rows updated: %d" % cur.rowcount
+    # -- get timestamp of first scanline
+    datetimestr1   = ''.join(start_date_string.split('T'))
+    microseconds1  = int(datetimestr1[-1])*1E5
+    stime_l1c_help = datetime.datetime.strptime(datetimestr1[0:-1], '%Y%m%d%H%M%S')
+    stime_query    = datetime.datetime.strptime(datetimestr1[0:-3], '%Y%m%d%H%M')
+    stime_l1c      = stime_l1c_help + \
+                      datetime.timedelta(microseconds=microseconds1)
+              
+    # -- get timestamp of last scanline
+    datetimestr2   = ''.join(end_date_string.split('T'))
+    microseconds2  = int(datetimestr2[-1])*1E5
+    etime_l1c_help = datetime.datetime.strptime(datetimestr2[0:-1], '%Y%m%d%H%M%S')
+    etime_query    = datetime.datetime.strptime(datetimestr2[0:-3], '%Y%m%d%H%M')
+    etime_l1c      = etime_l1c_help + \
+                      datetime.timedelta(microseconds=microseconds2)
+    
+    # -- add to sqlite
+    db.add_l1c_fields( 
+            start_time_l1c=stime_l1c, end_time_l1c=etime_l1c, 
+            across_track=data_across, along_track=data_along, 
+            missing_scanlines=missing_scanlines, 
+            where_start_time_l1b=stime_query, 
+            where_end_time_l1b=etime_query, 
+            where_sat=satellite)
   
-# -------------------------------------------------------------------
-except lite.Error, e:
-    if con: 
-        con.rollback()
+# -- end of loop over file list: now commit update
+db.commit_changes()
 
-    print " *** Error %s:" % e.args[0]
-    sys.exit(1)
-# -------------------------------------------------------------------
-finally:
-    if con:
-        con.close()
 # -------------------------------------------------------------------
