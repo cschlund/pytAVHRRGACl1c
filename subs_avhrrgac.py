@@ -103,7 +103,7 @@ def get_new_cols():
 
     new_cols = ["start_scanline_begcut", "end_scanline_begcut", 
                 "start_scanline_endcut", "end_scanline_endcut",
-                "midnight_orbit_scanline"]
+                "midnight_scanline"]
     return new_cols
 
 # --------------------------------------------------------------------
@@ -114,15 +114,16 @@ def update_db_without_midnight(vals, db):
                             stime, etime, satellite]
     """
 
+    sat_id = db._get_id_by_name(table='satellites', name=vals[6])
+
     act = "UPDATE orbits SET " \
           "{0} = {1}, {2} = {3} WHERE blacklist=0 AND " \
           "start_time_l1c=\'{4}\' AND " \
           "end_time_l1c=\'{5}\' AND " \
-          "sat=\'{6}\'".format(
+          "satellite_id={6}".format(
                   vals[0], vals[1], vals[2], vals[3], vals[4],
-                  vals[5], vals[6])
+                  vals[5], sat_id)
 
-    #print ("    - without_midnight: %s" % act)
     db.execute(act)
 
 # --------------------------------------------------------------------
@@ -133,15 +134,16 @@ def update_db_with_midnight(vals, db):
                             string, midnight_calc,
                             stime, etime, satellite]
     """
+    sat_id = db._get_id_by_name(table='satellites', name=vals[8])
 
     act = "UPDATE orbits SET " \
           "{0} = {1}, {2} = {3}, {4} = {5} "\
           "WHERE blacklist=0 AND " \
           "start_time_l1c=\'{6}\' AND " \
           "end_time_l1c=\'{7}\' AND " \
-          "sat=\'{8}\'".format(
+          "satellite_id={8}".format(
                   vals[0], vals[1], vals[2], vals[3], vals[4],
-                  vals[5], vals[6], vals[7], vals[8])
+                  vals[5], vals[6], vals[7], sat_id)
 
     # print ("    - with_midnight: %s" % act)
     db.execute(act)
@@ -158,8 +160,8 @@ def get_record_lists(satellite, db):
     data_along=[] 
 
     get_data = "SELECT start_time_l1c, end_time_l1c, "\
-               "along_scanline FROM orbits WHERE "\
-               "sat=\'{satellite}\' ORDER BY "\
+               "along_track FROM vw_std WHERE "\
+               "satellite_name=\'{satellite}\' ORDER BY "\
                "start_time_l1c".format(satellite=satellite)
 
     results = db.execute(get_data)
@@ -168,7 +170,7 @@ def get_record_lists(satellite, db):
         if result['start_time_l1c'] != None: 
             start_dates.append(result['start_time_l1c']) 
             end_dates.append(result['end_time_l1c']) 
-            data_along.append(result['along_scanline'])
+            data_along.append(result['along_track'])
 
     return(start_dates, end_dates, data_along)
 
