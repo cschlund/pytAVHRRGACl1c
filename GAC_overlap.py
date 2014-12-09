@@ -13,9 +13,10 @@ import datetime, time
 import read_avhrrgac_h5 as rh5
 import subs_avhrrgac as subs
 import numpy as np
+from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
 
 # -------------------------------------------------------------------
-def update_database(): 
+def update_database(db): 
 
     for sate in sat_list: 
 
@@ -187,40 +188,13 @@ if __name__ == '__main__':
 
     
     # -- settings for sqlite  
-    try:
-        db = sqlite3.connect(args.sqlcomp, 
-                detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)    
-        db.row_factory=subs.dict_factory
-        cursor = db.cursor()
+    db = AvhrrGacDatabase(dbfile=args.sqlcomp, timeout=36000)
 
-        for i in add_cols: 
-            try: 
-                act1 = "ALTER TABLE orbits ADD COLUMN "+i+" INTEGER"
-                db.execute(act1) 
-            except: 
-                pass
+    if args.verbose == True: 
+        print ("   + Read %s " % args.sqlcomp)
 
-        if args.verbose == True: 
-            print ("   + Read %s " % args.sqlcomp)
+    update_database(db)
 
-        update_database()
+    db.commit_changes()
 
-
-    except sqlite3.Error, e:
-        if db: 
-            db.rollback()
-
-        print "\n *** Error %s ***\n" % e.args[0]
-        sys.exit(1)
-    
-    
-    finally:
-        if db: 
-            if args.verbose == True: 
-                print ("\n   + Commit and close %s\n" % 
-                        args.sqlcomp)
-    
-            db.commit()
-            db.close()
-    
 # end of main code
