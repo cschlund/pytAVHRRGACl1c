@@ -208,7 +208,7 @@ def plot_time_series(sat_list, channel, select, start_date,
                 #ax_val.plot(datelst, meanlst, 'o', color=color_list[cnt])
                 ax_val.plot(datelst, meanlst, label=satellite, 
                             color=color_list[cnt], linewidth=lwd)
-                if len(asc_datelst) > 10: 
+                if ascinpdir != None and len(asc_datelst) > 10: 
                     ax_val.plot(asc_datelst, asc_meanlst, 'o', 
                             color=color_list[cnt], linewidth=lwd)
 
@@ -216,7 +216,7 @@ def plot_time_series(sat_list, channel, select, start_date,
                 #ax_std.plot(datelst, stdvlst, 'o', color=color_list[cnt])
                 ax_std.plot(datelst, stdvlst, label=satellite, 
                             color=color_list[cnt], linewidth=lwd)
-                if len(asc_datelst) > 10: 
+                if ascinpdir != None and len(asc_datelst) > 10: 
                     ax_std.plot(asc_datelst, asc_stdvlst, 'o', 
                             color=color_list[cnt], linewidth=lwd)
                 
@@ -224,7 +224,7 @@ def plot_time_series(sat_list, channel, select, start_date,
                 #ax_rec.plot(datelst, nobslst, 'o', color=color_list[cnt])
                 ax_rec.plot(datelst, nobslst, label=satellite, 
                             color=color_list[cnt], linewidth=lwd)
-                if len(asc_datelst) > 10: 
+                if ascinpdir != None and len(asc_datelst) > 10: 
                     ax_rec.plot(asc_datelst, asc_nobslst, 'o', 
                             color=color_list[cnt], linewidth=lwd)
 
