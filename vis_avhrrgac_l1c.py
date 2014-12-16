@@ -31,6 +31,7 @@ of cloud_cci (gyGAC).''')
 
 parser.add_argument('-c', '--channel', help=chalist, required=True)
 parser.add_argument('-f', '--filename', help='/path/to/ECC_GAC_file.h5', required=True)
+parser.add_argument('-o', '--outputdir', help='/path/to/out', required=True)
 parser.add_argument('-r', '--region', help=defin, default='glo')
 parser.add_argument('-t', '--time', help=sellist+', default is all', default='all')
 parser.add_argument('-v', '--verbose', help='increase output verbosity', action="store_true")
@@ -42,10 +43,11 @@ args = parser.parse_args()
 if args.verbose == True:
     print ("\n *** Parameter passed" )
     print (" ---------------------- ")
-    print ("   - Channel  : %s" % mysub.full_cha_name(args.channel))
-    print ("   - Filename : %s" % args.filename)
-    print ("   - Region   : %s" % args.region)
-    print ("   - Time     : %s\n" % args.time)
+    print ("   - Channel   : %s" % mysub.full_cha_name(args.channel))
+    print ("   - Filename  : %s" % args.filename)
+    print ("   - Outputdir : %s" % args.outputdir)
+    print ("   - Region    : %s" % args.region)
+    print ("   - Time      : %s\n" % args.time)
 
 # -------------------------------------------------------------------
 # -- some settings
@@ -58,12 +60,12 @@ avhrrstr = strsdate+ ": AVHRR GAC L1c / "+mysub.full_sat_name(platform)[0]
 
 basfil = os.path.basename(args.filename)
 bastxt = os.path.splitext(basfil)[0]
-outdir = './OUT/'
 outfil = bastxt+'_'+args.channel+'_'+args.region+'_'+args.time+'.png'
+ofilen = os.path.join(args.outputdir, outfil)
 outtit = avhrrstr+" - "+rl.REGIONS[args.region]["nam"]+" ("+args.time+")\n\n"
 
-if not os.path.exists(outdir): 
-    os.makedirs(outdir)
+if not os.path.exists(args.outputdir): 
+    os.makedirs(args.outputdir)
   
 # -------------------------------------------------------------------
 # -- for testing
@@ -147,10 +149,10 @@ cbar.set_label(mysub.full_cha_name(args.channel))
 ax.set_title(outtit)
 
 # save to file:
-fig.savefig(outdir + outfil, bbox_inches='tight')
+fig.savefig(ofilen, bbox_inches='tight')
 plt.close()
 
 # -------------------------------------------------------------------
 print ( "\n *** %s finished for \n     %s\n" % 
-((sys.argv[0]), outdir+outfil) )
+((sys.argv[0]), ofilen) )
 # -------------------------------------------------------------------
