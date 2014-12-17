@@ -75,8 +75,6 @@ else:
 
 # -------------------------------------------------------------------
 # -- sqlite database containing L1b information updated with L1c inf.
-# connect to database
-db = AvhrrGacDatabase(dbfile=args.sqlite, timeout=36000)
 
 # columns are already created in the orig. db: 
 # AVHRR_GAC_archive.sqlite3
@@ -142,6 +140,9 @@ for fil in fil_list:
     etime_l1c      = etime_l1c_help + \
                       datetime.timedelta(microseconds=microseconds2)
     
+    # connect to database
+    db = AvhrrGacDatabase(dbfile=args.sqlite, timeout=36000)
+
     # -- add to sqlite
     db.add_l1c_fields( 
             start_time_l1c=stime_l1c, end_time_l1c=etime_l1c, 
@@ -150,8 +151,10 @@ for fil in fil_list:
             where_start_time_l1b=stime_query, 
             where_end_time_l1b=etime_query, 
             where_sat=satellite)
+
+    # -- commit changes
+    db.commit_changes()
   
 # -- end of loop over file list: now commit update
-db.commit_changes()
 
 # -------------------------------------------------------------------
