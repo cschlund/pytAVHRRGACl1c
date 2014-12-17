@@ -188,7 +188,7 @@ if __name__ == '__main__':
 
     
     # -- settings for sqlite  
-    db = AvhrrGacDatabase(dbfile=args.sqlcomp, timeout=36000)
+    db = AvhrrGacDatabase(dbfile=args.sqlcomp, timeout=36000, exclusive=True)
 
     if args.verbose == True: 
         print ("   + Read %s " % args.sqlcomp)

@@ -141,7 +141,7 @@ for fil in fil_list:
                       datetime.timedelta(microseconds=microseconds2)
     
     # connect to database
-    db = AvhrrGacDatabase(dbfile=args.sqlite, timeout=36000)
+    db = AvhrrGacDatabase(dbfile=args.sqlite, timeout=36000, exclusive=True)
 
     # -- add to sqlite
     db.add_l1c_fields( 
