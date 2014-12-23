@@ -5,7 +5,7 @@
 #
 
 import os
-import sys, getopt
+import sys
 import argparse
 import datetime
 import numpy as np
