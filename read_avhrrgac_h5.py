@@ -10,7 +10,6 @@ import os, sys
 import numpy as np
 import numpy.ma as ma
 
-
 #----------------------------------------------------------------------------
 def read_qualflags(fil): 
     try:
@@ -99,6 +98,18 @@ def show_properties(fil):
 def read_var(fil, varstr, ver):
   
     flg = False
+
+    # CC4CL limits: ./trunk/src/ECPConstants.F90
+    ref_min = 0.
+    ref_max = 1.5*100.
+    bt_min  = 140.0
+    bt_max  = 350.0
+    lat_min = -90.0
+    lat_max = 90.0
+    lon_min = -180.0
+    lon_max = 180.0
+    sza_min = 0.
+    sza_max = 180.0
   
     while flg == False:
         try:
@@ -106,6 +117,13 @@ def read_var(fil, varstr, ver):
                 g = fil['/'+key+'/']
                 if key == varstr:
                     flg = True 
+
+                    for att in g.attrs.keys():
+                        if att == "channel":
+                            chan_attr = g.attrs[att]
+                        if att == "description":
+                            desc_attr = g.attrs[att]
+
                     add = fil[g.name+'/what']
                     #how = fil[g.name+'/how'] #not in sunsatangles h5
                     var = fil[g.name+'/data'].value
@@ -114,17 +132,30 @@ def read_var(fil, varstr, ver):
                     noda = add.attrs["nodata"]
                     miss = add.attrs["missingdata"]
                     name = add.attrs["dataset_name"]
-                    mask_var = ma.masked_values(var, miss)
-                    var = ( mask_var * gain ) +  offs
-                    #print (" + %s: %s" % (key, g.name) )
-                    #print ("   - shape=%s, size=%s, dype=%s" % 
-                        #(dat.shape, dat.size, dat.dtype) )
-                    #for att in g.attrs.keys():
-                        #print ("   - gattr: %s -> %s" % (att, g.attrs[att]) )
-                    #for att in add.attrs.keys():
-                        #print ("   - aattr: %s -> %s" % (att, add.attrs[att]) )
-                    #for att in how.attrs.keys():
-                        #print ("   - hattr: %s -> %s" % (att, how.attrs[att]) )
+
+                    # missing and nodata masking
+                    miss_mask = ma.masked_values(var, miss)
+                    noda_mask = ma.masked_values(miss_mask, noda)
+                    temp_var  = ( noda_mask * gain ) + offs
+
+                    # boundary masking
+                    if desc_attr.lower() == "solar zenith angle": 
+                        lim_mask  = ma.mask_or(temp_var < sza_min, 
+                                               temp_var > sza_max)
+
+                    elif desc_attr.lower().startswith("avhrr"):
+                        if chan_attr == "1" or chan_attr == "2" \
+                                or chan_attr.lower() == "3a": 
+                                    lim_mask  = ma.mask_or(temp_var < ref_min, 
+                                                           temp_var > ref_max)
+
+                        elif chan_attr == "4" or chan_attr == "5" \
+                                or chan_attr.lower() == "3b": 
+                                    lim_mask  = ma.mask_or(temp_var < bt_min, 
+                                                           temp_var > bt_max)
+
+                    fin_var = ma.masked_where(lim_mask, temp_var)
+
                     break
         
             for key2 in g.keys():
@@ -137,16 +168,12 @@ def read_var(fil, varstr, ver):
                     noda = add.attrs["nodata"]
                     miss = add.attrs["missingdata"]
                     name = add.attrs["dataset_name"]
-                    mask_var = ma.masked_values(var, miss)
-                    var = ( mask_var * gain ) +  offs
-                    #var = ( var * gain ) +  offs
-                    #print (" + %s -> %s: %s" % (key, key2, g[key2].name) )
-                    #print ("   - shape=%s, size=%s, dype=%s" % 
-                        #(dat.shape, dat.size, dat.dtype) )
-                    #for att in g.attrs.keys():
-                        #print ("   - gattr: %s -> %s" % (att, g.attrs[att]) )
-                    #for att in add.attrs.keys():
-                        #print ("   - aattr: %s -> %s" % (att, add.attrs[att]) )
+
+                    # missing and nodata masking
+                    miss_mask = ma.masked_values(var, miss)
+                    noda_mask = ma.masked_values(miss_mask, noda)
+                    fin_var   = ( noda_mask * gain ) + offs
+
                     break
 
         finally:
@@ -154,9 +181,15 @@ def read_var(fil, varstr, ver):
                 print (" *** Cannot find %s variable in file ***" % varstr)
             else:
                 if ver == True:
-                    print ("   + Variable: %s, shape: %s, size: %s, type: %s , min: %s, max: %s" 
-                        % (name, var.shape, var.size, var.dtype, var.min(), var.max() ) )
-                return (var, name)
+                    print ("   + %s" % name)
+                    print ("     shape: %s, size: %s, type: %s , min: %s, max: %s" 
+                        % (fin_var.shape, fin_var.size, fin_var.dtype, 
+                            fin_var.min(), fin_var.max() ) )
+                    print ("     missingdata: %s, nodata: %s, gain: %s, offs: %s" 
+                        % (miss, noda, gain, offs))
+                    print ("     non-masked elements: %s" % ma.count(fin_var))
+                    print ("     masked elements    : %s" % ma.count_masked(fin_var))
+                return (fin_var, name)
 
 
 #----------------------------------------------------------------------------
@@ -166,11 +199,19 @@ def read_avhrrgac(f, a, tim, cha, ver):
       #show_properties(f)
       #show_properties(a)
 
+    if ver == True: 
+        print ("   -------------------------------------------")
+        print ("   * Original data for %s and %s" % (cha, tim)) 
+        print ("   -------------------------------------------")
+
+
+    # get angle and geolocation
     sza, szanam = read_var(a, 'image1', ver)
     lat, latnam = read_var(f, 'lat', ver)
     lon, lonnam = read_var(f, 'lon', ver)
 
-    
+
+    # get measurement
     if cha == 'ch1': 
         tardat, tarname = read_var(f, 'image1', ver)
         tar = tardat / 100.
@@ -187,7 +228,21 @@ def read_avhrrgac(f, a, tim, cha, ver):
         tardat, tarname = read_var(f, 'image6', ver)
         tar = tardat / 100.
       
-    
+
+    ## some lat/lon fields are not fill_value although they should be
+    ## lat/lon min/max outside realistic values
+    ## fixed here in read_var
+    ## but then tar and lat/lon do not have the same masked elements
+    ## thus:
+    all_masks  = [lat < -90., lat > 90., lon < -180., lon > 180.]
+    total_mask = reduce(np.logical_or, all_masks)
+    lat = ma.masked_where(total_mask, lat)
+    lon = ma.masked_where(total_mask, lon)
+    tar = ma.masked_where(total_mask, tar)
+    sza = ma.masked_where(total_mask, sza)
+
+
+    # select time
     if tim == 'day':
         #consider only daytime, i.e. sza < 80
         lon = ma.masked_where(sza >= 80., lon)
@@ -212,14 +267,21 @@ def read_avhrrgac(f, a, tim, cha, ver):
     parlst  = [latnam, lonnam, tarname]
     datlst  = [lat, lon, tar]
 
+
     if ver == True: 
         cnt = 0 
-        print ("   + Masked Arrays: %s" % tim) 
+        print
+        print ("   -------------------------------------------")
+        print ("   * Masked Arrays: %s" % tim) 
+        print ("   -------------------------------------------")
         for item2 in datlst: 
-            print ("   + Variable: %s, shape: %s, size: %s, type: %s , min: %s, max: %s" % 
+            print ("   + \'%s\', shape: %s, size: %s, type: %s , min: %s, max: %s" % 
                     (parlst[cnt], item2.shape, item2.size, 
                      item2.dtype, item2.min(), item2.max() ))
+            print ("     non-masked elements: %s" % ma.count(item2))
+            print ("     masked elements    : %s" % ma.count_masked(item2))
             cnt += 1
+        print
 
     
     return (lat, lon, tar)

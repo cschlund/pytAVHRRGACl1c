@@ -74,12 +74,12 @@ def readfiles(tup):
                 check = global_mean[channel][select] 
 
                 if args.verbose == True and args.test == True: 
-                    print ("   * %s = %s (%s)" % 
+                    print ("   * %s = %s (%s)\n" % 
                           (idx, mysub.full_cha_name(channel), select)) 
 
                 try: 
-                    (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, False) 
-                    #(lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, args.verbose)
+                    #(lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, False) 
+                    (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, args.verbose)
 
                     # check is channel is filled with measurements
                     if np.ma.count(tar) == 0: 
@@ -93,12 +93,19 @@ def readfiles(tup):
                     #zonal statistics
                     (zm, zs, zn) = mysub.cal_zonal_means(lat, tar, zone_size)
 
+
                     if zn.sum() != gn: 
-                        print (" --- FAILED: Input is fishy due to: %s(zonal nobs) != %s (global nobs) " % (int(zn.sum()), gn) ) 
-                        print ("        Fil: %s" % fil) 
-                        print ("       Afil: %s" % afil) 
-                        print ("    Cha/Sel: %s/%s " % (channel,select)) 
+                        print ("   * Input is fishy due to: "\
+                                "%s (zonal nobs) != %s (global nobs) " % (int(zn.sum()), gn) ) 
+                        print ("         Fil: %s" % fil) 
+                        print ("        Afil: %s" % afil) 
+                        print ("     Cha/Sel: %s/%s " % (channel,select)) 
                         return None
+                    else:
+                        print ("   * Number of oberservations for zonal stat. "\
+                                "is equal to that for global stat.: %s = %s" 
+                                % (int(zn.sum()), gn))
+
 
                     gmean[channel][select] = gm
                     gstdv[channel][select] = gs
@@ -112,7 +119,7 @@ def readfiles(tup):
                     del(gm, gs, gn, zm, zs, zn)
 
                 except (IndexError, ValueError, RuntimeError, Exception) as err: 
-                    print (" --- FAILED: %s" % err)
+                    print ("   --- FAILED: %s" % err)
                     print ("        Fil: %s" % fil)
                     print ("       Afil: %s" % afil)
                     print ("    Cha/Sel: %s/%s " % (channel,select))
@@ -179,7 +186,7 @@ if __name__ == '__main__':
         print ("   - Input Path : %s" % args.inpdir)
         print ("   - Binsize    : %s" % args.binsize)
         print ("   - Verbose    : %s" % args.verbose)
-        print ("   - DB_Sqlite3 : %s" % args.gsqlite)
+        print ("   - DB_Sqlite3 : %s\n" % args.gsqlite)
 
     # -------------------------------------------------------------------
     # -- some settings
@@ -196,6 +203,7 @@ if __name__ == '__main__':
         sys.exit(0)
     else:
         fil_list.sort()
+        #print ("   - %s of orbits" % len(fil_list))
         #for f in fil_list:
         #    print f
 
@@ -288,9 +296,9 @@ if __name__ == '__main__':
 
     for pos,out in enumerate(results): 
         if out is None: 
-            print (" --- FAILED: %s. Input is fishy for %s --> %s" %
-                    (pos, args.date, fil_list[pos]))
             qflag = False
+            #print ("   * %s. Input is fishy for %s --> %s" %
+            #        (pos, args.date, fil_list[pos]))
         else:
             for cha in cha_list:
                 for sel in sel_list:
@@ -496,10 +504,10 @@ if __name__ == '__main__':
                                     zonal_stdv_list + zonal_nobs_list
                         tuple_len = len(full_list)
                         holders   = ','.join('?' * tuple_len)
-                        sql_query = "INSERT OR ABORT INTO %s "\
-                                    "VALUES({0})".format(holders) % tab_sta
-                        #sql_query = "INSERT OR REPLACE INTO %s "\
+                        #sql_query = "INSERT OR ABORT INTO %s "\
                         #            "VALUES({0})".format(holders) % tab_sta
+                        sql_query = "INSERT OR REPLACE INTO %s "\
+                                    "VALUES({0})".format(holders) % tab_sta
                         db.execute(sql_query, full_list)
 
 
@@ -523,7 +531,8 @@ if __name__ == '__main__':
 
     # -------------------------------------------------------------------
     else: 
-        print (" --- FAILED: No output due to fishy input !")
+        print ("\n   --- FAILED: No output for %s on %s due to fishy input !" %
+                (args.satellite, args.date))
     # -------------------------------------------------------------------
 
 
