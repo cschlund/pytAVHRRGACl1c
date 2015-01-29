@@ -105,6 +105,16 @@ def read_global_stats( sat, cha, sel, sd, ed, sql ):
     start_date (sd) and end_date (ed).
     """
 
+    # reflectance
+    if cha == "ch1" or cha == "ch2" or cha == "ch3a":
+        minval = 0.
+        maxval = 1.5
+    # brightness temperature
+    else:
+        minval = 140.
+        maxval = 350.
+
+
     glob_list  = ("GlobalMean", "GlobalStdv", "GlobalNobs")
 
     mean_list = list() 
@@ -119,10 +129,12 @@ def read_global_stats( sat, cha, sel, sd, ed, sql ):
     get_data = "SELECT date, {0}, {1}, {2} "\
                "FROM statistics WHERE satelliteID={3} AND "\
                "channelID={4} AND selectID={5} AND "\
-               "date>=\'{6}\' AND date<=\'{7}\' "\
+               "date>=\'{6}\' AND date<=\'{7}\' AND "\
+               "GlobalMean >= {8} AND GlobalMean <= {9} "\
                "ORDER BY date".format(glob_list[0],
                        glob_list[1], glob_list[2],
-                       sat_id, cha_id, sel_id, sd, ed)
+                       sat_id, cha_id, sel_id, sd, ed,
+                       minval, maxval)
     #print get_data
     results = sql.execute(get_data)
 

@@ -71,7 +71,7 @@ def calc_midnight(stime, etime):
     else:
         
         # set midnight variable to -1 if the day hasn't changed 
-        midnight_orbit_calc = -1
+        midnight_orbit_calc = None
 
     return midnight_orbit_calc
 
@@ -137,7 +137,7 @@ def update_db_with_midnight(vals, db):
     sat_id = db._get_id_by_name(table='satellites', name=vals[8])
 
     act = "UPDATE orbits SET " \
-          "{0} = {1}, {2} = {3}, {4} = {5} "\
+          "{0} = {1}, {2} = {3}, {4} = \'{5}\' "\
           "WHERE blacklist=0 AND " \
           "start_time_l1c=\'{6}\' AND " \
           "end_time_l1c=\'{7}\' AND " \

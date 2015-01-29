@@ -22,11 +22,16 @@ def update_database(db):
 
         satellite = subs.full_sat_name(sate)[2] 
 
-        if args.verbose == True: 
-            print ("\n      - Get records for: %s" % satellite)
+        print ("\n   +++ Get records for: %s\n" % satellite)
 
         (start_dates, end_dates, 
          data_along) = subs.get_record_lists(satellite,db)
+
+        if args.verbose == True:
+            print ( "   * Dimensions: start_dates=%s, "
+                    "end_dates=%s, data_along=%s" % (len(start_dates), 
+                        len(end_dates), len(data_along)) )
+
 
         if not start_dates and not end_dates and not data_along:
             record_flag = False
@@ -37,7 +42,7 @@ def update_database(db):
         if record_flag == True:
 
             if args.verbose == True: 
-                print ("      - Checking for midnight orbit "\
+                print ("   * Checking for midnight orbit "
                        "and number of overlapping lines")
  
 
@@ -52,6 +57,12 @@ def update_database(db):
                 midnight_orbit_current = subs.calc_midnight(stime_current,
                                                             etime_current)
 
+                if args.verbose == True: 
+                    print ( "\n\n   * Current Orbit %s: %s --> %s Midnight=%s"
+                            % (position, stime_current, etime_current, 
+                                midnight_orbit_current))
+
+
                 # -- range: first orbit until last but one
                 if (position+1) < len(end_dates):
 
@@ -59,16 +70,24 @@ def update_database(db):
                     stime_next = start_dates[position+1]
                     etime_next = end_dates[position+1]
 
+                    if args.verbose == True: 
+                        print ( "   * Next Orbit    %s: %s --> %s \n"
+                                % (position+1, stime_next, etime_next))
 
                     # -- very first orbit: 
                     #    no cutting at the beginning of orbit
                     #    i. e. start = 0 and end = along_track_dimension
                     if position == 0:
                         val_list = [add_cols[0], 0, 
+                        #           start_scanline_begcut, 0
                                     add_cols[1], data_along[position],
+                        #           end_scanline_begcut, along_track_dimension
                                     stime_current, etime_current, satellite]
 
                         subs.update_db_without_midnight(val_list, db)
+
+                        if args.verbose == True: 
+                            print ( "     - UPDATE current orbit %s" % (val_list))
 
 
                     # -- check for overlap
@@ -95,6 +114,9 @@ def update_database(db):
                                     stime_next, etime_next, satellite]
 
                         subs.update_db_without_midnight(val_list, db)
+
+                        if args.verbose == True: 
+                            print ( "     - UPDATE next orbit %s" % (val_list))
               
                         # -- update database current orbit
                         val_list = [add_cols[2], start_current, 
@@ -103,6 +125,9 @@ def update_database(db):
                                     stime_current, etime_current, satellite]
 
                         subs.update_db_with_midnight(val_list, db)
+
+                        if args.verbose == True: 
+                            print ( "     - UPDATE current orbit %s" % (val_list))
 
 
                     # -- if no overlap was found: no cutting, i.e.
@@ -115,6 +140,9 @@ def update_database(db):
                                     stime_next, etime_next, satellite]
 
                         subs.update_db_without_midnight(val_list, db)
+
+                        if args.verbose == True: 
+                            print ( "     - UPDATE next orbit %s" % (val_list))
               
                         # -- update database current orbit
                         val_list = [add_cols[2], 0, 
@@ -123,6 +151,9 @@ def update_database(db):
                                     stime_current, etime_current, satellite]
 
                         subs.update_db_with_midnight(val_list, db)
+
+                        if args.verbose == True: 
+                            print ( "     - UPDATE current orbit %s" % (val_list))
 
 
                 # -- very last orbit 
@@ -134,6 +165,9 @@ def update_database(db):
                                 stime_current, etime_current, satellite]
 
                     subs.update_db_with_midnight(val_list, db)
+
+                    if args.verbose == True: 
+                        print ( "     - UPDATE last orbit %s" % (val_list))
 
                 # end of if position < len(end_dates) 
 
@@ -172,12 +206,11 @@ if __name__ == '__main__':
 
 
     # -- some screen output if wanted
-    if args.verbose == True: 
-        print ("\n *** Parameter passed" )
-        print (" ---------------------- ")
-        print ("   - Satellite  : %s" % args.sat)
-        print ("   - Verbose    : %s" % args.verbose)
-        print ("   - DB_Sqlite3 : %s\n" % args.sqlcomp)
+    print ("\n *** Parameter passed" )
+    print (" ---------------------- ")
+    print ("   - Satellite  : %s" % args.sat)
+    print ("   - Verbose    : %s" % args.verbose)
+    print ("   - DB_Sqlite3 : %s\n" % args.sqlcomp)
 
     
     # -- either use full sat list or only one
@@ -190,8 +223,9 @@ if __name__ == '__main__':
     # -- settings for sqlite  
     db = AvhrrGacDatabase(dbfile=args.sqlcomp, timeout=36000, exclusive=True)
 
-    if args.verbose == True: 
-        print ("   + Read %s " % args.sqlcomp)
+    #if args.verbose == True: 
+    #    print ("   + Read %s " % args.sqlcomp)
+    print ("   + Read %s " % args.sqlcomp)
 
     update_database(db)
 
