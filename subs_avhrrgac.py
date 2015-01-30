@@ -7,6 +7,11 @@ import fnmatch, datetime
 import string
 import numpy as np
   
+
+# -------------------------------------------------------------------
+class ColumnError(Exception): 
+    pass
+
 # -------------------------------------------------------------------
 def split_filename(fil):
     dirname  = os.path.dirname(fil)  
@@ -124,7 +129,11 @@ def update_db_without_midnight(vals, db):
                   vals[0], vals[1], vals[2], vals[3], vals[4],
                   vals[5], sat_id)
 
+    total_changes_before = db.conn.total_changes
     db.execute(act)
+    nchanges = db.conn.total_changes - total_changes_before
+    if not nchanges == 1:
+        raise ColumnError('DB UPDATE fishy')
 
 # --------------------------------------------------------------------
 def update_db_with_midnight(vals, db):
@@ -146,7 +155,11 @@ def update_db_with_midnight(vals, db):
                   vals[5], vals[6], vals[7], sat_id)
 
     # print ("    - with_midnight: %s" % act)
+    total_changes_before = db.conn.total_changes
     db.execute(act)
+    nchanges = db.conn.total_changes - total_changes_before
+    if not nchanges == 1:
+        raise ColumnError('DB UPDATE fishy')
 
 # --------------------------------------------------------------------
 def get_record_lists(satellite, db): 
@@ -161,6 +174,9 @@ def get_record_lists(satellite, db):
 
     get_data = "SELECT start_time_l1c, end_time_l1c, "\
                "along_track FROM vw_std WHERE "\
+               "blacklist=0 AND "\
+               "start_time_l1c is not null AND "\
+               "end_time_l1c is not null AND "\
                "satellite_name=\'{satellite}\' ORDER BY "\
                "start_time_l1c".format(satellite=satellite)
 
