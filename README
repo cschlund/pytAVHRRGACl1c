@@ -28,23 +28,6 @@ optional arguments:
 
 # ============================================================================
 
-usage: bugsearch_pygac.py [-h] -i IPASS -o OPROC [-v]
-
-bugsearch_pygac.py searches for the L1b file, which was passed to pyGAC but
-not processed by pyGAC without emmitting a Traceback notification. Input files
-are *L1b_pass.log and *L1c_proc.log files, which are compared to figure out
-which L1b orbit failed.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -i IPASS, --ipass IPASS
-                        log file containing the L1b files passed to pyGAC
-  -o OPROC, --oproc OPROC
-                        log file containing the L1c files produced by pyGAC
-  -v, --verbose         increase output verbosity
-
-# ============================================================================
-
 usage: run_pystat_add2sqlite.py [-h] -d DATE -s SATELLITE -i INPDIR -g GSQLITE
                                 [-b BINSIZE] [-t] [-v]
 
