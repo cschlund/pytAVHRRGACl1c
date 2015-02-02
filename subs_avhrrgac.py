@@ -2,8 +2,10 @@
 # subroutines for pystat, sqlite updating/writing/creating
 #
 
-import os, sys
-import fnmatch, datetime
+import os
+import sys
+import fnmatch
+import datetime
 import string
 import numpy as np
   
@@ -56,27 +58,27 @@ def calc_midnight(stime, etime):
     Check for midnight orbit & check if day has changed
     """
 
-    if stime.day < etime.day: 
-        
-        # calculate how much time has passed 
-        # between start time and midnight 
+    # 2008-07-31 22:29:51.400000|2008-08-01 00:18:15.400000
+    if stime.date() < etime.date():
 
-        midnight = datetime.datetime.strptime( 
-                    str(etime.day*1000000), '%d%H%M%S')
+        # calculate how much time has passed 
+        # between start time and midnight
+        midnight = datetime.datetime.strptime(
+            str(etime.day*1000000), '%d%H%M%S')
         midnight = midnight + datetime.timedelta(microseconds=0)
         midnight_diff = midnight-stime
-        
+
         # calculate the orbit line under the 
         # assumption of 2 scanlines/second
-
-        midnight_diff_msec  = midnight_diff.seconds+\
-                              midnight_diff.microseconds/1000000
+        midnight_diff_msec = midnight_diff.seconds + \
+                             midnight_diff.microseconds/1000000
         midnight_orbit_calc = midnight_diff_msec*2
 
     else:
-        
+
         # set midnight variable to -1 if the day hasn't changed 
-        midnight_orbit_calc = None
+        # midnight_orbit_calc = None
+        midnight_orbit_calc = ''
 
     return midnight_orbit_calc
 

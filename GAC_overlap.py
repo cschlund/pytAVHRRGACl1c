@@ -5,18 +5,14 @@
 # C. Schlundt, Nov. 2014, minor changes
 #
 
-import sqlite3
-import h5py
-import os, sys
+import os
 import argparse
-import datetime, time
-import read_avhrrgac_h5 as rh5
 import subs_avhrrgac as subs
-import numpy as np
 from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
 
+
 # -------------------------------------------------------------------
-def update_database(db): 
+def update_database(db):
 
     for sate in sat_list: 
 
@@ -27,10 +23,10 @@ def update_database(db):
         (start_dates, end_dates, 
          data_along) = subs.get_record_lists(satellite,db)
 
-        if args.verbose == True:
-            print ( "   * Dimensions: start_dates=%s, "
-                    "end_dates=%s, data_along=%s" % (len(start_dates), 
-                        len(end_dates), len(data_along)) )
+        # if args.verbose == True:
+        #     print ( "   * Dimensions: start_dates=%s, "
+        #             "end_dates=%s, data_along=%s" % (len(start_dates),
+        #                 len(end_dates), len(data_along)) )
 
 
         if not start_dates and not end_dates and not data_along:
@@ -57,10 +53,10 @@ def update_database(db):
                 midnight_orbit_current = subs.calc_midnight(stime_current,
                                                             etime_current)
 
-                if args.verbose == True: 
-                    print ( "\n\n   * Current Orbit %s: %s --> %s Midnight=%s"
-                            % (position, stime_current, etime_current, 
-                                midnight_orbit_current))
+                # if args.verbose == True:
+                #     print ( "\n\n   * Current Orbit %s: %s --> %s Midnight=%s"
+                #             % (position, stime_current, etime_current,
+                #                 midnight_orbit_current))
 
 
                 # -- range: first orbit until last but one
@@ -70,9 +66,9 @@ def update_database(db):
                     stime_next = start_dates[position+1]
                     etime_next = end_dates[position+1]
 
-                    if args.verbose == True: 
-                        print ( "   * Next Orbit    %s: %s --> %s \n"
-                                % (position+1, stime_next, etime_next))
+                    # if args.verbose == True:
+                    #     print ( "   * Next Orbit    %s: %s --> %s \n"
+                    #             % (position+1, stime_next, etime_next))
 
                     # -- very first orbit: 
                     #    no cutting at the beginning of orbit
@@ -86,8 +82,8 @@ def update_database(db):
 
                         subs.update_db_without_midnight(val_list, db)
 
-                        if args.verbose == True: 
-                            print ( "     - UPDATE current orbit %s" % (val_list))
+                        # if args.verbose == True:
+                        #     print ( "     - UPDATE current orbit %s" % (val_list))
 
 
                     # -- check for overlap
@@ -115,8 +111,8 @@ def update_database(db):
 
                         subs.update_db_without_midnight(val_list, db)
 
-                        if args.verbose == True: 
-                            print ( "     - UPDATE next orbit %s" % (val_list))
+                        # if args.verbose == True:
+                        #     print ( "     - UPDATE next orbit %s" % (val_list))
               
                         # -- update database current orbit
                         val_list = [add_cols[2], start_current, 
@@ -126,8 +122,8 @@ def update_database(db):
 
                         subs.update_db_with_midnight(val_list, db)
 
-                        if args.verbose == True: 
-                            print ( "     - UPDATE current orbit %s" % (val_list))
+                        # if args.verbose == True:
+                        #     print ( "     - UPDATE current orbit %s" % (val_list))
 
 
                     # -- if no overlap was found: no cutting, i.e.
@@ -141,8 +137,8 @@ def update_database(db):
 
                         subs.update_db_without_midnight(val_list, db)
 
-                        if args.verbose == True: 
-                            print ( "     - UPDATE next orbit %s" % (val_list))
+                        # if args.verbose == True:
+                        #     print ( "     - UPDATE next orbit %s" % (val_list))
               
                         # -- update database current orbit
                         val_list = [add_cols[2], 0, 
@@ -152,8 +148,8 @@ def update_database(db):
 
                         subs.update_db_with_midnight(val_list, db)
 
-                        if args.verbose == True: 
-                            print ( "     - UPDATE current orbit %s" % (val_list))
+                        # if args.verbose == True:
+                        #     print ( "     - UPDATE current orbit %s" % (val_list))
 
 
                 # -- very last orbit 
@@ -166,8 +162,8 @@ def update_database(db):
 
                     subs.update_db_with_midnight(val_list, db)
 
-                    if args.verbose == True: 
-                        print ( "     - UPDATE last orbit %s" % (val_list))
+                    # if args.verbose == True:
+                    #     print ( "     - UPDATE last orbit %s" % (val_list))
 
                 # end of if position < len(end_dates) 
 
@@ -229,6 +225,9 @@ if __name__ == '__main__':
 
     update_database(db)
 
+    print ("   * Commit changes:")
     db.commit_changes()
+
+    print ("   *** %s finished\n\n" % os.path.basename(__file__))
 
 # end of main code

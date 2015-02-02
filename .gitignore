@@ -6,6 +6,7 @@
 *.png
 *.txt
 *.sqlite3
+*.idea
 PYSTAT/**
 PYSTAT/
 OUT/
