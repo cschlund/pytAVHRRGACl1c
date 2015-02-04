@@ -2,46 +2,59 @@
 # -*- coding: utf-8 -*-
 #
 # how to use the script: 
-#   > python script.py -h
+# > python script.py -h
 #
 # C.Schlundt: July, 2014
 # S.Finkensieper: July, 2014: INIT plot
 #
 # -------------------------------------------------------------------
 
-from mpl_toolkits.basemap import Basemap, cm
+import os
+import sys
+import argparse
+
+from mpl_toolkits.basemap import Basemap
 import numpy as np
 import matplotlib.pyplot as plt
-import regionslist as rl
 import h5py
-import os, sys, getopt
-import argparse
+
+import regionslist as rl
 import subs_avhrrgac as mysub
 import read_avhrrgac_h5 as rh5
 
-# -------------------------------------------------------------------
+
 avail = sorted(rl.REGIONS.keys())
 defin = ', '.join(map(str, avail))
 chalist = '|'.join(mysub.get_channel_list())
 sellist = '|'.join(mysub.get_select_list())
 
-parser = argparse.ArgumentParser(description='''This script 
+parser = argparse.ArgumentParser(description='''This script
 displays one AVHRR GAC Level 1c orbit processed in the framework 
 of cloud_cci (gyGAC).''')
 
-parser.add_argument('-c', '--channel', help=chalist, required=True)
-parser.add_argument('-f', '--filename', help='/path/to/ECC_GAC_file.h5', required=True)
-parser.add_argument('-o', '--outputdir', help='/path/to/out', required=True)
+parser.add_argument('-c', '--channel', help=chalist,
+                    required=True)
+
+parser.add_argument('-f', '--filename', help='/path/to/ECC_GAC_file.h5',
+                    required=True)
+
+parser.add_argument('-o', '--outputdir', help='/path/to/out',
+                    required=True)
+
 parser.add_argument('-r', '--region', help=defin, default='glo')
-parser.add_argument('-t', '--time', help=sellist+', default is all', default='all')
-parser.add_argument('-v', '--verbose', help='increase output verbosity', action="store_true")
+
+parser.add_argument('-t', '--time', help=sellist + ', default is all',
+                    default='all')
+
+parser.add_argument('-v', '--verbose', help='increase output verbosity',
+                    action="store_true")
 
 args = parser.parse_args()
 
-# -------------------------------------------------------------------
+
 # -- some screen output if wanted
-if args.verbose == True:
-    print ("\n *** Parameter passed" )
+if args.verbose:
+    print ("\n *** Parameter passed")
     print (" ---------------------- ")
     print ("   - Channel   : %s" % mysub.full_cha_name(args.channel))
     print ("   - Filename  : %s" % args.filename)
@@ -49,46 +62,43 @@ if args.verbose == True:
     print ("   - Region    : %s" % args.region)
     print ("   - Time      : %s\n" % args.time)
 
-# -------------------------------------------------------------------
-# -- some settings
 
-strlst   = mysub.split_filename(args.filename)
+# -- some settings
+strlst = mysub.split_filename(args.filename)
 platform = strlst[3]
 strsdate = strlst[5][0:8]
 stredate = strlst[6][0:8]
-avhrrstr = strsdate+ ": AVHRR GAC L1c / "+mysub.full_sat_name(platform)[0]
+avhrrstr = strsdate + ": AVHRR GAC L1c / " + mysub.full_sat_name(platform)[0]
 
 basfil = os.path.basename(args.filename)
 bastxt = os.path.splitext(basfil)[0]
-outfil = bastxt+'_'+args.channel+'_'+args.region+'_'+args.time+'.png'
+outfil = bastxt + '_' + args.channel + '_' + args.region + '_' + args.time + '.png'
 ofilen = os.path.join(args.outputdir, outfil)
-outtit = avhrrstr+" - "+rl.REGIONS[args.region]["nam"]+" ("+args.time+")\n\n"
+outtit = avhrrstr + " - " + rl.REGIONS[args.region]["nam"] + " (" + args.time + ")\n\n"
 
-if not os.path.exists(args.outputdir): 
+if not os.path.exists(args.outputdir):
     os.makedirs(args.outputdir)
-  
-# -------------------------------------------------------------------
+
+
 # -- for testing
+# print rl.REGIONS[args.region]["nam"]
+# print rl.REGIONS[args.region]["geo"]
+# for key,val in rl.REGIONS[args.region].items():
+#     print key, "=>", val
 
-#print rl.REGIONS[args.region]["nam"]
-#print rl.REGIONS[args.region]["geo"]
-#for key,val in rl.REGIONS[args.region].items():
-    #print key, "=>", val
 
-# -------------------------------------------------------------------
 # -- READ H5 input
-
 # search for corresponding sunsatangles file
 afil = args.filename.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
-  
+
 # open H5 files
 f = h5py.File(args.filename, "r+")
 a = h5py.File(afil, "r+")
 
-#if ver == True: 
+# if ver is True:
 #    rh5.show_properties(f)
 #    rh5.show_properties(a)
-  
+
 # get data
 (lat, lon, tar) = rh5.read_avhrrgac(f, a, args.time, args.channel, args.verbose)
 
@@ -96,21 +106,20 @@ a = h5py.File(afil, "r+")
 a.close()
 f.close()
 
-# -------------------------------------------------------------------
-# -- INIT plot
 
+# -- INIT plot
 # initialize figure
 fig = plt.figure()
-ax  = fig.add_subplot(111)
+ax = fig.add_subplot(111)
 
 # create basemap
 m = Basemap(**rl.REGIONS[args.region]["geo"])
 m.drawcoastlines(linewidth=0.25)
 m.drawcountries(linewidth=0.25)
-#m.fillcontinents(color='grey',lake_color='lightblue')
-#m.drawmapboundary(fill_color='lightblue')
+# m.fillcontinents(color='grey',lake_color='lightblue')
+# m.drawmapboundary(fill_color='lightblue')
 
-#m.drawlsmask(land_color='grey', ocean_color='lightblue', lakes=True)
+# m.drawlsmask(land_color='grey', ocean_color='lightblue', lakes=True)
 lons = np.arange(*rl.REGIONS[args.region]["mer"])
 lats = np.arange(*rl.REGIONS[args.region]["par"])
 
@@ -122,10 +131,10 @@ m.drawmeridians(lons, labels=[False, False, True, True])
 # polygons produced by pcolor when lon crosses the dateline (i.e. jumps from
 # 180 to -180 or vice versa). Use 5 degrees of overlap to avoid polygon gaps
 # at lon=0.
-wmask = lon > 5     # cut all values where lon > 5
-emask = lon < -5    # cut all values where lon < -5
+wmask = lon > 5  # cut all values where lon > 5
+emask = lon < -5  # cut all values where lon < -5
 
-for mask in (wmask, emask): 
+for mask in (wmask, emask):
     # mask lat, lon & data arrays:
     mlon = np.ma.masked_where(mask, lon)
     mlat = np.ma.masked_where(mask, lat)
@@ -138,10 +147,11 @@ for mask in (wmask, emask):
     # for both the east- and west-plot in order to assure an identical colorbar
     # scaling. Here, vmin & vmax are set to the global minimum and maximum of
     # the data, respectively.
-    #pcolor = m.pcolor(x, y, mtar, cmap='jet', vmin=0.0, vmax=1.0)
+    # pcolor = m.pcolor(x, y, mtar, cmap='jet', vmin=0.0, vmax=1.0)
     pcolor = m.pcolor(x, y, mtar, cmap='jet', vmin=np.min(tar), vmax=np.max(tar))
 
 # add colorbar with units:
+# noinspection PyUnboundLocalVariable
 cbar = m.colorbar(pcolor)
 cbar.set_label(mysub.full_cha_name(args.channel))
 
@@ -152,7 +162,4 @@ ax.set_title(outtit)
 fig.savefig(ofilen, bbox_inches='tight')
 plt.close()
 
-# -------------------------------------------------------------------
-print ( "\n *** %s finished for \n     %s\n" % 
-((sys.argv[0]), ofilen) )
-# -------------------------------------------------------------------
+print ("\n *** %s finished for \n     %s\n" % ((sys.argv[0]), ofilen))

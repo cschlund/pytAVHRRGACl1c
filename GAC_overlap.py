@@ -3,6 +3,7 @@
 #
 # Heidrun Hoeschen, Oct. 2014
 # C. Schlundt, Nov. 2014, minor changes
+# C. Schlundt, Feb. 2015, several bugs fixed
 #
 
 import os
@@ -11,39 +12,28 @@ import subs_avhrrgac as subs
 from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
 
 
-# -------------------------------------------------------------------
 def update_database(db):
+    for sate in sat_list:
 
-    for sate in sat_list: 
-
-        satellite = subs.full_sat_name(sate)[2] 
+        satellite = subs.full_sat_name(sate)[2]
 
         print ("\n   +++ Get records for: %s\n" % satellite)
 
-        (start_dates, end_dates, 
-         data_along) = subs.get_record_lists(satellite,db)
-
-        # if args.verbose == True:
-        #     print ( "   * Dimensions: start_dates=%s, "
-        #             "end_dates=%s, data_along=%s" % (len(start_dates),
-        #                 len(end_dates), len(data_along)) )
-
+        (start_dates, end_dates, data_along) = subs.get_record_lists(satellite, db)
 
         if not start_dates and not end_dates and not data_along:
             record_flag = False
         else:
             record_flag = True
 
+        if record_flag:
 
-        if record_flag == True:
-
-            if args.verbose == True: 
-                print ("   * Checking for midnight orbit "
-                       "and number of overlapping lines")
- 
+            if args.verbose:
+                print "   * Checking for midnight orbit and " \
+                      "number of overlapping lines"
 
             # -- loop over end dates
-            for position, end_time in enumerate(end_dates): 
+            for position, end_time in enumerate(end_dates):
 
                 # -- start and end date/time of current orbit
                 stime_current = start_dates[position]
@@ -53,181 +43,134 @@ def update_database(db):
                 midnight_orbit_current = subs.calc_midnight(stime_current,
                                                             etime_current)
 
-                # if args.verbose == True:
-                #     print ( "\n\n   * Current Orbit %s: %s --> %s Midnight=%s"
-                #             % (position, stime_current, etime_current,
-                #                 midnight_orbit_current))
-
-
                 # -- range: first orbit until last but one
-                if (position+1) < len(end_dates):
+                if (position + 1) < len(end_dates):
 
                     # -- start time of next orbit
-                    stime_next = start_dates[position+1]
-                    etime_next = end_dates[position+1]
+                    stime_next = start_dates[position + 1]
+                    etime_next = end_dates[position + 1]
 
-                    # if args.verbose == True:
-                    #     print ( "   * Next Orbit    %s: %s --> %s \n"
-                    #             % (position+1, stime_next, etime_next))
-
-                    # -- very first orbit: 
-                    #    no cutting at the beginning of orbit
-                    #    i. e. start = 0 and end = along_track_dimension
+                    # -- very first orbit:
+                    # no cutting at the beginning of orbit
+                    # i. e. start = 0 and end = along_track_dimension
                     if position == 0:
-                        val_list = [add_cols[0], 0, 
-                        #           start_scanline_begcut, 0
+                        val_list = [add_cols[0], 0,
                                     add_cols[1], data_along[position],
-                        #           end_scanline_begcut, along_track_dimension
                                     stime_current, etime_current, satellite]
 
                         subs.update_db_without_midnight(val_list, db)
 
-                        # if args.verbose == True:
-                        #     print ( "     - UPDATE current orbit %s" % (val_list))
-
-
                     # -- check for overlap
                     if etime_current >= stime_next:
-                        
+
                         # number of overlapping scanlines
                         overlap_rows = subs.calc_overlap(stime_next,
                                                          etime_current)
-                        
+
                         # CUT ORBIT AT THE BEGINNING of next orbit
                         # write to db corresponding to next orbit
                         start_next = overlap_rows
-                        end_next   = data_along[position+1]
+                        end_next = data_along[position + 1]
 
                         # CUT ORBIT AT THE END of current orbit
                         # write to db corrsp. to current orbit
                         start_current = 0
-                        end_current   = data_along[position] - \
-                                        overlap_rows
+                        end_current = data_along[position] - overlap_rows
 
                         # -- update database next orbit
-                        val_list = [add_cols[0], start_next, 
+                        val_list = [add_cols[0], start_next,
                                     add_cols[1], end_next,
                                     stime_next, etime_next, satellite]
 
                         subs.update_db_without_midnight(val_list, db)
 
-                        # if args.verbose == True:
-                        #     print ( "     - UPDATE next orbit %s" % (val_list))
-              
                         # -- update database current orbit
-                        val_list = [add_cols[2], start_current, 
+                        val_list = [add_cols[2], start_current,
                                     add_cols[3], end_current,
                                     add_cols[4], midnight_orbit_current,
                                     stime_current, etime_current, satellite]
 
                         subs.update_db_with_midnight(val_list, db)
 
-                        # if args.verbose == True:
-                        #     print ( "     - UPDATE current orbit %s" % (val_list))
-
-
                     # -- if no overlap was found: no cutting, i.e.
                     #    start = 0, end = along_track_dimension
-                    else: 
+                    else:
 
                         # -- update database next orbit
-                        val_list = [add_cols[0], 0, 
-                                    add_cols[1], data_along[position+1],
+                        val_list = [add_cols[0], 0,
+                                    add_cols[1], data_along[position + 1],
                                     stime_next, etime_next, satellite]
 
                         subs.update_db_without_midnight(val_list, db)
 
-                        # if args.verbose == True:
-                        #     print ( "     - UPDATE next orbit %s" % (val_list))
-              
                         # -- update database current orbit
-                        val_list = [add_cols[2], 0, 
+                        val_list = [add_cols[2], 0,
                                     add_cols[3], data_along[position],
                                     add_cols[4], midnight_orbit_current,
                                     stime_current, etime_current, satellite]
 
                         subs.update_db_with_midnight(val_list, db)
 
-                        # if args.verbose == True:
-                        #     print ( "     - UPDATE current orbit %s" % (val_list))
-
-
                 # -- very last orbit 
-                else: 
+                else:
 
-                    val_list = [add_cols[2], 0, 
+                    val_list = [add_cols[2], 0,
                                 add_cols[3], data_along[position],
                                 add_cols[4], midnight_orbit_current,
                                 stime_current, etime_current, satellite]
 
                     subs.update_db_with_midnight(val_list, db)
 
-                    # if args.verbose == True:
-                    #     print ( "     - UPDATE last orbit %s" % (val_list))
-
-                # end of if position < len(end_dates) 
-
-            # end of for loop: etime in end_dates
-
-        # end if record_flag == True:
         else:
-            print ("      ! No data records found for %s" % satellite)
 
-    # end of for loop: sate in sat_list
+            print ("      ! No data records found for %s" % satellite)
 
 # -------------------------------------------------------------------
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
 
-    satlist  = '|'.join(subs.get_satellite_list())
+    satlist = '|'.join(subs.get_satellite_list())
     add_cols = subs.get_new_cols()
 
-    parser = argparse.ArgumentParser(description='''%s
-    calculates the number of overlapping rows. 
-    Five columns are added: \'%s\' and \'%s\'
-    in case the beginning of the orbits will be cut, 
-    \'%s\' and \'%s\' in case the end of the orbit will be cut, 
-    and \'%s\' giving the midnight orbit scan line.''' % 
-    (os.path.basename(__file__),add_cols[0], add_cols[1],
-        add_cols[2], add_cols[3], add_cols[4]))
+    parser = argparse.ArgumentParser(
+        description=('{0} calculates the number of overlapping rows. '
+                     'Five columns are added: \'{1}\' and \'{2}\' in '
+                     'case the beginning of the orbits will be cut, \'{3}\' '
+                     'and \'{4}\' in case the end of the orbit will be cut, '
+                     'and \'{5}\' giving the midnight orbit scan line.').
+        format(os.path.basename(__file__), add_cols[0], add_cols[1],
+               add_cols[2], add_cols[3], add_cols[4]))
 
     parser.add_argument('-s', '--sat', type=subs.satstring,
-            help='Available are: '+satlist+', default: use all')
+                        help='Available are: ' + satlist + ', default: use all')
     parser.add_argument('-g', '--sqlcomp',
-            help='/path/to/sqlitefile.sqlite3', required=True)
+                        help='/path/to/sqlitefile.sqlite3', required=True)
     parser.add_argument('-v', '--verbose',
-            help='increase output verbosity', action="store_true")
+                        help='increase output verbosity', action="store_true")
 
     args = parser.parse_args()
 
-
     # -- some screen output if wanted
-    print ("\n *** Parameter passed" )
-    print (" ---------------------- ")
+    print ("\n *** Parameter passed")
     print ("   - Satellite  : %s" % args.sat)
     print ("   - Verbose    : %s" % args.verbose)
     print ("   - DB_Sqlite3 : %s\n" % args.sqlcomp)
 
-    
     # -- either use full sat list or only one
-    if args.sat == None:
+    if args.sat is None:
         sat_list = subs.get_satellite_list()
     else:
         sat_list = [args.sat]
 
-    
-    # -- settings for sqlite  
-    db = AvhrrGacDatabase(dbfile=args.sqlcomp, timeout=36000, exclusive=True)
+    # -- connect to database
+    dbfile = AvhrrGacDatabase(dbfile=args.sqlcomp, timeout=36000,
+                              exclusive=True)
 
-    #if args.verbose == True: 
-    #    print ("   + Read %s " % args.sqlcomp)
     print ("   + Read %s " % args.sqlcomp)
-
-    update_database(db)
+    print ("   * Update database:")
+    update_database(dbfile)
 
     print ("   * Commit changes:")
-    db.commit_changes()
+    dbfile.commit_changes()
 
     print ("   *** %s finished\n\n" % os.path.basename(__file__))
-
-# end of main code
