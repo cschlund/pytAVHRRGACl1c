@@ -468,8 +468,8 @@ if __name__ == '__main__':
                                     "VALUES({0})".format(holders) % tab_sta
 
                         if args.verbose:
-                            print "      + sql_query: ", sql_query
-                            print "      + full_list: ", full_list
+                            print "        - sql_query: ", sql_query
+                            print "        - full_list: ", full_list
 
                         db.execute(sql_query, full_list)
 
