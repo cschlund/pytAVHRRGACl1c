@@ -419,7 +419,7 @@ if __name__ == '__main__':
 
                         if args.verbose:
                             print ("        - Global mean based on zonal means: "
-                                   "{0:f} = {1:f} (global)".
+                                   "{0} = {1} (global)".
                                    format(gmean_check, all_global_list[0][chakey][selkey]))
 
                             print ("        - Global nobs based on zonal nobs: "
@@ -488,8 +488,9 @@ if __name__ == '__main__':
                 db.close()
 
     else:
-        print ("\n   --- FAILED: No output for %s on %s due to fishy input !" %
-               (args.satellite, args.date))
+        print ("\n   --- FAILED: No output for "
+               "{0} on {1} due to fishy input !".format(args.satellite,
+                                                        args.date))
 
-    print ("\n *** %s finished for %s and %s\n" %
-           (sys.argv[0], args.satellite, args.date))
+    print ("\n *** {0} finished for {1} "
+           "and {2}\n".format(sys.argv[0], args.satellite, args.date))
