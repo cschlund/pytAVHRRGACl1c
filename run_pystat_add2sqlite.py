@@ -455,17 +455,23 @@ if __name__ == '__main__':
                         zonal_nobs_list = nobs.tolist()
 
                         # -- add statistics to args.gsqlite db
-                        if sat_id and cha_id and sel_id:
-                            prim_list = [sat_id, lite_datstr, cha_id, sel_id]
-                            base_list = prim_list + [glm, gls, gln]
-                            full_list = base_list + zonal_mean_list + zonal_stdv_list + zonal_nobs_list
-                            tuple_len = len(full_list)
-                            holders = ','.join('?' * tuple_len)
-                            # sql_query = "INSERT OR ABORT INTO %s "\
-                            # "VALUES({0})".format(holders) % tab_sta
-                            sql_query = "INSERT OR REPLACE INTO %s " \
-                                        "VALUES({0})".format(holders) % tab_sta
-                            db.execute(sql_query, full_list)
+                        # noinspection PyUnboundLocalVariable,PyUnboundLocalVariable,PyUnboundLocalVariable
+                        prim_list = [sat_id, lite_datstr, cha_id, sel_id]
+                        base_list = prim_list + [glm, gls, gln]
+                        full_list = base_list + zonal_mean_list + zonal_stdv_list + zonal_nobs_list
+                        tuple_len = len(full_list)
+                        holders = ','.join('?' * tuple_len)
+
+                        # sql_query = "INSERT OR ABORT INTO %s "\
+                        # "VALUES({0})".format(holders) % tab_sta
+                        sql_query = "INSERT OR REPLACE INTO %s " \
+                                    "VALUES({0})".format(holders) % tab_sta
+
+                        if args.verbose:
+                            print "      + sql_query: ", sql_query
+                            print "      + full_list: ", full_list
+
+                        db.execute(sql_query, full_list)
 
                     except KeyError:
                         break

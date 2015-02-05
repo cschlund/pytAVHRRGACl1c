@@ -210,7 +210,7 @@ def plot_time_series(sat_list, channel, select, start_date,
         if not datelst:
             pass
         else:
-            if len(datelst) > 10:
+            if len(datelst) > 1:
                 isdata_cnt += 1
 
                 # date vs. global mean
