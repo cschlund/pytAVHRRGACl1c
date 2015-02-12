@@ -7,12 +7,73 @@ import sys
 import fnmatch
 import datetime
 import string
-
 import numpy as np
+from math import floor
 
 
 class ColumnError(Exception):
     pass
+
+
+def ect_convert_to_datetime(time_hours):
+    # time_hours = 23.99431
+    time_minutes = time_hours * 60
+    time_seconds = time_minutes * 60
+
+    hours_part = int(floor(time_hours))
+    minutes_part = int(floor(time_minutes % 60))
+    seconds_part = int(floor(time_seconds % 60))
+
+    return hours_part, minutes_part, seconds_part
+
+
+def get_ect_local_hour(lat, lon, start_time_l1c, verbose, logger):
+    """
+    Calculates/estimates the equator crossing time of an orbit,
+    based on the minimum of abs(lat).
+    :rtype : datetime object
+    """
+    try:
+        # find minimum of absolute latitude
+        abs_lat = abs(lat)
+        min_lat_index = np.unravel_index(abs_lat.argmin(),
+                                         abs_lat.shape)
+
+        # calculate equator crossing time (local time [hour])
+        start_date = start_time_l1c.date()
+        start_time = start_time_l1c.time()
+
+        # beginning of the orbit
+        start_time_hour = start_time.hour + \
+                          start_time.minute / 60. + \
+                          start_time.second / 3600.
+
+        # 2 scanlines per second, 3600 seconds per hour
+        scanline_over_equator_time = min_lat_index[0] / 2. / 3600.
+
+        # ect local hour over equator
+        ect_local_hour = (start_time_hour + scanline_over_equator_time) + \
+                         (lon[min_lat_index] / 15.)
+
+        if ect_local_hour > 24.:
+            ect_local_hour -= 24.
+        elif ect_local_hour < 0:
+            ect_local_hour += 24.
+
+        (eh, em, es) = ect_convert_to_datetime(ect_local_hour)
+
+        ect_datetime = datetime.datetime(start_date.year, start_date.month,
+                                         start_date.day, eh, em, es)
+
+        if verbose:
+            logger.info("ECT: {0} hour -> to {1} for lat:{2} and lon:{3}".
+                        format(ect_local_hour, ect_datetime,
+                               lat[min_lat_index], lon[min_lat_index]))
+
+        return ect_datetime
+
+    except (IndexError, ValueError, RuntimeError, Exception) as err:
+        print "FAILED: {0}".format(err)
 
 
 def split_filename(fil):
