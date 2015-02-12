@@ -73,7 +73,7 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose, logger):
         return ect_datetime
 
     except (IndexError, ValueError, RuntimeError, Exception) as err:
-        print "FAILED: {0}".format(err)
+        logger.info("FAILED: {0}".format(err))
 
 
 def split_filename(fil):
@@ -214,7 +214,6 @@ def update_db_with_midnight(vals, db):
                                     vals[4], vals[5], vals[6], vals[7],
                                     sat_id)
 
-    # print ("    - with_midnight: %s" % act)
     total_changes_before = db.conn.total_changes
     db.execute(act)
     nchanges = db.conn.total_changes - total_changes_before

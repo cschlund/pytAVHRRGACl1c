@@ -14,6 +14,9 @@ import datetime
 import subs_avhrrgac as mysub
 import read_avhrrgac_h5 as rh5
 from multiprocessing import Pool
+from pycmsaf.logger import setup_root_logger
+
+logger = setup_root_logger(name='root')
 
 
 def readfiles(tup):
@@ -53,10 +56,6 @@ def readfiles(tup):
     # get angles file for ahvrr file
     afil = ifil.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
 
-    # if args.verbose is True and args.test is True:
-    #     print ("   * {0} = {1}/{2}".format(
-    #         idx, os.path.basename(ifil), os.path.basename(afil)))
-
     # open H5 files
     f = h5py.File(ifil, "r+")
     a = h5py.File(afil, "r+")
@@ -70,10 +69,6 @@ def readfiles(tup):
             try:
                 # noinspection PyUnusedLocal
                 check_availability = global_mean[channel][select]
-
-                # if args.verbose is True and args.test is True:
-                #     print ("   * {0} = {1} ({2})\n".format(
-                #         idx, mysub.full_cha_name(channel), select))
 
                 try:
                     # (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, args.verbose)
@@ -92,18 +87,13 @@ def readfiles(tup):
                     (zonal_m, zonal_s, zonal_n) = mysub.cal_zonal_means(lat, tar, zone_size)
 
                     if zonal_n.sum() != glob_n:
-                        print "   * Input is fishy due to: " \
-                              "{0} (zonal nobs) != {1} (global nobs) ".format(int(zonal_n.sum()),
-                                                                              glob_n)
-                        print "         Fil: {0}".format(os.path.basename(ifil))
-                        print "        Afil: {0}".format(os.path.basename(afil))
-                        print "     Cha/Sel: {0}/{1} ".format(channel, select)
+                        logger.info("Input is fishy due to: {0} "
+                                    "(zonal nobs) != {1} (global nobs) ".
+                                    format(int(zonal_n.sum()), glob_n))
+                        logger.info("Fil: {0}".format(os.path.basename(ifil)))
+                        logger.info("Afil: {0}".format(os.path.basename(afil)))
+                        logger.info("Cha/Sel: {0}/{1} ".format(channel, select))
                         return None
-                    # else:
-                    #     print ("   * Number of oberservations for zonal stat. "
-                    #            "is equal to that for global stat.: "
-                    #            "{0} = {1} for {2}".format(int(zonal_n.sum()), glob_n,
-                    #                                       os.path.basename(ifil)))
 
                     gmean[channel][select] = glob_m
                     gstdv[channel][select] = glob_s
@@ -117,10 +107,10 @@ def readfiles(tup):
                     del (glob_m, glob_s, glob_n, zonal_m, zonal_s, zonal_n)
 
                 except (IndexError, ValueError, RuntimeError, Exception) as err:
-                    print "   --- FAILED: %s" % err
-                    print "         Fil: {0}".format(os.path.basename(ifil))
-                    print "        Afil: {0}".format(os.path.basename(afil))
-                    print "    Cha/Sel: {0}/{1} ".format(channel, select)
+                    logger.info("FAILED: {0}".format(err))
+                    logger.info("Fil: {0}".format(os.path.basename(ifil)))
+                    logger.info("Afil: {0}".format(os.path.basename(afil)))
+                    logger.info("Cha/Sel: {0}/{1} ".format(channel, select))
                     return None
 
             except KeyError:
@@ -170,26 +160,25 @@ if __name__ == '__main__':
 
     # -- make some screen output if wanted
     if args.verbose:
-        print ("\n *** Parameter passed")
-        print (" ---------------------- ")
-        print ("   - TEST       : %s" % args.test)
-        print ("   - Date       : %s" % args.date)
-        print ("   - Satellite  : %s" % args.satellite)
-        print ("   - Input Path : %s" % args.inpdir)
-        print ("   - Binsize    : %s" % args.binsize)
-        print ("   - Verbose    : %s" % args.verbose)
-        print ("   - DB_Sqlite3 : %s\n" % args.gsqlite)
+        logger.info("Parameter passed")
+        logger.info("TEST       : %s" % args.test)
+        logger.info("Date       : %s" % args.date)
+        logger.info("Satellite  : %s" % args.satellite)
+        logger.info("Input Path : %s" % args.inpdir)
+        logger.info("Binsize    : %s" % args.binsize)
+        logger.info("Verbose    : %s" % args.verbose)
+        logger.info("DB_Sqlite3 : %s" % args.gsqlite)
 
     # -- some settings
     fill_value = -9999.
     pattern = 'ECC_GAC_avhrr*' + args.satellite + '*' + args.date + 'T*'
     fil_list = mysub.find(pattern, args.inpdir)
     nfiles = len(fil_list)
-    message = "*** No files available for " + args.date + ", " + args.satellite
+    message = "No files available for " + args.date + ", " + args.satellite
     qflag = True  # quality flag if input data is not fishy
 
     if nfiles == 0:
-        print message
+        logger.info(message)
         sys.exit(0)
     else:
         fil_list.sort()
@@ -339,7 +328,8 @@ if __name__ == '__main__':
 
         # -- save output
         if args.verbose:
-            print "\n   *** Write global/zonal output into {0} ".format(args.gsqlite)
+            logger.info("Write global/zonal output into {0} ".
+                        format(args.gsqlite))
 
         lite_datstr = datetime.datetime.strptime(args.date, '%Y%m%d').date()
         lite_satstr = mysub.full_sat_name(args.satellite)[2]
@@ -409,8 +399,9 @@ if __name__ == '__main__':
                             continue
 
                         if args.verbose:
-                            print ("      + {0} ({1}) ".
-                                   format(mysub.full_cha_name(chakey), selkey))
+                            logger.info("{0} ({1})".
+                                        format(mysub.full_cha_name(chakey),
+                                               selkey))
 
                         zm = all_zonal_list[0][chakey][selkey]
                         zn = all_zonal_list[2][chakey][selkey]
@@ -418,12 +409,13 @@ if __name__ == '__main__':
                         gmean_check = np.ma.dot(zm, zn) / gn
 
                         if args.verbose:
-                            print ("        - Global mean based on zonal means: "
-                                   "{0} = {1} (global)".
-                                   format(gmean_check, all_global_list[0][chakey][selkey]))
+                            logger.info("Global mean based on zonal means: "
+                                        "{0} = {1} (global)".
+                                        format(gmean_check,
+                                               all_global_list[0][chakey][selkey]))
 
-                            print ("        - Global nobs based on zonal nobs: "
-                                   "{0} = {1} (global)".format(np.sum(zn), gn))
+                            logger.info("Global nobs based on zonal nobs: "
+                                        "{0} = {1} (global)".format(np.sum(zn), gn))
 
                         # -- get chaID
                         get_id = "SELECT id FROM {0} " \
@@ -468,8 +460,8 @@ if __name__ == '__main__':
                                     "VALUES({0})".format(holders) % tab_sta
 
                         if args.verbose:
-                            print "        - sql_query: ", sql_query
-                            print "        - full_list: ", full_list
+                            logger.info("sql_query: {0}".format(sql_query))
+                            logger.info("full_list: {0}".format(full_list))
 
                         db.execute(sql_query, full_list)
 
@@ -479,7 +471,7 @@ if __name__ == '__main__':
         except sqlite3.Error, e:
             if db:
                 db.rollback()
-                print "\n *** Error: %s" % e.args[0]
+                logger.info("ERROR: {0}".format(e.args[0]))
                 sys.exit(1)
 
         finally:
@@ -488,9 +480,8 @@ if __name__ == '__main__':
                 db.close()
 
     else:
-        print ("\n   --- FAILED: No output for "
-               "{0} on {1} due to fishy input !".format(args.satellite,
-                                                        args.date))
+        logger.info("FAILED: No output for {0} on {1} "
+                    "due to fishy input !".format(args.satellite, args.date))
 
-    print ("\n *** {0} finished for {1} "
-           "and {2}\n".format(sys.argv[0], args.satellite, args.date))
+    logger.info("{0} finished for {1} and {2}\n".
+                format(sys.argv[0], args.satellite, args.date))

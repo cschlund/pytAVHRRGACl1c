@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Heidrun Hoeschen, Oct. 2014: read_data.py written
-# C. Schlundt, Oct. 2014: modified to add2sqlite.py
-# C. Schlundt, Nov. 2014: added read_qualflags file and added information about missing scanlines
-# C. Schlundt, Feb. 2015: usage of script changed, via l1b and l1c filenames
-#
-# sqlite database containing L1b information updated with L1c information
-# columns are already created in the orig. db: pycmsaf/AVHRR_GAC_archive.sqlite3
-#
 
 import os
 import sys
@@ -18,7 +10,9 @@ import h5py
 import read_avhrrgac_h5 as rh5
 import subs_avhrrgac as subs
 from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
+from pycmsaf.logger import setup_root_logger
 
+logger = setup_root_logger(name='root')
 
 parser = argparse.ArgumentParser(description=u'''{0:s}
 reads pyGAC L1c output h5 orbit files (avhrr, qualflags)
@@ -51,12 +45,12 @@ args = parser.parse_args()
 
 # -- some screen output
 if args.verbose:
-    print ("   *** Parameter passed")
-    print ("   - L1bFile    : %s" % args.l1b_file)
-    print ("   - L1cFile    : %s" % args.l1c_file)
-    print ("   - Input Path : %s" % args.l1c_path)
-    print ("   - Database   : %s" % args.db_file)
-    print ("   - Verbose    : %s" % args.verbose)
+    logger.info("Parameter passed")
+    logger.info("L1bFile    : %s" % args.l1b_file)
+    logger.info("L1cFile    : %s" % args.l1c_file)
+    logger.info("Input Path : %s" % args.l1c_path)
+    logger.info("Database   : %s" % args.db_file)
+    logger.info("Verbose    : %s" % args.verbose)
 
 
 # -- get full qualified L1c File and db satellite_name
@@ -74,7 +68,7 @@ try:
         data_across = fil_dim[1]
         data_along = fil_dim[0]
     else:
-        print (" *** Skip %s -> no file dimensions!" % fil_name)
+        logger.info("*** Skip %s -> no file dimensions!" % fil_name)
         sys.exit(0)
 
     # -- read quality flag file
@@ -95,12 +89,12 @@ try:
         missing_scanlines = rh5.find_scanline_gaps(0, last_scanline, data)
 
         if args.verbose:
-            print ("   * File:{0}, Row:{1}, Col:{2}, TotalRecords:{3}, "
-                   "Last_ScanLine:{4}, NumberOfMissingScanlines:{5}, "
-                   "MissingScanlines:{6}"
-                   .format(os.path.basename(qfil), row, col, total_records,
-                           last_scanline, number_of_missing_scanlines,
-                           missing_scanlines))
+            logger.info("File:{0}, Row:{1}, Col:{2}, TotalRecords:{3}, "
+                        "Last_ScanLine:{4}, NumberOfMissingScanlines:{5}, "
+                        "MissingScanlines:{6}".
+                        format(os.path.basename(qfil), row, col, total_records,
+                               last_scanline, number_of_missing_scanlines,
+                               missing_scanlines))
 
     # -- split filename
     split_string = subs.split_filename(fil_name)
@@ -119,12 +113,22 @@ try:
     end_time_l1c_help = datetime.datetime.strptime(end_datetime_string[0:-1], '%Y%m%d%H%M%S')
     end_time_l1c = end_time_l1c_help + datetime.timedelta(microseconds=end_microseconds)
 
+    # -- get equator crossing time
+    ang_file = fil_name.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
+    f = h5py.File(fil_name, "r+")
+    a = h5py.File(ang_file, "r+")
+    (lat, lon, tar) = rh5.read_avhrrgac(f, a, 'day', 'ch1', False)
+    f.close()
+    a.close()
+    ect = subs.get_ect_local_hour(lat, lon, start_time_l1c, args.verbose, logger)
+
     if args.verbose:
-        print "   * UPDATE {0}:".format(args.db_file)
-        print ("   * L1bfile:{0}, start_time_l1c:{1}, end_time_l1c:{2}, "
-               "across_track:{3}, along_track:{4}, missing_scanlines:{5}" .
-               format(args.l1b_file, start_time_l1c, end_time_l1c,
-                      data_across, data_along, missing_scanlines))
+        logger.info("UPDATE {0}:".format(args.db_file))
+        logger.info("L1bfile:{0}, start_time_l1c:{1}, end_time_l1c:{2}, "
+                    "across_track:{3}, along_track:{4}, missing_scanlines:{5}, "
+                    "equator_crossing_time:{6} " .
+                    format(args.l1b_file, start_time_l1c, end_time_l1c,
+                           data_across, data_along, missing_scanlines, ect))
 
     # connect to database
     db = AvhrrGacDatabase(dbfile=args.db_file, timeout=36000, exclusive=True)
@@ -133,12 +137,13 @@ try:
     db.add_l1c_fields(where_filename=args.l1b_file,
                       start_time_l1c=start_time_l1c, end_time_l1c=end_time_l1c,
                       across_track=data_across, along_track=data_along,
-                      missing_scanlines=missing_scanlines)
+                      missing_scanlines=missing_scanlines,
+                      equator_crossing_time=ect)
 
     # -- commit changes
     db.commit_changes()
 
 except (IndexError, ValueError, RuntimeError, Exception) as err:
-    print "   --- FAILED: {0}".format(err)
+    logger.info("FAILED: {0}".format(err))
 
-print (u"   *** {0:s} finished\n".format(os.path.basename(__file__)))
+logger.info("{0:s} finished!".format(os.path.basename(__file__)))

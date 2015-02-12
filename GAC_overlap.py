@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Heidrun Hoeschen, Oct. 2014
-# C. Schlundt, Nov. 2014, minor changes
-# C. Schlundt, Feb. 2015, several bugs fixed
-#
 
 import os
 import argparse
 import subs_avhrrgac as subs
 from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
+from pycmsaf.logger import setup_root_logger
+
+logger = setup_root_logger(name='root')
 
 
 def update_database(db):
@@ -17,7 +16,7 @@ def update_database(db):
 
         satellite = subs.full_sat_name(sate)[2]
 
-        print ("\n   +++ Get records for: %s\n" % satellite)
+        logger.info("Get records for: %s\n" % satellite)
 
         (start_dates, end_dates, data_along) = subs.get_record_lists(satellite, db)
 
@@ -29,8 +28,8 @@ def update_database(db):
         if record_flag:
 
             if args.verbose:
-                print "   * Checking for midnight orbit and " \
-                      "number of overlapping lines"
+                logger.info("Checking for midnight orbit and "
+                            "number of overlapping lines")
 
             # -- loop over end dates
             for position, end_time in enumerate(end_dates):
@@ -123,7 +122,7 @@ def update_database(db):
 
         else:
 
-            print ("      ! No data records found for %s" % satellite)
+            logger.info("No data records found for %s" % satellite)
 
 # -------------------------------------------------------------------
 
@@ -151,10 +150,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # -- some screen output if wanted
-    print ("\n *** Parameter passed")
-    print ("   - Satellite  : %s" % args.sat)
-    print ("   - Verbose    : %s" % args.verbose)
-    print ("   - DB_Sqlite3 : %s\n" % args.sqlcomp)
+    logger.info("Parameter passed")
+    logger.info("Satellite  : %s" % args.sat)
+    logger.info("Verbose    : %s" % args.verbose)
+    logger.info("DB_Sqlite3 : %s\n" % args.sqlcomp)
 
     # -- either use full sat list or only one
     if args.sat is None:
@@ -166,11 +165,11 @@ if __name__ == '__main__':
     dbfile = AvhrrGacDatabase(dbfile=args.sqlcomp, timeout=36000,
                               exclusive=True)
 
-    print ("   + Read %s " % args.sqlcomp)
-    print ("   * Update database:")
+    logger.info("Read {0} ".format(args.sqlcomp))
+    logger.info("Update database")
     update_database(dbfile)
 
-    print ("   * Commit changes:")
+    logger.info("Commit changes")
     dbfile.commit_changes()
 
-    print ("   *** %s finished\n\n" % os.path.basename(__file__))
+    logger.info("%s finished\n" % os.path.basename(__file__))
