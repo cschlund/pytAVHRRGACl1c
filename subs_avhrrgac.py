@@ -8,7 +8,10 @@ import fnmatch
 import datetime
 import string
 import numpy as np
+import logging
 from math import floor
+
+logger = logging.getLogger('root')
 
 
 class ColumnError(Exception):
@@ -27,7 +30,7 @@ def ect_convert_to_datetime(time_hours):
     return hours_part, minutes_part, seconds_part
 
 
-def get_ect_local_hour(lat, lon, start_time_l1c, verbose, logger):
+def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
     """
     Calculates/estimates the equator crossing time of an orbit,
     based on the minimum of abs(lat).

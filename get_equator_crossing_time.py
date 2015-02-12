@@ -71,7 +71,6 @@ for fil in file_list:
     f.close()
     a.close()
 
-    ect = subs.get_ect_local_hour(lat, lon, start_time_l1c,
-                                  args.verbose, logger)
+    ect = subs.get_ect_local_hour(lat, lon, start_time_l1c, args.verbose)
 
 logger.info(" *** {0:s} finished ***\n".format(os.path.basename(__file__)))

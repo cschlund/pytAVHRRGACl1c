@@ -120,7 +120,7 @@ try:
     (lat, lon, tar) = rh5.read_avhrrgac(f, a, 'day', 'ch1', False)
     f.close()
     a.close()
-    ect = subs.get_ect_local_hour(lat, lon, start_time_l1c, args.verbose, logger)
+    ect = subs.get_ect_local_hour(lat, lon, start_time_l1c, args.verbose)
 
     if args.verbose:
         logger.info("UPDATE {0}:".format(args.db_file))
