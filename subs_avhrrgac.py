@@ -37,43 +37,93 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
     :rtype : datetime object
     """
     try:
-        # find minimum of absolute latitude
+        # find minimum of absolute latitude in the middle of the swath
+        # avhrr swath: 409 pixels
+        mid_pix = 204
         abs_lat = abs(lat)
-        min_lat_index = np.unravel_index(abs_lat.argmin(),
-                                         abs_lat.shape)
+        ori_lat = lat
 
-        # calculate equator crossing time (local time [hour])
-        start_date = start_time_l1c.date()
-        start_time = start_time_l1c.time()
+        lat = np.ma.masked_where(abs_lat > abs_lat.min() + 0.05, lat)
+        lon = np.ma.masked_where(abs_lat > abs_lat.min() + 0.05, lon)
 
-        # beginning of the orbit
-        start_time_hour = start_time.hour + \
-                          start_time.minute / 60. + \
-                          start_time.second / 3600.
+        lat_min = lat[:, mid_pix].compressed().tolist()
+        lon_min = lon[:, mid_pix].compressed().tolist()
+        lat_idx = np.ma.where(abs(lat[:, mid_pix]) >= 0.)[0].tolist()
 
-        # 2 scanlines per second, 3600 seconds per hour
-        scanline_over_equator_time = min_lat_index[0] / 2. / 3600.
+        if len(lat_min) != len(lat_idx):
+            logger.info("lat_min cnt != lat_idx cnt")
+            sys.exit(0)
 
-        # ect local hour over equator
-        ect_local_hour = (start_time_hour + scanline_over_equator_time) + \
-                         (lon[min_lat_index] / 15.)
+        for cnt, val in enumerate(lat_idx):
+            lat_idx_next = val + 1
+            lat_val_next = ori_lat[lat_idx_next, mid_pix]
 
-        if ect_local_hour > 24.:
-            ect_local_hour -= 24.
-        elif ect_local_hour < 0:
-            ect_local_hour += 24.
+            if type(lat_val_next) == type(str()):
+                continue
+            else:
+                # logger.info("lat_idx:{0:6d} | lat_min:{1:9.5f} | lon_min:{2:9.5f} |"
+                #             "lat_idx_next:{3:6d} | lat_val_next:{4:9.5f}".
+                #             format(lat_idx[cnt], lat_min[cnt], lon_min[cnt],
+                #                    lat_idx_next, lat_val_next))
 
-        (eh, em, es) = ect_convert_to_datetime(ect_local_hour)
+                if lat_min[cnt] < lat_val_next:
+                    oflag = 'afternoon'
+                    orbit = 'asc:{0:8.4f} < {1:8.4f}'.\
+                        format(lat_min[cnt], lat_val_next)
+                else:
+                    oflag = 'morning'
+                    orbit = 'des:{0:8.4f} > {1:8.4f}'.\
+                        format(lat_min[cnt], lat_val_next)
 
-        ect_datetime = datetime.datetime(start_date.year, start_date.month,
-                                         start_date.day, eh, em, es)
+                # logger.info("{0} orbit due to {1}".
+                #             format(oflag, orbit))
 
-        if verbose:
-            logger.info("ECT: {0} hour -> to {1} for lat:{2} and lon:{3}".
-                        format(ect_local_hour, ect_datetime,
-                               lat[min_lat_index], lon[min_lat_index]))
+                if oflag == "afternoon":
+                    ect_lat_idx = val
+                    ect_lat_val = lat_min[cnt]
+                    ect_lon_val = lon_min[cnt]
+                    break
 
-        return ect_datetime
+        if oflag == "afternoon":
+            # calculate equator crossing time (local time [hour])
+            start_date = start_time_l1c.date()
+            start_time = start_time_l1c.time()
+
+            # beginning of the orbit
+            start_time_hour = start_time.hour + \
+                              start_time.minute / 60. + \
+                              start_time.second / 3600.
+
+            # 2 scanlines per second, 3600 seconds per hour
+            scanline_over_equator_time = ect_lat_idx / 2. / 3600.
+
+            # ect local hour over equator
+            ect_local_hour = (start_time_hour + scanline_over_equator_time) + \
+                             (ect_lon_val / 15.)
+
+            if ect_local_hour > 24.:
+                ect_local_hour -= 24.
+            elif ect_local_hour < 0:
+                ect_local_hour += 24.
+
+            # if ect_local_hour < 12.:
+            #     ect_local_hour += 12.
+
+            (eh, em, es) = ect_convert_to_datetime(ect_local_hour)
+
+            ect_datetime = datetime.datetime(start_date.year, start_date.month,
+                                             start_date.day, eh, em, es)
+
+            if verbose:
+                logger.info("Local Time of Ascending Node (LTAN) [{4}]: "
+                            "{0:8.4f} hour -> to {1} "
+                            "for lat:{2:8.4f} and lon:{3:8.4f}".
+                            format(ect_local_hour, ect_datetime,
+                                   ect_lat_val, ect_lon_val, orbit))
+
+            return ect_datetime
+        else:
+            return None
 
     except (IndexError, ValueError, RuntimeError, Exception) as err:
         logger.info("FAILED: {0}".format(err))

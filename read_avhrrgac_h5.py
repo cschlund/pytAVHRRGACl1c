@@ -195,6 +195,19 @@ def read_var(fil, varstr, ver):
                 return fin_var, name
 
 
+def read_latlon(f, ver):
+    lat, latnam = read_var(f, 'lat', ver)
+    lon, lonnam = read_var(f, 'lon', ver)
+
+    all_masks = [lat < -90., lat > 90., lon < -180., lon > 180.]
+    total_mask = reduce(np.logical_or, all_masks)
+
+    lat = ma.masked_where(total_mask, lat)
+    lon = ma.masked_where(total_mask, lon)
+
+    return lat, lon
+
+
 def read_avhrrgac(f, a, tim, cha, ver):
 
     if ver:
