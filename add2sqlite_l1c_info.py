@@ -114,12 +114,9 @@ try:
     end_time_l1c = end_time_l1c_help + datetime.timedelta(microseconds=end_microseconds)
 
     # -- get equator crossing time
-    ang_file = fil_name.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
     f = h5py.File(fil_name, "r+")
-    a = h5py.File(ang_file, "r+")
-    (lat, lon, tar) = rh5.read_avhrrgac(f, a, 'day', 'ch1', False)
+    lat, lon = rh5.read_latlon(f, False)
     f.close()
-    a.close()
     ect = subs.get_ect_local_hour(lat, lon, start_time_l1c, args.verbose)
 
     if args.verbose:
