@@ -36,7 +36,8 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
     based on the minimum of abs(lat).
     :rtype : datetime object
     """
-    global oflag, ect_lat_idx, ect_lon_val, ect_lat_val, oflag, orbit
+    global ect_lat_idx, ect_lon_val, ect_lat_val, oflag, orbit
+
     try:
         # find minimum of absolute latitude in the middle of the swath
         # avhrr swath: 409 pixels
@@ -54,7 +55,7 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
         lat_idx = np.ma.where(abs(lat[:, mid_pix]) >= 0.)[0].tolist()
 
         if len(lat_min) != len(lat_idx):
-            logger.info("lat_min cnt != lat_idx cnt")
+            logger.info("FAILED: lat_min cnt != lat_idx cnt")
             sys.exit(0)
 
         for cnt, val in enumerate(lat_idx):
@@ -63,23 +64,16 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
 
             if type(lat_val_next) == type(str()):
                 continue
-            else:
-                # logger.info("lat_idx:{0:6d} | lat_min:{1:9.5f} | lon_min:{2:9.5f} |"
-                #             "lat_idx_next:{3:6d} | lat_val_next:{4:9.5f}".
-                #             format(lat_idx[cnt], lat_min[cnt], lon_min[cnt],
-                #                    lat_idx_next, lat_val_next))
 
+            else:
                 if lat_min[cnt] < lat_val_next:
-                    oflag = 'afternoon'
+                    oflag = "afternoon"
                     orbit = 'asc:{0:8.4f} < {1:8.4f}'.\
                         format(lat_min[cnt], lat_val_next)
                 else:
-                    oflag = 'morning'
+                    oflag = "morning"
                     orbit = 'des:{0:8.4f} > {1:8.4f}'.\
                         format(lat_min[cnt], lat_val_next)
-
-                # logger.info("{0} orbit due to {1}".
-                #             format(oflag, orbit))
 
                 if oflag == "afternoon":
                     ect_lat_idx = val
@@ -123,6 +117,12 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
                                        ect_lat_val, ect_lon_val, orbit))
 
                 return ect_datetime
+
+            else:
+                return None
+
+        else:
+            return None
 
     except (IndexError, ValueError, RuntimeError, Exception) as err:
         logger.info("FAILED: {0}".format(err))
