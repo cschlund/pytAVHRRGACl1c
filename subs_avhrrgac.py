@@ -122,8 +122,6 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
                                    ect_lat_val, ect_lon_val, orbit))
 
             return ect_datetime
-        else:
-            return None
 
     except (IndexError, ValueError, RuntimeError, Exception) as err:
         logger.info("FAILED: {0}".format(err))
