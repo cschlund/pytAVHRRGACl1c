@@ -12,7 +12,9 @@ from matplotlib import gridspec
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as aa
 from dateutil.rrule import rrule, DAILY
+import logging
 
+logger = logging.getLogger('root')
 
 # noinspection PyUnboundLocalVariable
 def get_id(table, column, value, sql):
@@ -276,7 +278,7 @@ def plot_time_series(sat_list, channel, select, start_date,
         plt.close()
 
         if verbose is True:
-            print ("   + %s done!" % ofile)
+            logger.info("%s done!" % ofile)
     else:
         plt.close()
 
@@ -395,7 +397,7 @@ def plot_time_series_linfit(sat_list, channel, select, start_date,
                 plt.close()
 
                 if verbose is True:
-                    print ("   + %s done!" % ofile)
+                    logger.info("%s done!" % ofile)
 
     # -- end ofloop over satellites
     return
@@ -735,7 +737,7 @@ def plot_zonal_results(sat_list, channel, select, start_date,
                                     pdate, chan_label, sat_label, select)
 
                     if verbose is True:
-                        print ("   + %s done!" % ofile)
+                        logger.info("%s done!" % ofile)
 
                     # latitudinal plot: one per satellite
                     fbase = 'Plot_ZonalResult2_' + satellite + '_' + \
@@ -748,7 +750,7 @@ def plot_zonal_results(sat_list, channel, select, start_date,
                                         sat_label, select)
 
                     if verbose is True:
-                        print ("   + %s done!" % ofile)
+                        logger.info("%s done!" % ofile)
 
             # set new color for next satellite
             cnt += 1
@@ -766,7 +768,7 @@ def plot_zonal_results(sat_list, channel, select, start_date,
                               zone_size, fill_value)
 
             if verbose is True:
-                print ("   + %s done!" % outfilen)
+                logger.info("%s done!" % outfilen)
 
     # -- end of loop over days
 

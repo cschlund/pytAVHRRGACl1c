@@ -12,6 +12,9 @@ import sqlite3 as lite
 import subs_avhrrgac as mysub
 import subs_plot_sql as psql
 
+from pycmsaf.logger import setup_root_logger
+
+logger = setup_root_logger(name='root')
 
 chalist = '|'.join(mysub.get_channel_list())
 sellist = '|'.join(mysub.get_select_list())
@@ -125,19 +128,18 @@ if __name__ == '__main__':
 
     # -- summary of settings if verbose mode
     if args.verbose:
-        print ("\n *** Parameter passed")
-        print (" ---------------------- ")
-        print ("   - Input Path : %s" % args.dbfile)
-        print ("   - Output Path: %s" % args.outdir)
-        print ("   - Start Date : %s" % start_date)
-        print ("   - End Date   : %s" % end_date)
-        print ("   - Channel    : %s" % cha_list)
-        print ("   - Time       : %s" % sel_list)
-        print ("   - Satellite  : %s" % sat_list)
-        print ("   - Target plot: %s" % target_plt_name)
-        print ("   - TimeS.LinF : %s" % args.linfit)
-        print ("   - Old asciiF : %s" % args.asciifiles)
-        print ("   - Verbose    : %s\n" % args.verbose)
+        logger.info("\n *** Parameter passed")
+        logger.info("Input Path : %s" % args.dbfile)
+        logger.info("Output Path: %s" % args.outdir)
+        logger.info("Start Date : %s" % start_date)
+        logger.info("End Date   : %s" % end_date)
+        logger.info("Channel    : %s" % cha_list)
+        logger.info("Time       : %s" % sel_list)
+        logger.info("Satellite  : %s" % sat_list)
+        logger.info("Target plot: %s" % target_plt_name)
+        logger.info("TimeS.LinF : %s" % args.linfit)
+        logger.info("Old asciiF : %s" % args.asciifiles)
+        logger.info("Verbose    : %s\n" % args.verbose)
 
     try:
         dbfile = lite.connect(args.dbfile,
@@ -152,8 +154,8 @@ if __name__ == '__main__':
         dbfile.close()
 
         if args.verbose:
-            print u"\n *** {0} finished \n".format(sys.argv[0])
+            logger.info("\n *** {0} finished \n".format(sys.argv[0]))
 
     except lite.Error, e:
-        print u"\n *** Error {0} ***\n".format(e.args[0])
+        logger.info("\n *** Error {0} ***\n".format(e.args[0]))
         sys.exit(1)
