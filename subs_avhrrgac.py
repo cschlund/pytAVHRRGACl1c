@@ -36,6 +36,7 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
     based on the minimum of abs(lat).
     :rtype : datetime object
     """
+    global oflag, ect_lat_idx, ect_lon_val, ect_lat_val, oflag, orbit
     try:
         # find minimum of absolute latitude in the middle of the swath
         # avhrr swath: 409 pixels
@@ -46,7 +47,9 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
         lat = np.ma.masked_where(abs_lat > abs_lat.min() + 0.05, lat)
         lon = np.ma.masked_where(abs_lat > abs_lat.min() + 0.05, lon)
 
+        # noinspection PyUnresolvedReferences
         lat_min = lat[:, mid_pix].compressed().tolist()
+        # noinspection PyUnresolvedReferences
         lon_min = lon[:, mid_pix].compressed().tolist()
         lat_idx = np.ma.where(abs(lat[:, mid_pix]) >= 0.)[0].tolist()
 
@@ -84,44 +87,42 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
                     ect_lon_val = lon_min[cnt]
                     break
 
-        if oflag == "afternoon":
-            # calculate equator crossing time (local time [hour])
-            start_date = start_time_l1c.date()
-            start_time = start_time_l1c.time()
+        if oflag:
+            if oflag == "afternoon":
+                # calculate equator crossing time (local time [hour])
+                start_date = start_time_l1c.date()
+                start_time = start_time_l1c.time()
 
-            # beginning of the orbit
-            start_time_hour = start_time.hour + \
-                              start_time.minute / 60. + \
-                              start_time.second / 3600.
+                # beginning of the orbit
+                start_time_hour = start_time.hour + \
+                                  start_time.minute / 60. + \
+                                  start_time.second / 3600.
 
-            # 2 scanlines per second, 3600 seconds per hour
-            scanline_over_equator_time = ect_lat_idx / 2. / 3600.
+                # 2 scanlines per second, 3600 seconds per hour
+                scanline_over_equator_time = ect_lat_idx / 2. / 3600.
 
-            # ect local hour over equator
-            ect_local_hour = (start_time_hour + scanline_over_equator_time) + \
-                             (ect_lon_val / 15.)
+                # ect local hour over equator
+                ect_local_hour = (start_time_hour + scanline_over_equator_time) + \
+                                 (ect_lon_val / 15.)
 
-            if ect_local_hour > 24.:
-                ect_local_hour -= 24.
-            elif ect_local_hour < 0:
-                ect_local_hour += 24.
+                if ect_local_hour > 24.:
+                    ect_local_hour -= 24.
+                elif ect_local_hour < 0:
+                    ect_local_hour += 24.
 
-            # if ect_local_hour < 12.:
-            #     ect_local_hour += 12.
+                (eh, em, es) = ect_convert_to_datetime(ect_local_hour)
 
-            (eh, em, es) = ect_convert_to_datetime(ect_local_hour)
+                ect_datetime = datetime.datetime(start_date.year, start_date.month,
+                                                 start_date.day, eh, em, es)
 
-            ect_datetime = datetime.datetime(start_date.year, start_date.month,
-                                             start_date.day, eh, em, es)
+                if verbose:
+                    logger.info("Local Time of Ascending Node (LTAN) [{4}]: "
+                                "{0:8.4f} hour -> to {1} "
+                                "for lat:{2:8.4f} and lon:{3:8.4f}".
+                                format(ect_local_hour, ect_datetime,
+                                       ect_lat_val, ect_lon_val, orbit))
 
-            if verbose:
-                logger.info("Local Time of Ascending Node (LTAN) [{4}]: "
-                            "{0:8.4f} hour -> to {1} "
-                            "for lat:{2:8.4f} and lon:{3:8.4f}".
-                            format(ect_local_hour, ect_datetime,
-                                   ect_lat_val, ect_lon_val, orbit))
-
-            return ect_datetime
+                return ect_datetime
 
     except (IndexError, ValueError, RuntimeError, Exception) as err:
         logger.info("FAILED: {0}".format(err))
