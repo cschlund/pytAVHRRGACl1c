@@ -36,7 +36,11 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
     based on the minimum of abs(lat).
     :rtype : datetime object
     """
-    global ect_lat_idx, ect_lon_val, ect_lat_val, oflag, orbit
+    ect_lat_idx = None
+    ect_lon_val = None
+    ect_lat_val = None
+    orbit = None
+    oflag = None
 
     try:
         # find minimum of absolute latitude in the middle of the swath
@@ -62,7 +66,7 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
             lat_idx_next = val + 1
             lat_val_next = ori_lat[lat_idx_next, mid_pix]
 
-            if type(lat_val_next) == type(str()):
+            if isinstance(lat_val_next, np.ma.core.MaskedConstant):
                 continue
 
             else:
