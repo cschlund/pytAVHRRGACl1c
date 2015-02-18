@@ -97,14 +97,14 @@ def update_database(db):
 
                         # -- update database next orbit
                         val_list = [add_cols[0], 0,
-                                    add_cols[1], data_along[position + 1],
+                                    add_cols[1], data_along[position + 1] - 1,
                                     stime_next, etime_next, satellite]
 
                         subs.update_db_without_midnight(val_list, db)
 
                         # -- update database current orbit
                         val_list = [add_cols[2], 0,
-                                    add_cols[3], data_along[position],
+                                    add_cols[3], data_along[position] - 1,
                                     add_cols[4], midnight_orbit_current,
                                     stime_current, etime_current, satellite]
 
