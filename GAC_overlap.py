@@ -16,7 +16,7 @@ def update_database(db):
 
         satellite = subs.full_sat_name(sate)[2]
 
-        logger.info("Get records for: %s\n" % satellite)
+        logger.info("Get records for: %s" % satellite)
 
         (start_dates, end_dates, data_along) = subs.get_record_lists(satellite, db)
 
@@ -29,7 +29,7 @@ def update_database(db):
 
             if args.verbose:
                 logger.info("Checking for midnight orbit and "
-                            "number of overlapping lines")
+                            "number of overlapping lines\n")
 
             # -- loop over end dates
             for position, end_time in enumerate(end_dates):
@@ -57,6 +57,10 @@ def update_database(db):
                                     add_cols[1], data_along[position],
                                     stime_current, etime_current, satellite]
 
+                        if args.verbose:
+                            logger.info("UPDATE db (first orbit): "
+                                        "{0}".format(val_list))
+
                         subs.update_db_without_midnight(val_list, db)
 
                     # -- check for overlap
@@ -81,6 +85,10 @@ def update_database(db):
                                     add_cols[1], end_next,
                                     stime_next, etime_next, satellite]
 
+                        if args.verbose:
+                            logger.info("UPDATE db (next orbit): "
+                                        "{0}".format(val_list))
+
                         subs.update_db_without_midnight(val_list, db)
 
                         # -- update database current orbit
@@ -89,6 +97,10 @@ def update_database(db):
                                     add_cols[4], midnight_orbit_current,
                                     stime_current, etime_current, satellite]
 
+                        if args.verbose:
+                            logger.info("UPDATE db (current orbit): "
+                                        "{0}".format(val_list))
+
                         subs.update_db_with_midnight(val_list, db)
 
                     # -- if no overlap was found: no cutting, i.e.
@@ -96,17 +108,29 @@ def update_database(db):
                     else:
 
                         # -- update database next orbit
+                        last_scanline_next = data_along[position + 1] - 1
+
                         val_list = [add_cols[0], 0,
-                                    add_cols[1], data_along[position + 1] - 1,
+                                    add_cols[1], last_scanline_next,
                                     stime_next, etime_next, satellite]
+
+                        if args.verbose:
+                            logger.info("UPDATE db (next orbit, no overlap): "
+                                        "{0}".format(val_list))
 
                         subs.update_db_without_midnight(val_list, db)
 
                         # -- update database current orbit
+                        last_scanline_current = data_along[position] - 1
+
                         val_list = [add_cols[2], 0,
-                                    add_cols[3], data_along[position] - 1,
+                                    add_cols[3], last_scanline_current,
                                     add_cols[4], midnight_orbit_current,
                                     stime_current, etime_current, satellite]
+
+                        if args.verbose:
+                            logger.info("UPDATE db (current orbit, no overlap): "
+                                        "{0}".format(val_list))
 
                         subs.update_db_with_midnight(val_list, db)
 
@@ -118,11 +142,15 @@ def update_database(db):
                                 add_cols[4], midnight_orbit_current,
                                 stime_current, etime_current, satellite]
 
+                    if args.verbose:
+                        logger.info("UPDATE db (last orbit): "
+                                    "{0}".format(val_list))
+
                     subs.update_db_with_midnight(val_list, db)
 
         else:
 
-            logger.info("No data records found for %s" % satellite)
+            logger.info("No data records found for %s\n" % satellite)
 
 # -------------------------------------------------------------------
 
@@ -166,10 +194,10 @@ if __name__ == '__main__':
                               exclusive=True)
 
     logger.info("Read {0} ".format(args.sqlcomp))
-    logger.info("Update database")
+    logger.info("Update database\n")
     update_database(dbfile)
 
     logger.info("Commit changes")
     dbfile.commit_changes()
 
-    logger.info("%s finished\n" % os.path.basename(__file__))
+    logger.info("%s finished" % os.path.basename(__file__))
