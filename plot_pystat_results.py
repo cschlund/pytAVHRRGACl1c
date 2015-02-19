@@ -92,7 +92,7 @@ if __name__ == '__main__':
                         help='increase output verbosity', action="store_true")
 
     parser.add_argument('-show', '--show_figure', action="store_true",
-                        help='Show figure before saving')
+                        help='Show figure instead of saving saving')
 
     parser.add_argument('-asc', '--asciifiles', type=str,
                         help='read old pystat results stored in ascii files')

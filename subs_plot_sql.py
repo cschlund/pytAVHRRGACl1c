@@ -270,22 +270,31 @@ def plot_time_series(sat_list, channel, select, start_date,
         ax_rec.grid()
 
         # make legend
-        if cnt > 2:
-            leg = ax_val.legend(bbox_to_anchor=(1.125, 1.05),
-                                fontsize=11)
-        else:
-            plt.tight_layout()
-            leg = ax_val.legend(loc='best', fancybox=True)
-
+        num_of_sats = int(math.ceil(cnt / 2.))
+        leg = ax_val.legend(ncol=num_of_sats, loc='best', fancybox=True)
+        plt.tight_layout()
         leg.get_frame().set_alpha(0.5)
 
+        # # make legend
+        # if cnt > 2:
+        #     leg = ax_val.legend(bbox_to_anchor=(1.125, 1.05),
+        #                         fontsize=11)
+        # else:
+        #     plt.tight_layout()
+        #     leg = ax_val.legend(loc='best', fancybox=True)
+        #
+        # leg.get_frame().set_alpha(0.5)
+
+        # save and close plot
         if show_fig:
             plt.show()
-        plt.savefig(ofile)
+            logger.info("Shown: {0} ".
+                        format(os.path.basename(ofile)))
+        else:
+            plt.savefig(ofile)
+            logger.info("Done {0}".format(ofile))
         plt.close()
 
-        if verbose is True:
-            logger.info("%s done!" % ofile)
     else:
         plt.close()
 
@@ -401,14 +410,15 @@ def plot_time_series_linfit(sat_list, channel, select, start_date,
                 # tight layout
                 plt.tight_layout()
 
-                # save/show figure
+                # save and close plot
                 if show_fig:
                     plt.show()
-                plt.savefig(ofile)
+                    logger.info("Shown: {0} ".
+                                format(os.path.basename(ofile)))
+                else:
+                    plt.savefig(ofile)
+                    logger.info("Done {0}".format(ofile))
                 plt.close()
-
-                if verbose is True:
-                    logger.info("%s done!" % ofile)
 
     # -- end ofloop over satellites
     return
@@ -495,9 +505,14 @@ def plt_zonal_means(zonal_mean, zonal_nobs, global_mean, zone_size,
     # save figure to file:
     # plt.savefig('zonal_means.png', bbox_inches='tight')
     with np.errstate(all='ignore'):
+
         if show_fig:
             plt.show()
-        plt.savefig(ofil_name)
+            logger.info("Shown: {0} ".
+                        format(os.path.basename(ofil_name)))
+        else:
+            plt.savefig(ofil_name)
+            logger.info("Done {0}".format(ofil_name))
         plt.close()
 
     return
@@ -589,9 +604,14 @@ def plt_zonal_mean_stdv(zonal_mean, zonal_stdv, zonal_nobs,
     # ensure 'tight layout' (prevents the axes labels from being 
     # placed outside the figure):
     plt.tight_layout()
+
     if show_fig:
         plt.show()
-    plt.savefig(ofil_name)
+        logger.info("Shown: {0} ".
+                    format(os.path.basename(ofil_name)))
+    else:
+        plt.savefig(ofil_name)
+        logger.info("Done {0}".format(ofil_name))
     plt.close()
 
     return
@@ -680,7 +700,11 @@ def plt_all_sat_zonal(outfile, mean, stdv, nobs, lats, cols, sats,
     # save and close plotfile
     if show_fig:
         plt.show()
-    plt.savefig(outfile)
+        logger.info("Shown: {0} ".
+                    format(os.path.basename(outfile)))
+    else:
+        plt.savefig(outfile)
+        logger.info("Done {0}".format(outfile))
     plt.close()
 
     return
@@ -960,7 +984,9 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     # save and close plot
     if show_fig:
         plt.show()
-    plt.savefig(outfile)
+        logger.info("Shown: {0} ".
+                    format(os.path.basename(outfile)))
+    else:
+        plt.savefig(outfile)
+        logger.info("Done {0}".format(outfile))
     plt.close()
-
-    logger.info("{0} done".format(outfile))

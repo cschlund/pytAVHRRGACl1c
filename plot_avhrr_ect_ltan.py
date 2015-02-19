@@ -44,7 +44,7 @@ if __name__ == '__main__':
                         help='increase output verbosity')
 
     parser.add_argument('-show', '--show_figure', action="store_true",
-                        help='Show figure before saving')
+                        help='Show figure instead of saving saving')
 
     args = parser.parse_args()
 
