@@ -158,7 +158,8 @@ def read_global_stats(sat, cha, sel, sd, ed, sql):
 
 # noinspection PyUnboundLocalVariable,PyUnboundLocalVariable,PyUnboundLocalVariable
 def plot_time_series(sat_list, channel, select, start_date,
-                     end_date, outpath, cursor, verbose, ascinpdir):
+                     end_date, outpath, cursor, verbose, ascinpdir,
+                     show_fig):
     """
     Plot time series based on pystat results.
     """
@@ -278,9 +279,9 @@ def plot_time_series(sat_list, channel, select, start_date,
 
         leg.get_frame().set_alpha(0.5)
 
-        # save figure
+        if show_fig:
+            plt.show()
         plt.savefig(ofile)
-        plt.show()
         plt.close()
 
         if verbose is True:
@@ -292,7 +293,7 @@ def plot_time_series(sat_list, channel, select, start_date,
 
 
 def plot_time_series_linfit(sat_list, channel, select, start_date,
-                            end_date, outpath, cursor, verbose):
+                            end_date, outpath, cursor, verbose, show_fig):
     """
     Plot Time Series based on pystat results for each satellite
     including linear regression.
@@ -397,10 +398,13 @@ def plot_time_series_linfit(sat_list, channel, select, start_date,
                 ax_std.grid()
                 ax_rec.grid()
 
-                # save figure
+                # tight layout
                 plt.tight_layout()
+
+                # save/show figure
+                if show_fig:
+                    plt.show()
                 plt.savefig(ofile)
-                plt.show()
                 plt.close()
 
                 if verbose is True:
@@ -412,7 +416,7 @@ def plot_time_series_linfit(sat_list, channel, select, start_date,
 
 def plt_zonal_means(zonal_mean, zonal_nobs, global_mean, zone_size,
                     ofil_name, fill_value, date_str, chan_str, plat_str,
-                    sel_str):
+                    sel_str, show_fig):
     """
     plot global and zonal means.
     s. finkensieper, july 2014
@@ -491,15 +495,18 @@ def plt_zonal_means(zonal_mean, zonal_nobs, global_mean, zone_size,
     # save figure to file:
     # plt.savefig('zonal_means.png', bbox_inches='tight')
     with np.errstate(all='ignore'):
+        if show_fig:
+            plt.show()
         plt.savefig(ofil_name)
-        plt.show()
         plt.close()
+
     return
 
 
 def plt_zonal_mean_stdv(zonal_mean, zonal_stdv, zonal_nobs,
                         zone_centers, fill_value, zone_size, ofil_name,
-                        date_str, chan_str, plat_str, sel_str):
+                        date_str, chan_str, plat_str, sel_str,
+                        show_fig):
     """
     plot zonal means and standard deviations.
     """
@@ -582,15 +589,17 @@ def plt_zonal_mean_stdv(zonal_mean, zonal_stdv, zonal_nobs,
     # ensure 'tight layout' (prevents the axes labels from being 
     # placed outside the figure):
     plt.tight_layout()
+    if show_fig:
+        plt.show()
     plt.savefig(ofil_name)
-    plt.show()
     plt.close()
 
     return
 
 
 def plt_all_sat_zonal(outfile, mean, stdv, nobs, lats, cols, sats,
-                      date_label, chan_label, sel_label, zone_size, fill_value):
+                      date_label, chan_label, sel_label, zone_size, fill_value,
+                      show_fig):
     """
     Plot all zonal results of all satellites into one plot.
     """
@@ -669,9 +678,9 @@ def plt_all_sat_zonal(outfile, mean, stdv, nobs, lats, cols, sats,
     ax_rec.grid(which='both')
 
     # save and close plotfile
-    # plt.show()
+    if show_fig:
+        plt.show()
     plt.savefig(outfile)
-    plt.show()
     plt.close()
 
     return
@@ -679,7 +688,8 @@ def plt_all_sat_zonal(outfile, mean, stdv, nobs, lats, cols, sats,
 
 # noinspection PyUnboundLocalVariable,PyUnboundLocalVariable
 def plot_zonal_results(sat_list, channel, select, start_date,
-                       end_date, outpath, cur, target, verbose):
+                       end_date, outpath, cur, target, verbose,
+                       show_fig):
     """
     plotting daily zonal means and standard deviation.
     c. schlundt, june 2014
@@ -744,7 +754,8 @@ def plot_zonal_results(sat_list, channel, select, start_date,
 
                     plt_zonal_means(np.array(zmean), np.array(znobs),
                                     global_mean, zone_size, ofile, fill_value,
-                                    pdate, chan_label, sat_label, select)
+                                    pdate, chan_label, sat_label, select,
+                                    show_fig)
 
                     if verbose is True:
                         logger.info("%s done!" % ofile)
@@ -775,7 +786,7 @@ def plot_zonal_results(sat_list, channel, select, start_date,
 
             plt_all_sat_zonal(outfilen, mlist, slist, rlist, blist,
                               clist, plist, pdate, chan_label, select,
-                              zone_size, fill_value)
+                              zone_size, fill_value, show_fig)
 
             if verbose is True:
                 logger.info("%s done!" % outfilen)
@@ -832,7 +843,7 @@ def read_globstafile(fil, cha, sel, sdate, edate):
 
 
 def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
-                           sat_list, verbose):
+                           sat_list, verbose, show_fig):
     """
     Plot AVHRR / NOAAs equator crossing time
     """
@@ -947,8 +958,9 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     leg.get_frame().set_alpha(0.5)
 
     # save and close plot
+    if show_fig:
+        plt.show()
     plt.savefig(outfile)
-    plt.show()
     plt.close()
 
     logger.info("{0} done".format(outfile))

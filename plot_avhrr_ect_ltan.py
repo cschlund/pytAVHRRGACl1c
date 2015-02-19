@@ -43,6 +43,9 @@ if __name__ == '__main__':
     parser.add_argument('-ver', '--verbose', action="store_true",
                         help='increase output verbosity')
 
+    parser.add_argument('-show', '--show_figure', action="store_true",
+                        help='Show figure before saving')
+
     args = parser.parse_args()
 
     # -- some settings
@@ -67,6 +70,7 @@ if __name__ == '__main__':
         logger.info("Start Date : %s" % start_date)
         logger.info("End Date   : %s" % end_date)
         logger.info("Satellite  : %s" % sat_list)
+        logger.info("Show fig   : %s" % args.show_figure)
         logger.info("Verbose    : %s\n" % args.verbose)
 
     try:
@@ -79,7 +83,8 @@ if __name__ == '__main__':
 
         psql.plot_avhrr_ect_results(dbfile, args.outdir,
                                     start_date, end_date,
-                                    sat_list, args.verbose)
+                                    sat_list, args.verbose,
+                                    args.show_figure)
 
         dbfile.close()
 

@@ -28,18 +28,20 @@ def plot_results():
 
                 psql.plot_time_series(sat_list, channel, select,
                                       start_date, end_date, args.outdir,
-                                      cur, args.verbose, args.asciifiles)
+                                      cur, args.verbose, args.asciifiles,
+                                      args.show_figure)
 
                 if args.linfit:
-                    psql.plot_time_series_linfit(sat_list, channel,
-                                                 select, start_date, end_date, args.outdir,
-                                                 cur, args.verbose)
+                    psql.plot_time_series_linfit(sat_list, channel, select,
+                                                 start_date, end_date, args.outdir,
+                                                 cur, args.verbose, args.show_figure)
 
             else:
 
-                psql.plot_zonal_results(sat_list, channel,
-                                        select, start_date, end_date, args.outdir,
-                                        cur, args.target, args.verbose)
+                psql.plot_zonal_results(sat_list, channel, select,
+                                        start_date, end_date, args.outdir,
+                                        cur, args.target, args.verbose,
+                                        args.show_figure)
 
     return
 
@@ -88,6 +90,9 @@ if __name__ == '__main__':
 
     parser.add_argument('-ver', '--verbose',
                         help='increase output verbosity', action="store_true")
+
+    parser.add_argument('-show', '--show_figure', action="store_true",
+                        help='Show figure before saving')
 
     parser.add_argument('-asc', '--asciifiles', type=str,
                         help='read old pystat results stored in ascii files')
@@ -139,6 +144,7 @@ if __name__ == '__main__':
         logger.info("Target plot: %s" % target_plt_name)
         logger.info("TimeS.LinF : %s" % args.linfit)
         logger.info("Old asciiF : %s" % args.asciifiles)
+        logger.info("Show fig   : %s" % args.show_figure)
         logger.info("Verbose    : %s\n" % args.verbose)
 
     try:
