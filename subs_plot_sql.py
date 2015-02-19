@@ -5,6 +5,7 @@
 import os
 import numpy as np
 import datetime
+import math
 import matplotlib.pyplot as plt
 import subs_avhrrgac as subs
 from scipy import stats
@@ -12,9 +13,12 @@ from matplotlib import gridspec
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as aa
 from dateutil.rrule import rrule, DAILY
+from numpy import array
+import warnings
 import logging
 
 logger = logging.getLogger('root')
+warnings.filterwarnings("ignore")
 
 
 # noinspection PyUnboundLocalVariable
@@ -839,16 +843,14 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
             "_" + subs.date2str(edate) + ".png"
     outfile = os.path.join(outdir, ofile)
 
-    plt_title = "Equatorial Crossing Time of NOAA/MetOp " \
-                "Polar Satellites based on AVHRR\n"
-    x_title = "Date\n"
+    plt_title = "Equatorial Crossing Time of AVHRR's " \
+                "on-board NOAA/MetOp Polar Satellites\n"
+    x_title = "\nYear"
     y_title = "Local Time (hour)\n"
 
     # count for satellite color
     cnt = 0
     color_list = subs.get_color_list()
-    # line width
-    lwd = 2
 
     # initialize plot
     fig = plt.figure()
@@ -862,50 +864,53 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
 
         if len(date_list) != 0:
 
-            # ect_list
+            # midnights for ect_list
             midnights = [datetime.datetime(ect.year, ect.month, ect.day, 0, 0)
                          for ect in ect_list]
+            # convert ect_list into seconds
             seconds = [(ect - m).total_seconds()
                        for ect, m in zip(ect_list, midnights)]
 
-            # # date_list in seconds
-            # date_in_seconds = [int(dt.strftime("%s")) for dt in date_list]
-            # print date_in_seconds
+            # get dates from date_list without time
+            dates = [datetime.datetime(dt.year, dt.month, dt.day, 0, 0)
+                     for dt in date_list]
+            # convert dates into seconds
+            date_seconds = [(dt - datetime.datetime(1970, 1, 1, 0, 0)).
+                                total_seconds() for dt in dates]
 
             # convert to numpy arrays
-            sec_arr = np.asarray(seconds)
-            # dat_arr = np.asarray(date_in_seconds)
-            sec_mean = np.mean(sec_arr)
-            sec_std = np.std(sec_arr)
+            sec_arr = array(seconds)
+            dat_arr = array(date_seconds)
 
-            # mask outliers
-            sec_arr = np.ma.masked_where(abs(sec_arr - sec_mean) > 2 * sec_std, sec_arr)
-            # dat_arr = np.ma.masked_where(abs(sec_arr - sec_mean) > 2 * sec_std, dat_arr)
-            logger.info("ect_mean:{0}, ect_std:{1}, # of outliers:{2}".
-                        format(sec_mean, sec_std, np.ma.count_masked(sec_arr)))
+            # minus 12 hours if morning satellite
+            if satellite in am_sats:
+                logger.info("{0} is a morning satellite")
+                sec_arr -= 12 * 60 * 60
 
-            # convert to list
-            # dates = dat_arr.compressed().tolist()
-            # ects = sec_arr.compressed().tolist()
-
-            # # running mean
-            # total_bins = len(date_list)
-            # print total_bins
-            # bins = np.linspace(min(date_list), max(date_list), total_bins)
-            # print bins
+            # count number of days from unique dat_arr
+            total_bins = len(set(dat_arr)) / 30
+            bins = np.linspace(min(dat_arr), max(dat_arr), total_bins)
+            bin_delta = bins[1] - bins[0]
+            idx = np.digitize(dat_arr, bins)
+            running_mean = [np.median(sec_arr[idx == k])
+                            for k in range(total_bins)]
 
             # plot x and y
-            # ax.plot(dates, ects, 'o', color=color_list[cnt])
-            # ax.plot(dates, ects, label=satellite, color=color_list[cnt], linewidth=lwd)
-            ax.plot(date_list, sec_arr, 'o', color=color_list[cnt])
-            ax.plot(date_list, sec_arr, label=satellite, color=color_list[cnt], linewidth=lwd)
+            # ax.scatter(dat_arr, sec_arr,
+            #            color=color_list[cnt], alpha=.2, s=2)
+            # noinspection PyTypeChecker
+            ax.plot(bins - bin_delta / 2., running_mean,
+                    color=color_list[cnt], lw=4, alpha=.9,
+                    label=satellite)
 
+        # next satellite
         cnt += 1
 
     # annotate plot
     ax.set_title(plt_title)
     ax.set_xlabel(x_title)
     ax.set_ylabel(y_title)
+
     # modify y axis
     ax.set_ylim(0, 86400)
     seconds_label = range(3600, 86400, 3600)
@@ -913,18 +918,29 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
                        for s in seconds_label]
     ax.yaxis.set_ticks(seconds_label)
     ax.yaxis.set_ticklabels(seconds_strings)
+
     # modify x axis
-    ax.set_xlim(sdate, edate)
+    start_date = int((datetime.datetime(sdate.year, sdate.month, sdate.day) -
+                      datetime.datetime(1970, 1, 1)).total_seconds())
+    end_date = int((datetime.datetime(edate.year, edate.month, edate.day) -
+                    datetime.datetime(1970, 1, 1)).total_seconds())
+    ax.set_xlim(start_date, end_date)
+    years_label = range(start_date, end_date, 365 * 24 * 60 * 60)
+    years_strings = [str(datetime.datetime.fromtimestamp(s).strftime('%Y'))
+                     for s in years_label]
+    ax.xaxis.set_ticks(years_label)
+    ax.xaxis.set_ticklabels(years_strings)
     plt.gcf().autofmt_xdate()
+
     # set grid
     ax.grid()
+
     # make legend
-    if cnt > 2:
-        leg = ax.legend(bbox_to_anchor=(1.125, 1.05), fontsize=11)
-    else:
-        plt.tight_layout()
-        leg = ax.legend(loc='best', fancybox=True)
+    num_of_sats = int(math.ceil(cnt / 2.))
+    leg = ax.legend(ncol=num_of_sats, loc='best', fancybox=True)
+    plt.tight_layout()
     leg.get_frame().set_alpha(0.5)
+
     # save and close plot
     plt.savefig(outfile)
     plt.show()
