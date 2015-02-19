@@ -889,7 +889,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
 
             # minus 12 hours if morning satellite
             if satellite in am_sats:
-                logger.info("{0} is a morning satellite")
+                logger.info("{0} is a morning satellite".format(satellite))
                 sec_arr -= 12 * 60 * 60
 
             # count number of days from unique dat_arr
