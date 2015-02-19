@@ -280,6 +280,7 @@ def plot_time_series(sat_list, channel, select, start_date,
 
         # save figure
         plt.savefig(ofile)
+        plt.show()
         plt.close()
 
         if verbose is True:
@@ -399,6 +400,7 @@ def plot_time_series_linfit(sat_list, channel, select, start_date,
                 # save figure
                 plt.tight_layout()
                 plt.savefig(ofile)
+                plt.show()
                 plt.close()
 
                 if verbose is True:
@@ -490,6 +492,7 @@ def plt_zonal_means(zonal_mean, zonal_nobs, global_mean, zone_size,
     # plt.savefig('zonal_means.png', bbox_inches='tight')
     with np.errstate(all='ignore'):
         plt.savefig(ofil_name)
+        plt.show()
         plt.close()
     return
 
@@ -580,6 +583,7 @@ def plt_zonal_mean_stdv(zonal_mean, zonal_stdv, zonal_nobs,
     # placed outside the figure):
     plt.tight_layout()
     plt.savefig(ofil_name)
+    plt.show()
     plt.close()
 
     return
@@ -667,6 +671,7 @@ def plt_all_sat_zonal(outfile, mean, stdv, nobs, lats, cols, sats,
     # save and close plotfile
     # plt.show()
     plt.savefig(outfile)
+    plt.show()
     plt.close()
 
     return
