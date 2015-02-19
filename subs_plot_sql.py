@@ -6,7 +6,7 @@ import os
 import numpy as np
 import datetime
 import matplotlib.pyplot as plt
-import subs_avhrrgac as mysub
+import subs_avhrrgac as subs
 from scipy import stats
 from matplotlib import gridspec
 from mpl_toolkits.axes_grid1 import host_subplot
@@ -15,6 +15,7 @@ from dateutil.rrule import rrule, DAILY
 import logging
 
 logger = logging.getLogger('root')
+
 
 # noinspection PyUnboundLocalVariable
 def get_id(table, column, value, sql):
@@ -159,7 +160,7 @@ def plot_time_series(sat_list, channel, select, start_date,
     """
 
     isdata_cnt = 0
-    chan_label = mysub.full_cha_name(channel)
+    chan_label = subs.full_cha_name(channel)
     plot_label = "AVHRR GAC L1C Time Series (MODc6 calib.): " + \
                  chan_label + " (" + select + ")\n"
     mean_label = "Global Mean\n"
@@ -167,15 +168,15 @@ def plot_time_series(sat_list, channel, select, start_date,
     nobs_label = "# of Observations\n"
     date_label = "\nTime"
 
-    color_list = mysub.get_color_list()
+    color_list = subs.get_color_list()
     cnt = 0
     lwd = 2
 
-    sdate = mysub.date2str(start_date)
-    edate = mysub.date2str(end_date)
+    sdate = subs.date2str(start_date)
+    edate = subs.date2str(end_date)
     if len(sat_list) == 1:
-        sname = mysub.full_sat_name(sat_list[0])[2]
-        slist = mysub.get_satellite_list()
+        sname = subs.full_sat_name(sat_list[0])[2]
+        slist = subs.get_satellite_list()
         colid = slist.index(sname)
         cnt = colid
         fbase = 'Plot_TimeSeries_' + sdate + '_' + edate + \
@@ -196,7 +197,7 @@ def plot_time_series(sat_list, channel, select, start_date,
 
         # if ascii files inpdir is given
         if ascinpdir is not None:
-            satname = mysub.full_sat_name(satellite)[1]
+            satname = subs.full_sat_name(satellite)[1]
             ifile = os.path.join(ascinpdir,
                                  "Global_statistics_AVHRRGACl1c_" + satname + ".txt")
 
@@ -297,16 +298,16 @@ def plot_time_series_linfit(sat_list, channel, select, start_date,
     # else:
     # min_nobs = 2.5e7
 
-    sdate = mysub.date2str(start_date)
-    edate = mysub.date2str(end_date)
+    sdate = subs.date2str(start_date)
+    edate = subs.date2str(end_date)
 
-    chan_label = mysub.full_cha_name(channel)
+    chan_label = subs.full_cha_name(channel)
     mean_label = "Global Mean\n"
     stdv_label = "Standard Deviation\n"
     nobs_label = "# of Observations\n"
     date_label = "\nTime"
 
-    # color_list = mysub.get_color_list()
+    # color_list = subs.get_color_list()
     # cnt = 0
     lwd = 2
 
@@ -676,15 +677,15 @@ def plot_zonal_results(sat_list, channel, select, start_date,
     """
 
     fill_value = -9999.0
-    chan_label = mysub.full_cha_name(channel)
-    color_list = mysub.get_color_list()
+    chan_label = subs.full_cha_name(channel)
+    color_list = subs.get_color_list()
     cnt = 0
 
     # -- loop over days
     for dt in rrule(DAILY, dtstart=start_date, until=end_date):
 
         pdate = dt.strftime("%Y-%m-%d")
-        fdate = mysub.date2str(dt.date())
+        fdate = subs.date2str(dt.date())
 
         # lists for all in one plot
         mlist = list()  # mean
@@ -697,7 +698,7 @@ def plot_zonal_results(sat_list, channel, select, start_date,
         # -- loop over satellites
         for satellite in sat_list:
 
-            sat_label = mysub.full_sat_name(satellite)[0]
+            sat_label = subs.full_sat_name(satellite)[0]
 
             (datelst, meanlst, stdvlst,
              nobslst) = read_global_stats(satellite, channel, select,
@@ -820,3 +821,113 @@ def read_globstafile(fil, cha, sel, sdate, edate):
     # return (lstar,lsdat,lstim,lsave,lsstd,lsrec)
     return lsdat, lsave, lsstd, lsrec
 
+
+def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
+                           sat_list, verbose):
+    """
+    Plot AVHRR / NOAAs equator crossing time
+    """
+    if verbose:
+        logger.info("Plot LTAN")
+
+    # morning satellites shift by minus 12 hours
+    am_sats = ['NOAA10', 'NOAA12', 'NOAA15',
+               'NOAA17', 'METOPA', 'METOPB']
+
+    # output file
+    ofile = "Plot_AVHRR_ect_" + subs.date2str(sdate) + \
+            "_" + subs.date2str(edate) + ".png"
+    outfile = os.path.join(outdir, ofile)
+
+    plt_title = "Equatorial Crossing Time of NOAA/MetOp " \
+                "Polar Satellites based on AVHRR\n"
+    x_title = "Date\n"
+    y_title = "Local Time (hour)\n"
+
+    # count for satellite color
+    cnt = 0
+    color_list = subs.get_color_list()
+    # line width
+    lwd = 2
+
+    # initialize plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    # loop over satellites
+    for satellite in sat_list:
+
+        # get records for satellite
+        date_list, ect_list = subs.get_ect_records(satellite, dbfile)
+
+        if len(date_list) != 0:
+
+            # ect_list
+            midnights = [datetime.datetime(ect.year, ect.month, ect.day, 0, 0)
+                         for ect in ect_list]
+            seconds = [(ect - m).total_seconds()
+                       for ect, m in zip(ect_list, midnights)]
+
+            # # date_list in seconds
+            # date_in_seconds = [int(dt.strftime("%s")) for dt in date_list]
+            # print date_in_seconds
+
+            # convert to numpy arrays
+            sec_arr = np.asarray(seconds)
+            # dat_arr = np.asarray(date_in_seconds)
+            sec_mean = np.mean(sec_arr)
+            sec_std = np.std(sec_arr)
+
+            # mask outliers
+            sec_arr = np.ma.masked_where(abs(sec_arr - sec_mean) > 2 * sec_std, sec_arr)
+            # dat_arr = np.ma.masked_where(abs(sec_arr - sec_mean) > 2 * sec_std, dat_arr)
+            logger.info("ect_mean:{0}, ect_std:{1}, # of outliers:{2}".
+                        format(sec_mean, sec_std, np.ma.count_masked(sec_arr)))
+
+            # convert to list
+            # dates = dat_arr.compressed().tolist()
+            # ects = sec_arr.compressed().tolist()
+
+            # # running mean
+            # total_bins = len(date_list)
+            # print total_bins
+            # bins = np.linspace(min(date_list), max(date_list), total_bins)
+            # print bins
+
+            # plot x and y
+            # ax.plot(dates, ects, 'o', color=color_list[cnt])
+            # ax.plot(dates, ects, label=satellite, color=color_list[cnt], linewidth=lwd)
+            ax.plot(date_list, sec_arr, 'o', color=color_list[cnt])
+            ax.plot(date_list, sec_arr, label=satellite, color=color_list[cnt], linewidth=lwd)
+
+        cnt += 1
+
+    # annotate plot
+    ax.set_title(plt_title)
+    ax.set_xlabel(x_title)
+    ax.set_ylabel(y_title)
+    # modify y axis
+    ax.set_ylim(0, 86400)
+    seconds_label = range(3600, 86400, 3600)
+    seconds_strings = [str(datetime.timedelta(seconds=s))[0:-3]
+                       for s in seconds_label]
+    ax.yaxis.set_ticks(seconds_label)
+    ax.yaxis.set_ticklabels(seconds_strings)
+    # modify x axis
+    ax.set_xlim(sdate, edate)
+    plt.gcf().autofmt_xdate()
+    # set grid
+    ax.grid()
+    # make legend
+    if cnt > 2:
+        leg = ax.legend(bbox_to_anchor=(1.125, 1.05), fontsize=11)
+    else:
+        plt.tight_layout()
+        leg = ax.legend(loc='best', fancybox=True)
+    leg.get_frame().set_alpha(0.5)
+    # save and close plot
+    plt.savefig(outfile)
+    plt.show()
+    plt.close()
+
+    logger.info("{0} done".format(outfile))

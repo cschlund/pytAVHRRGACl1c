@@ -69,7 +69,7 @@ if __name__ == '__main__':
     parser.add_argument('-tim', '--time', type=str,
                         help='Time abbreviation, available: ' + sellist)
 
-    parser.add_argument('-sat', '--satellite', type=mysub.lite_sat_string,
+    parser.add_argument('-sats', '--satellites', type=mysub.str2upper, nargs='*',
                         help='Satellite, available: ' + satlist)
 
     parser.add_argument('-tar', '--target', type=str, default='global',
@@ -111,10 +111,10 @@ if __name__ == '__main__':
         sel_list = [args.time]
 
     # -- satellite selection
-    if args.satellite is None:
+    if args.satellites is None:
         sat_list = mysub.get_satellite_list()
     else:
-        sat_list = [args.satellite]
+        sat_list = args.satellites
 
     # -- target selection
     if args.target == 'global':
@@ -128,7 +128,7 @@ if __name__ == '__main__':
 
     # -- summary of settings if verbose mode
     if args.verbose:
-        logger.info("\n *** Parameter passed")
+        logger.info("Parameter passed")
         logger.info("Input Path : %s" % args.dbfile)
         logger.info("Output Path: %s" % args.outdir)
         logger.info("Start Date : %s" % start_date)
@@ -154,8 +154,8 @@ if __name__ == '__main__':
         dbfile.close()
 
         if args.verbose:
-            logger.info("\n *** {0} finished \n".format(sys.argv[0]))
+            logger.info("{0} finished".format(sys.argv[0]))
 
     except lite.Error, e:
-        logger.info("\n *** Error {0} ***\n".format(e.args[0]))
+        logger.info("ERROR {0} ".format(e.args[0]))
         sys.exit(1)

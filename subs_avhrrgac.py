@@ -18,6 +18,10 @@ class ColumnError(Exception):
     pass
 
 
+def str2upper(string_object):
+    return string_object.upper()
+
+
 def ect_convert_to_datetime(time_hours):
     # time_hours = 23.99431
     time_minutes = time_hours * 60
@@ -49,8 +53,10 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
         abs_lat = abs(lat)
         ori_lat = lat
 
-        lat = np.ma.masked_where(abs_lat > abs_lat.min() + 0.05, lat)
-        lon = np.ma.masked_where(abs_lat > abs_lat.min() + 0.05, lon)
+        lat_mask = np.ma.mask_or(abs_lat > 1.,
+                                 abs_lat > abs_lat.min() + 0.02)
+        lat = np.ma.masked_where(lat_mask, lat)
+        lon = np.ma.masked_where(lat_mask, lon)
 
         # noinspection PyUnresolvedReferences
         lat_min = lat[:, mid_pix].compressed().tolist()
@@ -58,9 +64,15 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
         lon_min = lon[:, mid_pix].compressed().tolist()
         lat_idx = np.ma.where(abs(lat[:, mid_pix]) >= 0.)[0].tolist()
 
+        if len(lat_min) == 0:
+            logger.info("Lat_min is empty:{0} - "
+                        "no match found over the equator".
+                        format(len(lat_min)))
+            return None
+
         if len(lat_min) != len(lat_idx):
             logger.info("FAILED: lat_min cnt != lat_idx cnt")
-            sys.exit(0)
+            return None
 
         for cnt, val in enumerate(lat_idx):
             lat_idx_next = val + 1
@@ -123,9 +135,11 @@ def get_ect_local_hour(lat, lon, start_time_l1c, verbose):
                 return ect_datetime
 
             else:
+                logger.info("No afternoon orbit_flag: {0}".format(oflag))
                 return None
 
         else:
+            logger.info("No orbit_flag: {0}".format(oflag))
             return None
 
     except (IndexError, ValueError, RuntimeError, Exception) as err:
@@ -304,6 +318,35 @@ def get_record_lists(satellite, db):
             data_along.append(result['along_track'])
 
     return start_dates, end_dates, data_along
+
+
+def get_ect_records(satellite, db):
+    """
+    plot_avhrr_ect_ltan.py:
+    get equator crossing time for given satellite
+    from a sqlite3 database: table orbits
+    and return ect list and date list
+    """
+
+    ect_list = []
+    date_list = []
+
+    get_data = "SELECT start_time_l1c, equator_crossing_time " \
+               "FROM vw_std WHERE blacklist=0 AND " \
+               "equator_crossing_time is not null AND " \
+               "start_time_l1c is not null AND " \
+               "end_time_l1c is not null AND " \
+               "satellite_name=\'{satellite}\' ORDER BY " \
+               "start_time_l1c".format(satellite=satellite)
+
+    results = db.execute(get_data)
+
+    for result in results:
+        if result['start_time_l1c'] is not None:
+            date_list.append(result['start_time_l1c'])
+            ect_list.append(result['equator_crossing_time'])
+
+    return date_list, ect_list
 
 
 def create_statistics_table(db):

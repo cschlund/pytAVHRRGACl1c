@@ -4,16 +4,18 @@
 #
 
 import os
-import sys
 import datetime
 import argparse
+
 import h5py
-import read_avhrrgac_h5 as rh5
-import subs_avhrrgac as subs
 import matplotlib.pyplot as plt
 from dateutil.rrule import rrule, DAILY
+
+import read_avhrrgac_h5 as rh5
+import subs_avhrrgac as subs
 from pycmsaf.argparser import str2date
 from pycmsaf.logger import setup_root_logger
+
 
 logger = setup_root_logger(name='root')
 
