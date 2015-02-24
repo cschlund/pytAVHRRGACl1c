@@ -264,6 +264,9 @@ def update_db_without_midnight(vals, db):
     db.execute(act)
     nchanges = db.conn.total_changes - total_changes_before
     if not nchanges == 1:
+        logger.info("total_changes_before: {0}".format(total_changes_before))
+        logger.info("nchanges now: {0}".format(nchanges))
+        logger.info("db.execute(act): {0}".format(act))
         raise ColumnError('DB UPDATE fishy')
 
 
