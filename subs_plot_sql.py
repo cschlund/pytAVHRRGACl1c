@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import subs_avhrrgac as subs
 from scipy import stats
 from matplotlib import gridspec
+from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as aa
 from dateutil.rrule import rrule, DAILY
@@ -166,31 +167,26 @@ def plot_time_series(sat_list, channel, select, start_date,
 
     isdata_cnt = 0
     chan_label = subs.full_cha_name(channel)
-    plot_label = "AVHRR GAC L1C Time Series (MODc6 calib.): " + \
+    if channel == "ch1" or channel == "ch2" or channel == "ch3a":
+        cali_label = " (MODc6 calib.)"
+    else:
+        cali_label = ""
+    plot_label = "AVHRR GAC L1C Time Series" + cali_label + ": " + \
                  chan_label + " (" + select + ")\n"
-    mean_label = "Global Mean\n"
+    mean_label = "Daily Global Mean\n"
     stdv_label = "Standard Deviation\n"
     nobs_label = "# of Observations\n"
-    date_label = "\nTime"
+    date_label = "\nYear"
 
     color_list = subs.get_color_list()
     cnt = 0
     lwd = 2
 
-    sdate = subs.date2str(start_date)
-    edate = subs.date2str(end_date)
     if len(sat_list) == 1:
         sname = subs.full_sat_name(sat_list[0])[2]
         slist = subs.get_satellite_list()
         colid = slist.index(sname)
         cnt = colid
-        fbase = 'Plot_TimeSeries_' + sdate + '_' + edate + \
-                '_' + channel + '_' + select + '_' + \
-                sname + '.png'
-    else:
-        fbase = 'Plot_TimeSeries_' + sdate + '_' + edate + \
-                '_' + channel + '_' + select + '.png'
-    ofile = os.path.join(outpath, fbase)
 
     fig = plt.figure()
     ax_val = fig.add_subplot(311)
@@ -254,6 +250,24 @@ def plot_time_series(sat_list, channel, select, start_date,
     # -- end ofloop over satellites
 
     if isdata_cnt > 0:
+
+        if len(sat_list) == 1:
+            sdate_str = subs.date2str(min(datelst))
+            edate_str = subs.date2str(max(datelst))
+            sname = subs.full_sat_name(sat_list[0])[2]
+            slist = subs.get_satellite_list()
+            colid = slist.index(sname)
+            cnt = colid
+            fbase = 'Plot_TimeSeries_' + sdate_str + '_' + edate_str + \
+                    '_' + channel + '_' + select + '_' + \
+                    sname + '.png'
+        else:
+            sdate_str = subs.date2str(start_date)
+            edate_str = subs.date2str(end_date)
+            fbase = 'Plot_TimeSeries_' + sdate_str + '_' + edate_str + \
+                    '_' + channel + '_' + select + '.png'
+        ofile = os.path.join(outpath, fbase)
+
         # label axes
         ax_val.set_title(plot_label)
         ax_val.set_ylabel(mean_label)
@@ -261,29 +275,50 @@ def plot_time_series(sat_list, channel, select, start_date,
         ax_rec.set_ylabel(nobs_label)
         ax_rec.set_xlabel(date_label)
 
+        # modify x axis
         # beautify the x-labels
+        if len(sat_list) == 1:
+            years = YearLocator()
+            months = MonthLocator()
+            yearsFmt = DateFormatter('%Y')
+            ax_val.xaxis.set_major_locator(years)
+            ax_val.xaxis.set_major_formatter(yearsFmt)
+            ax_val.xaxis.set_minor_locator(months)
+            ax_std.xaxis.set_major_locator(years)
+            ax_std.xaxis.set_major_formatter(yearsFmt)
+            ax_std.xaxis.set_minor_locator(months)
+            ax_rec.xaxis.set_major_locator(years)
+            ax_rec.xaxis.set_major_formatter(yearsFmt)
+            ax_rec.xaxis.set_minor_locator(months)
+        else:
+            major_years = YearLocator(2, month=1, day=1)
+            minor_years = YearLocator()
+            yearsFmt = DateFormatter('%Y')
+            ax_val.xaxis.set_major_locator(major_years)
+            ax_val.xaxis.set_major_formatter(yearsFmt)
+            ax_val.xaxis.set_minor_locator(minor_years)
+            ax_std.xaxis.set_major_locator(major_years)
+            ax_std.xaxis.set_major_formatter(yearsFmt)
+            ax_std.xaxis.set_minor_locator(minor_years)
+            ax_rec.xaxis.set_major_locator(major_years)
+            ax_rec.xaxis.set_major_formatter(yearsFmt)
+            ax_rec.xaxis.set_minor_locator(minor_years)
+
         plt.gcf().autofmt_xdate()
 
         # make grid
-        ax_val.grid()
-        ax_std.grid()
-        ax_rec.grid()
+        ax_val.grid(which='major', alpha=0.7)
+        ax_val.grid(which='minor', alpha=0.3)
+        ax_std.grid(which='major', alpha=0.7)
+        ax_std.grid(which='minor', alpha=0.3)
+        ax_rec.grid(which='major', alpha=0.7)
+        ax_rec.grid(which='minor', alpha=0.3)
 
         # make legend
         num_of_sats = int(math.ceil(cnt / 2.))
         leg = ax_val.legend(ncol=num_of_sats, loc='best', fancybox=True)
-        plt.tight_layout()
+        plt.tight_layout(rect=(0.02, 0.02, 0.98, 0.98))
         leg.get_frame().set_alpha(0.5)
-
-        # # make legend
-        # if cnt > 2:
-        #     leg = ax_val.legend(bbox_to_anchor=(1.125, 1.05),
-        #                         fontsize=11)
-        # else:
-        #     plt.tight_layout()
-        #     leg = ax_val.legend(loc='best', fancybox=True)
-        #
-        # leg.get_frame().set_alpha(0.5)
 
         # save and close plot
         if show_fig:
@@ -879,7 +914,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
                'NOAA17', 'METOPA', 'METOPB']
 
     # output file
-    ofile = "Plot_AVHRR_ect_" + subs.date2str(sdate) + \
+    ofile = "Plot_AVHRR_equat_cross_time_" + subs.date2str(sdate) + \
             "_" + subs.date2str(edate) + ".png"
     outfile = os.path.join(outdir, ofile)
 
