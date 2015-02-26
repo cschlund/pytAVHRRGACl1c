@@ -792,7 +792,7 @@ def plot_zonal_results(sat_list, channel, select, start_date,
                     plt_zonal_mean_stdv(np.array(zmean), np.array(zstdv),
                                         np.array(znobs), np.array(belts), fill_value,
                                         zone_size, ofile, pdate, chan_label,
-                                        sat_label, select)
+                                        sat_label, select, show_fig)
 
                     if verbose is True:
                         logger.info("%s done!" % ofile)
@@ -947,17 +947,23 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
         cnt += 1
 
     # annotate plot
-    ax.set_title(plt_title)
-    ax.set_xlabel(x_title)
-    ax.set_ylabel(y_title)
+    ax.set_title(plt_title, fontsize=20)
+    ax.set_xlabel(x_title, fontsize=20)
+    ax.set_ylabel(y_title, fontsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=16)
+    ax.tick_params(axis='both', which='minor', labelsize=0)
 
     # modify y axis
-    ax.set_ylim(0, 86400)
-    seconds_label = range(3600, 86400, 3600)
+    hour_start = 3 * 3600
+    hour_end = 21 * 3600
+    ax.set_ylim(hour_start, hour_end)
+    major_seconds_label = range(hour_start + 3600, hour_end, 2 * 3600)
+    minor_seconds_label = range(hour_start + 3600, hour_end, 3600)
     seconds_strings = [str(datetime.timedelta(seconds=s))[0:-3]
-                       for s in seconds_label]
-    ax.yaxis.set_ticks(seconds_label)
+                       for s in major_seconds_label]
+    ax.yaxis.set_ticks(major_seconds_label)
     ax.yaxis.set_ticklabels(seconds_strings)
+    ax.yaxis.set_ticks(minor_seconds_label, minor=True)
 
     # modify x axis
     start_date = int((datetime.datetime(sdate.year, sdate.month, sdate.day) -
@@ -965,20 +971,23 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     end_date = int((datetime.datetime(edate.year, edate.month, edate.day) -
                     datetime.datetime(1970, 1, 1)).total_seconds())
     ax.set_xlim(start_date, end_date)
-    years_label = range(start_date, end_date, 365 * 24 * 60 * 60)
+    major_years_label = range(start_date, end_date, 2 * 365 * 24 * 60 * 60)
+    minor_years_label = range(start_date, end_date, 365 * 24 * 60 * 60)
     years_strings = [str(datetime.datetime.fromtimestamp(s).strftime('%Y'))
-                     for s in years_label]
-    ax.xaxis.set_ticks(years_label)
+                     for s in major_years_label]
+    ax.xaxis.set_ticks(major_years_label)
     ax.xaxis.set_ticklabels(years_strings)
+    ax.xaxis.set_ticks(minor_years_label, minor=True)
     plt.gcf().autofmt_xdate()
 
     # set grid
-    ax.grid()
+    ax.grid(which='minor', alpha=0.3)
+    ax.grid(which='major', alpha=0.7)
 
     # make legend
     num_of_sats = int(math.ceil(cnt / 2.))
-    leg = ax.legend(ncol=num_of_sats, loc='best', fancybox=True)
-    plt.tight_layout()
+    leg = ax.legend(ncol=num_of_sats, loc='best', fancybox=True, fontsize=18)
+    plt.tight_layout(rect=(0.02, 0.02, 0.98, 0.98))
     leg.get_frame().set_alpha(0.5)
 
     # save and close plot
