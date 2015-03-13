@@ -464,7 +464,7 @@ def full_sat_name(sat):
     """
 
     m1_list = ["m01", "metopb", "metop01", "M1", "METOPB"]
-    m2_list = ["m02", "metopa", "metop02", "M1", "METOPA"]
+    m2_list = ["m02", "metopa", "metop02", "M2", "METOPA"]
     nc_list = ["n07", "noaa7", "noaa07", "NC", "NOAA7"]
     nf_list = ["n09", "noaa9", "noaa09", "NF", "NOAA9"]
     ng_list = ["n10", "noaa10", "NG", "NOAA10"]
