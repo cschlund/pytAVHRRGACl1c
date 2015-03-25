@@ -1022,7 +1022,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     # make legend
     num_of_sats = int(math.ceil(cnt / 2.))
     leg = ax.legend(ncol=num_of_sats, loc='best', fancybox=True, fontsize=18)
-    plt.tight_layout(rect=(0.02, 0.02, 0.98, 0.98))
+    #plt.tight_layout(rect=(0.02, 0.02, 0.98, 0.98))
     leg.get_frame().set_alpha(0.5)
 
     # save and close plot
