@@ -25,8 +25,8 @@ def get_colorbar(param):
         labels = ['clear', 'cloudy']
 
     elif 'cld_type' in param or 'cldtype' in param:
-        colmap = colors.ListedColormap(['DimGray', 'MediumSlateBlue', 'Navy',
-                                        'Cyan', 'DarkOrange', 'Lime', 'Magenta'])
+        colmap = colors.ListedColormap(['DimGray', 'Yellow', 'Navy', 'Lime',
+                                        'DarkOrange', 'Cyan', 'Magenta'])
         bounds = [0, 2, 3, 4, 6, 7, 8, 9]
         colnorm = colors.BoundaryNorm(bounds, colmap.N)
         ticks = [1, 2.5, 3.5, 5, 6.5, 7.5, 8.5]

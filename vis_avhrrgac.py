@@ -148,4 +148,4 @@ if __name__ == '__main__':
     logger.info("*** {0} start for {1}".format(sys.argv[0], args))
     args.func(args)
 
-    logger.info("*** {0} succesfully finished \n".format(sys.argv[0]))
+    logger.info("*** {0} succesfully finished".format(sys.argv[0]))
