@@ -60,7 +60,7 @@ REGIONS = dict(
          "par": [-90, 91, 5],
          "mer": [-180, 181, 60],
          "geo": {"lon_0": 100, "lat_0": 70, "height": 5000e3, "width": 9000e3,
-                 "projection": 'stere', "resolution": 'i'}},
+                 "projection": 'stere', "resolution": 'l'}},
 
     npol={"nam": "North Pole",
           "par": [-80., 81., 20.],
