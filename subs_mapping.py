@@ -17,17 +17,16 @@ warnings.filterwarnings("ignore")
 
 def get_colorbar(param):
 
-    if 'cc_mask' in param:
+    if 'cc_mask' in param or 'cloudmask' in param:
         colmap = colors.ListedColormap(['blue', 'white'])
         bounds = [0, 0.5, 1]
         colnorm = colors.BoundaryNorm(bounds, colmap.N)
         ticks = [0.25, 0.75]
         labels = ['clear', 'cloudy']
 
-    elif 'cld_type' in param:
+    elif 'cld_type' in param or 'cldtype' in param:
         colmap = colors.ListedColormap(['DimGray', 'MediumSlateBlue', 'Navy',
-                                        'Cyan', 'DarkOrange',
-                                        'Lime', 'Magenta'])
+                                        'Cyan', 'DarkOrange', 'Lime', 'Magenta'])
         bounds = [0, 2, 3, 4, 6, 7, 8, 9]
         colnorm = colors.BoundaryNorm(bounds, colmap.N)
         ticks = [1, 2.5, 3.5, 5, 6.5, 7.5, 8.5]
@@ -47,6 +46,7 @@ def map_cloud_cci(filename, product, region, outputdir, background):
     :return:
     """
 
+    logger.info("Read: {0}".format(filename))
     fh = Dataset(filename, mode='r')
     longitudes = fh.variables['lon'][:]
     latitudes = fh.variables['lat'][:]
@@ -81,14 +81,14 @@ def map_cloud_cci(filename, product, region, outputdir, background):
     outfil = basout + '_' + product + '_' + region + '.png'
     ofilen = os.path.join(outputdir, outfil)
     otitle = fildat + ' ' + esacci + ' CLD ' + protyp + ' ' + \
-             instyp + '/' + sattyp + "\n\n"
+             instyp + '/' + sattyp
 
     # initialize figure
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
     # create basemap
-    logger.info("Draw basemap for {0}".format(ofilen))
+    logger.info("Draw basemap")
     m = Basemap(**rl.REGIONS[region]["geo"])
 
     # basemap background
@@ -119,8 +119,12 @@ def map_cloud_cci(filename, product, region, outputdir, background):
             mtar = np.ma.masked_where(mask, target)
             # find x,y values of map projection grid:
             x, y = m(mlon, mlat)
-            cs = m.pcolor(x, y, mtar, cmap='jet',
-                          vmin=np.min(target), vmax=np.max(target))
+            if not cmap:
+                cs = m.pcolor(x, y, mtar, cmap='jet',
+                              vmin=np.min(target), vmax=np.max(target))
+            else:
+                cs = m.pcolor(x, y, mtar, cmap=cmap, norm=norm,
+                              vmin=np.min(target), vmax=np.max(target))
     else:
         lon, lat = np.meshgrid(longitudes, latitudes)
         xi, yi = m(lon, lat)
@@ -161,11 +165,12 @@ def map_cloud_cci(filename, product, region, outputdir, background):
         cbar.set_label("\n" + longname + ' [' + units + ']')
 
     # add title:
-    ax.set_title(otitle)
+    ax.set_title(otitle + "\n\n")
 
     # save to file:
     fig.savefig(ofilen, bbox_inches='tight')
     plt.close()
+    logger.info("Done: {0}".format(ofilen))
 
     return
 
@@ -186,14 +191,14 @@ def map_avhrrgac_l1c(filename, channel, region, time, outputdir,
     bastxt = os.path.splitext(basfil)[0]
     outfil = bastxt + '_' + channel + '_' + region + '_' + time + '.png'
     ofilen = os.path.join(outputdir, outfil)
-    outtit = avhrrstr + " - " + rl.REGIONS[region]["nam"] + " (" + time + ")\n\n"
+    outtit = avhrrstr + " - " + rl.REGIONS[region]["nam"] + " (" + time + ")"
 
     # initialize figure
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
     # create basemap
-    logger.info("Draw basemap for {0}".format(ofilen))
+    logger.info("Draw basemap")
     m = Basemap(**rl.REGIONS[region]["geo"])
 
     # basemap background
@@ -253,8 +258,11 @@ def map_avhrrgac_l1c(filename, channel, region, time, outputdir,
     cbar.set_label(subs.full_cha_name(channel))
 
     # add title:
-    ax.set_title(outtit)
+    ax.set_title(outtit + "\n\n")
 
     # save to file:
     fig.savefig(ofilen, bbox_inches='tight')
     plt.close()
+    logger.info("Done: {0}".format(ofilen))
+
+    return
