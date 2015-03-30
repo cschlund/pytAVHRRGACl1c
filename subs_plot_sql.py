@@ -188,7 +188,7 @@ def plot_time_series(sat_list, channel, select, start_date,
         colid = slist.index(sname)
         cnt = colid
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(17, 10))
     ax_val = fig.add_subplot(311)
     ax_std = fig.add_subplot(312)
     ax_rec = fig.add_subplot(313)
@@ -316,18 +316,17 @@ def plot_time_series(sat_list, channel, select, start_date,
 
         # make legend
         num_of_sats = int(math.ceil(cnt / 2.))
-        leg = ax_val.legend(ncol=num_of_sats, loc='best', fancybox=True)
+        # leg = ax_val.legend(ncol=num_of_sats, loc='best', fancybox=True)
+        leg = ax_std.legend(ncol=num_of_sats, loc='best', fancybox=True)
         plt.tight_layout(rect=(0.02, 0.02, 0.98, 0.98))
         leg.get_frame().set_alpha(0.5)
 
         # save and close plot
+        plt.savefig(ofile)
         if show_fig:
             plt.show()
-            logger.info("Shown: {0} ".
-                        format(os.path.basename(ofile)))
-        else:
-            plt.savefig(ofile)
-            logger.info("Done {0}".format(ofile))
+            logger.info("Shown: {0} ".format(os.path.basename(ofile)))
+        logger.info("Done {0}".format(ofile))
         plt.close()
 
     else:
@@ -446,13 +445,11 @@ def plot_time_series_linfit(sat_list, channel, select, start_date,
                 plt.tight_layout()
 
                 # save and close plot
+                plt.savefig(ofile)
                 if show_fig:
                     plt.show()
-                    logger.info("Shown: {0} ".
-                                format(os.path.basename(ofile)))
-                else:
-                    plt.savefig(ofile)
-                    logger.info("Done {0}".format(ofile))
+                    logger.info("Shown: {0} ".format(os.path.basename(ofile)))
+                logger.info("Done {0}".format(ofile))
                 plt.close()
 
     # -- end ofloop over satellites
@@ -540,14 +537,11 @@ def plt_zonal_means(zonal_mean, zonal_nobs, global_mean, zone_size,
     # save figure to file:
     # plt.savefig('zonal_means.png', bbox_inches='tight')
     with np.errstate(all='ignore'):
-
+        plt.savefig(ofil_name)
         if show_fig:
             plt.show()
-            logger.info("Shown: {0} ".
-                        format(os.path.basename(ofil_name)))
-        else:
-            plt.savefig(ofil_name)
-            logger.info("Done {0}".format(ofil_name))
+            logger.info("Shown: {0} ".format(os.path.basename(ofil_name)))
+        logger.info("Done {0}".format(ofil_name))
         plt.close()
 
     return
@@ -640,13 +634,11 @@ def plt_zonal_mean_stdv(zonal_mean, zonal_stdv, zonal_nobs,
     # placed outside the figure):
     plt.tight_layout()
 
+    plt.savefig(ofil_name)
     if show_fig:
         plt.show()
-        logger.info("Shown: {0} ".
-                    format(os.path.basename(ofil_name)))
-    else:
-        plt.savefig(ofil_name)
-        logger.info("Done {0}".format(ofil_name))
+        logger.info("Shown: {0} ".format(os.path.basename(ofil_name)))
+    logger.info("Done {0}".format(ofil_name))
     plt.close()
 
     return
@@ -733,13 +725,11 @@ def plt_all_sat_zonal(outfile, mean, stdv, nobs, lats, cols, sats,
     ax_rec.grid(which='both')
 
     # save and close plotfile
+    plt.savefig(outfile)
     if show_fig:
         plt.show()
-        logger.info("Shown: {0} ".
-                    format(os.path.basename(outfile)))
-    else:
-        plt.savefig(outfile)
-        logger.info("Done {0}".format(outfile))
+        logger.info("Shown: {0} ".format(os.path.basename(outfile)))
+    logger.info("Done {0}".format(outfile))
     plt.close()
 
     return
@@ -928,7 +918,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     color_list = subs.get_color_list()
 
     # initialize plot
-    fig = plt.figure()
+    fig = plt.figure(figsize=(15, 10))
     ax = fig.add_subplot(111)
 
     # loop over satellites
@@ -1022,15 +1012,15 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     # make legend
     num_of_sats = int(math.ceil(cnt / 2.))
     leg = ax.legend(ncol=num_of_sats, loc='best', fancybox=True, fontsize=18)
-    #plt.tight_layout(rect=(0.02, 0.02, 0.98, 0.98))
+    # plt.tight_layout(rect=(0.02, 0.02, 1.98, 0.98))
+    plt.tight_layout()
     leg.get_frame().set_alpha(0.5)
 
     # save and close plot
+    # plt.savefig(outfile, bbox_inches='tight')
+    plt.savefig(outfile)
     if show_fig:
         plt.show()
-        logger.info("Shown: {0} ".
-                    format(os.path.basename(outfile)))
-    else:
-        plt.savefig(outfile)
-        logger.info("Done {0}".format(outfile))
+        logger.info("Shown: {0} ".format(os.path.basename(outfile)))
+    logger.info("Done {0}".format(outfile))
     plt.close()
