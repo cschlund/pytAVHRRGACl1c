@@ -412,6 +412,71 @@ def create_id_name_table(db, table, lst):
             db.execute(act)
 
 
+def get_cloudcci_l3u_products():
+    """
+    List of Cloud_cci L3U products in netCDF file.
+    """
+    l3u_products = ['cc_mask_asc', 'cc_mask_desc',
+                    'cccot_asc', 'cccot_desc',
+                    'cld_alb_ch1_asc', 'cld_alb_ch1_desc',
+                    'cld_alb_ch2_asc', 'cld_alb_ch2_desc',
+                    'cld_type_asc', 'cld_type_desc',
+                    'cot_asc', 'cot_desc',
+                    'cot_uncertainty_asc', 'cot_uncertainty_desc',
+                    'cph_asc', 'cph_desc', 'cth_asc', 'cth_desc',
+                    'cth_uncertainty_asc', 'cth_uncertainty_desc',
+                    'ctp_asc', 'ctp_desc',
+                    'ctp_uncertainty_asc', 'ctp_uncertainty_desc',
+                    'ctt_asc', 'ctt_desc',
+                    'ctt_uncertainty_asc', 'ctt_uncertainty_desc',
+                    'cwp_asc', 'cwp_desc',
+                    'cwp_uncertainty_asc', 'cwp_uncertainty_desc',
+                    'illum_asc', 'illum_desc',
+                    'npoints_l2b_asc', 'npoints_l2b_desc',
+                    'qcflag_asc', 'qcflag_desc', 'ref_asc', 'ref_desc',
+                    'ref_uncertainty_asc', 'ref_uncertainty_desc',
+                    'relazi_asc', 'relazi_desc', 'satzen_asc', 'satzen_desc',
+                    'solzen_asc', 'solzen_desc', 'stemp_asc', 'stemp_desc',
+                    'stemp_uncertainty_asc', 'stemp_uncertainty_desc',
+                    'time_asc', 'time_desc']
+    return l3u_products
+
+def get_cloudcci_l3c_products():
+    """
+    List of Cloud_cci L3C products in netCDF file.
+    """
+    l3c_products = ['cc_high', 'cc_low', 'cc_middle', 'cc_total',
+                    'cc_total_day', 'cc_total_micro', 'cc_total_night',
+                    'cc_total_std', 'cc_total_micro_std', 'cc_total_twl',
+                    'cc_total_uncertainty', 'cc_total_uncertainty_std',
+                    'cot', 'cot_ice', 'cot_liq', 'cot_log', 'cot_std',
+                    'cot_std_ice', 'cot_std_liq', 'cot_uncertainty',
+                    'cot_uncertainty_ice', 'cot_uncertainty_liq',
+                    'cot_uncertainty_std', 'cot_uncertainty_std_ice',
+                    'cot_uncertainty_std_liq', 'cph', 'cph_std', 'cth',
+                    'cth_std', 'cth_uncertainty', 'cth_uncertainty_std',
+                    'ctp', 'ctp_log', 'ctp_std', 'ctp_uncertainty',
+                    'ctp_uncertainty_std', 'ctt', 'ctt_std', 'ctt_uncertainty',
+                    'ctt_uncertainty_std', 'cwp', 'cwp_std', 'cwp_uncertainty',
+                    'cwp_uncertainty_std', 'iwp', 'iwp_std', 'iwp_uncertainty',
+                    'iwp_uncertainty_std', 'lwp', 'lwp_std', 'lwp_uncertainty',
+                    'lwp_uncertainty_std', 'npoints_macro',
+                    'npoints_macro_cct_clear', 'npoints_macro_cct_clear_raw',
+                    'npoints_macro_cct_cloudy', 'npoints_macro_cct_cloudy_raw',
+                    'npoints_macro_cct_day_clear', 'npoints_macro_cct_day_cloudy',
+                    'npoints_macro_cct_high_cloudy', 'npoints_macro_cct_low_cloudy',
+                    'npoints_macro_cct_middle_cloudy', 'npoints_macro_cct_night_clear',
+                    'npoints_macro_cct_night_cloudy', 'npoints_macro_cct_twl_clear',
+                    'npoints_macro_cct_twl_cloudy', 'npoints_macro_clear', 'npoints_macro_cloudy',
+                    'npoints_macro_cloudy_ice', 'npoints_macro_cloudy_liq', 'npoints_micro',
+                    'npoints_micro_cct_clear', 'npoints_micro_cct_cloudy', 'npoints_micro_clear',
+                    'npoints_micro_cloudy', 'npoints_micro_cloudy_ice', 'npoints_micro_cloudy_liq',
+                    'ref', 'ref_ice', 'ref_liq', 'ref_std', 'ref_std_ice', 'ref_std_liq',
+                    'ref_uncertainty', 'ref_uncertainty_ice', 'ref_uncertainty_liq',
+                    'ref_uncertainty_std', 'ref_uncertainty_std_ice', 'ref_uncertainty_std_liq']
+    return l3c_products
+
+
 def get_satellite_list():
     """
     SATELLITE list: sqlite3 nomenclature

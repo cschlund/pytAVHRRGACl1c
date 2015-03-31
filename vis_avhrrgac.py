@@ -25,6 +25,8 @@ avail = sorted(rl.REGIONS.keys())
 defin = ', '.join(map(str, avail))
 chalist = '|'.join(mysub.get_channel_list())
 sellist = '|'.join(mysub.get_select_list())
+l3clist = ', '.join(mysub.get_cloudcci_l3c_products())
+l3ulist = ', '.join(mysub.get_cloudcci_l3u_products())
 
 
 def get_file_list(subargs):
@@ -34,13 +36,11 @@ def get_file_list(subargs):
     if subargs.files:
         file_list = subargs.files
 
-    elif subargs.datestring and subargs.inputdir and subargs.satellite:
-        pattern = 'ECC_GAC_avhrr*' + subargs.satellite.lower() + \
-                  '*' + subargs.datestring + 'T*'
-        file_list = mysub.find(pattern, subargs.inputdir)
+    elif subargs.pattern and subargs.inputdir:
+        file_list = mysub.find(subargs.pattern, subargs.inputdir)
         message = "No files available for "
         if not file_list:
-            logger.info(message + pattern)
+            logger.info(message + subargs.pattern)
             sys.exit(0)
 
     else:
@@ -126,18 +126,17 @@ if __name__ == '__main__':
     map_l1c_parser = subparsers.add_parser('map_l1c', description="Map pygac results.")
     map_l1c_parser.add_argument('-cha', '--channel', help=chalist + ', default is ch1', default='ch1')
     map_l1c_parser.add_argument('-fil', '--files', nargs='*', help='List of full qualified files.')
-    map_l1c_parser.add_argument('-dat', '--datestring', type=mysub.datestring, help='e.g. 2008-01-01, 2009/06/02')
-    map_l1c_parser.add_argument('-sat', '--satellite', type=str, help='e.g. NOAA18, metopb')
+    map_l1c_parser.add_argument('-pat', '--pattern', type=str, help='e.g. ECC_GAC_avhrr_metopb_99999_20130520T*')
     map_l1c_parser.add_argument('-inp', '--inputdir', help='/path/to/l1c/files')
     map_l1c_parser.add_argument('-tim', '--time', default='all', help=sellist + ', default is all')
     map_l1c_parser.set_defaults(func=map_l1c)
 
     # plot cloud cci data
     map_cci_parser = subparsers.add_parser('map_cci', description="Map cloud cci results.")
-    map_cci_parser.add_argument('-pro', '--product', required=True)
+    map_cci_parser.add_argument('-pro', '--product', required=True,
+                                help='<<L3U PRODUCTS>> ' + l3ulist + ' <<L3C PRODUCTS>> ' + l3clist)
     map_cci_parser.add_argument('-fil', '--files', nargs='*', help='List of full qualified files.')
-    map_cci_parser.add_argument('-dat', '--datestring', type=mysub.datestring, help='e.g. 2008-01-01, 2009/06/02')
-    map_cci_parser.add_argument('-sat', '--satellite', type=str, help='e.g. NOAA18, metopb')
+    map_cci_parser.add_argument('-pat', '--pattern', type=str, help='e.g. 200801-ESACCI-L3C*')
     map_cci_parser.add_argument('-inp', '--inputdir', help='/path/to/cci/files')
     map_cci_parser.set_defaults(func=map_cci)
 
