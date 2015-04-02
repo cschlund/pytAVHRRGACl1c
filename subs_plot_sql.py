@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 import subs_avhrrgac as subs
 from scipy import stats
 from matplotlib import gridspec
-from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
+from matplotlib.dates import MONDAY
+from matplotlib.dates import YearLocator, MonthLocator, WeekdayLocator, DateFormatter
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as aa
 from dateutil.rrule import rrule, DAILY
@@ -217,8 +218,16 @@ def plot_time_series(sat_list, channel, select, start_date,
             if len(datelst) > 1:
                 isdata_cnt += 1
 
+                # # print min(nobslst), max(nobslst)
+                # # the mask (filter)
+                # msk = [(el > 1000) for el in nobslst]
+                # nobslst = [nobslst[i] for i in xrange(len(nobslst)) if msk[i]]
+                # datelst = [datelst[i] for i in xrange(len(datelst)) if msk[i]]
+                # meanlst = [meanlst[i] for i in xrange(len(meanlst)) if msk[i]]
+                # stdvlst = [stdvlst[i] for i in xrange(len(stdvlst)) if msk[i]]
+
                 # date vs. global mean
-                # ax_val.plot(datelst, meanlst, 'o', color=color_list[cnt])
+                # ax_val.plot(datelst, meanlst, marker='o', color=color_list[cnt])
                 ax_val.plot(datelst, meanlst, label=satellite,
                             color=color_list[cnt], linewidth=lwd)
 
@@ -238,6 +247,7 @@ def plot_time_series(sat_list, channel, select, start_date,
                 # date vs. global nobs
                 # ax_rec.plot(datelst, nobslst, 'o', color=color_list[cnt])
                 ax_rec.plot(datelst, nobslst, label=satellite,
+                            marker='o', markersize=5, alpha=0.8,
                             color=color_list[cnt], linewidth=lwd)
 
                 if ascinpdir is not None and len(asc_datelst) > 10:
@@ -252,6 +262,7 @@ def plot_time_series(sat_list, channel, select, start_date,
     if isdata_cnt > 0:
 
         if len(sat_list) == 1:
+            date_diff = max(datelst).year - min(datelst).year
             sdate_str = subs.date2str(min(datelst))
             edate_str = subs.date2str(max(datelst))
             sname = subs.full_sat_name(sat_list[0])[2]
@@ -280,26 +291,52 @@ def plot_time_series(sat_list, channel, select, start_date,
         if len(sat_list) == 1:
             years = YearLocator()
             months = MonthLocator()
+            mondays = WeekdayLocator(MONDAY)
             yearsFmt = DateFormatter('%Y')
-            ax_val.xaxis.set_major_locator(years)
-            ax_val.xaxis.set_major_formatter(yearsFmt)
-            ax_val.xaxis.set_minor_locator(months)
-            ax_std.xaxis.set_major_locator(years)
-            ax_std.xaxis.set_major_formatter(yearsFmt)
-            ax_std.xaxis.set_minor_locator(months)
-            ax_rec.xaxis.set_major_locator(years)
-            ax_rec.xaxis.set_major_formatter(yearsFmt)
-            ax_rec.xaxis.set_minor_locator(months)
+            monthsloc = MonthLocator(range(1, 13), bymonthday=1, interval=1)
+            monthsFmt = DateFormatter("%b '%y")
+
+            if date_diff < 2:
+                ax_val.xaxis.set_major_locator(monthsloc)
+                ax_val.xaxis.set_major_formatter(monthsFmt)
+                ax_val.xaxis.set_minor_locator(mondays)
+            else:
+                ax_val.xaxis.set_major_locator(years)
+                ax_val.xaxis.set_major_formatter(yearsFmt)
+                ax_val.xaxis.set_minor_locator(months)
+
+            if date_diff < 2:
+                ax_std.xaxis.set_major_locator(monthsloc)
+                ax_std.xaxis.set_major_formatter(monthsFmt)
+                ax_std.xaxis.set_minor_locator(mondays)
+            else:
+                ax_std.xaxis.set_major_locator(years)
+                ax_std.xaxis.set_major_formatter(yearsFmt)
+                ax_std.xaxis.set_minor_locator(months)
+
+            if date_diff < 2:
+                ax_rec.xaxis.set_major_locator(monthsloc)
+                ax_rec.xaxis.set_major_formatter(monthsFmt)
+                ax_rec.xaxis.set_minor_locator(mondays)
+            else:
+                ax_rec.xaxis.set_major_locator(years)
+                ax_rec.xaxis.set_major_formatter(yearsFmt)
+                ax_rec.xaxis.set_minor_locator(months)
+
         else:
+
             major_years = YearLocator(2, month=1, day=1)
             minor_years = YearLocator()
             yearsFmt = DateFormatter('%Y')
+
             ax_val.xaxis.set_major_locator(major_years)
             ax_val.xaxis.set_major_formatter(yearsFmt)
             ax_val.xaxis.set_minor_locator(minor_years)
+
             ax_std.xaxis.set_major_locator(major_years)
             ax_std.xaxis.set_major_formatter(yearsFmt)
             ax_std.xaxis.set_minor_locator(minor_years)
+
             ax_rec.xaxis.set_major_locator(major_years)
             ax_rec.xaxis.set_major_formatter(yearsFmt)
             ax_rec.xaxis.set_minor_locator(minor_years)
