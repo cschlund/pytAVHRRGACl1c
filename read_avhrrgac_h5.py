@@ -260,7 +260,7 @@ def read_avhrrgac(f, a, tim, cha, ver):
     if tim == 'twilight':
         # consider only twilight, i.e. 80 <= sza < 90
         # mask everything outside the current sza range
-        omask = ma.mask_or(sza <= 80, sza > 90)
+        omask = ma.mask_or(sza < 80, sza >= 90)
         lon = ma.masked_where(omask, lon)
         lat = ma.masked_where(omask, lat)
         tar = ma.masked_where(omask, tar)
