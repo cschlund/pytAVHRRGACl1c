@@ -15,7 +15,7 @@ logger = logging.getLogger('root')
 warnings.filterwarnings("ignore")
 
 
-def get_colorbar(param):
+def get_colorbar(param, data):
 
     if 'cc_mask' in param or 'cloudmask' in param:
         colmap = colors.ListedColormap(['blue', 'white'])
@@ -25,13 +25,24 @@ def get_colorbar(param):
         labels = ['clear', 'cloudy']
 
     elif 'cld_type' in param or 'cldtype' in param:
-        colmap = colors.ListedColormap(['DimGray', 'Yellow', 'Navy', 'Lime',
-                                        'DarkOrange', 'Cyan', 'Magenta'])
-        bounds = [0, 2, 3, 4, 6, 7, 8, 9]
-        colnorm = colors.BoundaryNorm(bounds, colmap.N)
-        ticks = [1, 2.5, 3.5, 5, 6.5, 7.5, 8.5]
-        labels = ['clear', 'fog', 'water', 'super-cooled',
-                  'opaque ice', 'cirrus', 'prob. opa. ice']
+
+        if np.max(data) == 9:
+            colmap = colors.ListedColormap(['DimGray', 'Peru', 'Navy', 'Lime',
+                                            'OrangeRed', 'Cyan', 'Magenta', 'Yellow'])
+            bounds = [0, 2, 3, 4, 6, 7, 8, 9, 10]
+            colnorm = colors.BoundaryNorm(bounds, colmap.N)
+            ticks = [1, 2.5, 3.5, 5, 6.5, 7.5, 8.5, 9.5]
+            labels = ['clear', 'fog', 'water', 'super-cooled',
+                      'opaque ice', 'cirrus', 'overlap', 'prob. opa. ice']
+
+        if np.max(data) == 8:
+            colmap = colors.ListedColormap(['DimGray', 'Peru', 'Navy', 'Lime',
+                                            'OrangeRed', 'Cyan', 'Magenta'])
+            bounds = [0, 2, 3, 4, 6, 7, 8, 9]
+            colnorm = colors.BoundaryNorm(bounds, colmap.N)
+            ticks = [1, 2.5, 3.5, 5, 6.5, 7.5, 8.5]
+            labels = ['clear', 'fog', 'water', 'super-cooled',
+                      'opaque ice', 'cirrus', 'overlap']
 
     else:
         logger.info("No special colorbar for {0}".format(param))
@@ -59,9 +70,12 @@ def map_cloud_cci(filename, product, region, outputdir, background):
     longname = fh.variables[product].long_name
     fh.close()
 
+    logger.info("Target: {0}, Min: {1}, Max: {2}".
+                format(longname, np.min(target), np.max(target)))
+
     # get color bar stuff for specific products
     (cmap, norm, interval,
-     cticks, clabels) = get_colorbar(product)
+     cticks, clabels) = get_colorbar(product, target)
 
     basfil = os.path.basename(filename)
     basout = os.path.splitext(basfil)[0]
