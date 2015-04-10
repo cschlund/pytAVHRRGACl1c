@@ -195,7 +195,8 @@ def blacklist_wrong_timestamp():
     """
     blacklist_reason = "wrong_l1c_timestamp"
 
-    blist = ['NSS.GHRR.NC.D83206.S0019.E0207.B1076667.GC.gz',
+    blist = ['NSS.GHRR.NC.D83172.S1921.E2106.B1028384.WI.gz',
+             'NSS.GHRR.NC.D83206.S0019.E0207.B1076667.GC.gz',
              'NSS.GHRR.NH.D92104.S1732.E1842.B1830304.WI.gz',
              'NSS.GHRR.ND.D95320.S0657.E0851.B0000000.WI.gz',
              'NSS.GHRR.ND.D95015.S1456.E1641.B0000000.GC.gz',
