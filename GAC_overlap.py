@@ -181,7 +181,7 @@ if __name__ == '__main__':
     logger.info("Parameter passed")
     logger.info("Satellite  : %s" % args.sat)
     logger.info("Verbose    : %s" % args.verbose)
-    logger.info("DB_Sqlite3 : %s\n" % args.sqlcomp)
+    logger.info("DB_Sqlite3 : %s" % args.sqlcomp)
 
     # -- either use full sat list or only one
     if args.sat is None:
@@ -194,7 +194,7 @@ if __name__ == '__main__':
                               exclusive=True)
 
     logger.info("Read {0} ".format(args.sqlcomp))
-    logger.info("Update database\n")
+    logger.info("Update database")
     update_database(dbfile)
 
     logger.info("Commit changes")
