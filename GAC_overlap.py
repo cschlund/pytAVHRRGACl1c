@@ -63,8 +63,11 @@ def update_database(db):
 
                         subs.update_db_without_midnight(val_list, db)
 
-                    # -- check for overlap
-                    if etime_current >= stime_next:
+                    # -- check for valid overlap
+                    # noinspection PyChainedComparisons
+                    if etime_current > stime_next and \
+                                    stime_current < stime_next and \
+                                    etime_current < etime_next:
 
                         # number of overlapping scanlines
                         overlap_rows = subs.calc_overlap(stime_next,
