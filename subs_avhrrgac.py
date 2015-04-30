@@ -18,6 +18,10 @@ class ColumnError(Exception):
     pass
 
 
+class NegativeScanline(Exception):
+    pass
+
+
 def str2upper(string_object):
     return string_object.upper()
 
@@ -188,9 +192,15 @@ def calc_midnight(stime, etime):
     """
     Check for midnight orbit & check if day has changed
     """
-
     # 2008-07-31 22:29:51.400000|2008-08-01 00:18:15.400000
-    if stime.date() < etime.date():
+    date_diff = abs(etime.date() - stime.date()).days
+    if date_diff > 1:
+        logger.info("SUSPECT: {0} days difference".format(date_diff))
+        logger.info("  --> start_time_l1c={0}".format(stime))
+        logger.info("  -->   end_time_l1c={0}".format(etime))
+
+    # Max. 1 day difference
+    if date_diff <= 1:
 
         # calculate how much time has passed
         # between start time and midnight
@@ -226,7 +236,11 @@ def calc_overlap(stime, etime):
     timediff_msec = timediff.days * 24 * 60 * 60 + timediff.seconds + timediff.microseconds / 1000000
     overlap_rows = timediff_msec * 2
 
-    return overlap_rows
+    if overlap_rows < 0:
+        logger.info("overlap_rows = {0}".format(overlap_rows))
+        raise NegativeScanline(' *** Negative Scanline Number ***')
+    else:
+        return overlap_rows
 
 
 def get_new_cols():
@@ -267,7 +281,7 @@ def update_db_without_midnight(vals, db):
         logger.info("total_changes_before: {0}".format(total_changes_before))
         logger.info("nchanges now: {0}".format(nchanges))
         logger.info("db.execute(act): {0}".format(act))
-        raise ColumnError('DB UPDATE fishy')
+        raise ColumnError(' *** DB UPDATE fishy ***')
 
 
 def update_db_with_midnight(vals, db):
@@ -291,7 +305,7 @@ def update_db_with_midnight(vals, db):
     db.execute(act)
     nchanges = db.conn.total_changes - total_changes_before
     if not nchanges == 1:
-        raise ColumnError('DB UPDATE fishy')
+        raise ColumnError(' *** DB UPDATE fishy ***')
 
 
 def get_record_lists(satellite, db):
