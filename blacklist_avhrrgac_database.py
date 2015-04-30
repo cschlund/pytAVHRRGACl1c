@@ -5,6 +5,7 @@
 import os
 import argparse
 import datetime
+import time
 from subs_avhrrgac import full_sat_name, get_satellite_list
 from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
 from pycmsaf.logger import setup_root_logger
@@ -333,6 +334,117 @@ def blacklist_single_orbits(db, ver):
     return black_reason
 
 
+def get_sat_records(satellite, db):
+    """
+    get start and end time l1c information
+    as well as the corresponding l1b filename
+    from a sqlite3 database: table orbits
+    """
+
+    start_l1c_timestamps = []
+    end_l1c_timestamps = []
+    l1b_filename = []
+
+    get_data = "SELECT start_time_l1c, end_time_l1c, " \
+               "filename FROM vw_std WHERE " \
+               "start_time_l1c is not null AND " \
+               "end_time_l1c is not null AND " \
+               "satellite_name=\'{satellite}\' ORDER BY " \
+               "start_time_l1c".format(satellite=satellite)
+
+    results = db.execute(get_data)
+
+    for result in results:
+        if result['start_time_l1c'] is not None:
+            start_l1c_timestamps.append(result['start_time_l1c'])
+            end_l1c_timestamps.append(result['end_time_l1c'])
+            l1b_filename.append(result['filename'])
+
+    return start_l1c_timestamps, end_l1c_timestamps, l1b_filename
+
+
+def sanity_check_l1c_timestamps(db, ver):
+    """
+    Blacklist an orbit, where start/end l1c timestamps do not make sense!
+
+    Either the end_time_l1c lies too far in the future:
+    e.g. start_time_l1c=2005-10-26 18:06:11.500000
+           end_time_l1c=2184-06-06 00:00:00
+
+    or the start_time_l1c lies behind the end_time_l1c timestamp:
+    e.g. start_time_l1c=2013-12-16 08:30:20.700000
+           end_time_l1c=2013-10-13 10:25:20
+
+    One AVHRR GAC orbit has a nominal orbit duration of about 110 minutes.
+    Upper limit for sanity check set to 120 minutes.
+    """
+    max_orbit_duration = 120.
+    black_reason_list = ["negative_orbit_length", "orbit_length_too_long"]
+    sat_list = get_satellite_list()
+    # sat_list = ["NOAA18"]
+    total_cnt_behind = 0
+    total_cnt_long = 0
+
+    for sat in sat_list:
+        cnt_behind = 0
+        cnt_long = 0
+
+        if ver:
+            logger.info("Working on satellite: {0}".format(sat))
+
+        (stimes, etimes, l1bfile) = get_sat_records(sat, db)
+
+        for idx, stim in enumerate(stimes):
+
+            # convert start and end dates to unix timestamp
+            d1_ts = time.mktime(stimes[idx].timetuple())
+            d2_ts = time.mktime(etimes[idx].timetuple())
+            # orbit duration in minutes
+            orbit_duration = int(d2_ts - d1_ts) / 60
+
+            # start time lies behind end time, i.e. negative orbit length
+            if stimes[idx] > etimes[idx]:
+                upd = "UPDATE orbits SET blacklist=1, " \
+                      "blacklist_reason=\'{blr}\' " \
+                      "WHERE filename=\'{fil}\'".format(fil=l1bfile[idx],
+                                                        blr=black_reason_list[0])
+                db.execute(upd)
+                cnt_behind += 1
+
+                if ver:
+                    logger.info("*** start: {0} > end: {1}".format(stimes[idx], etimes[idx]))
+                    logger.info("    l1b filename: {0}".format(l1bfile[idx]))
+                    logger.info("    orbit length: {0}".format(orbit_duration))
+
+            # orbit is longer than max_orbit_duration (length)
+            elif orbit_duration > max_orbit_duration:
+                upd = "UPDATE orbits SET blacklist=1, " \
+                      "blacklist_reason=\'{blr}\' " \
+                      "WHERE filename=\'{fil}\'".format(fil=l1bfile[idx],
+                                                        blr=black_reason_list[1])
+                db.execute(upd)
+                cnt_long += 1
+
+                if ver:
+                    logger.info("*** Orbit duration: {0} > {1}".format(orbit_duration,
+                                                                       max_orbit_duration))
+                    logger.info("    start: {0} -- end: {1}".format(stimes[idx], etimes[idx]))
+                    logger.info("    l1b filename: {0}".format(l1bfile[idx]))
+
+        total_cnt_behind += cnt_behind
+        total_cnt_long += cnt_long
+
+        if ver:
+            logger.info(" * Count: start behind end => {0}".format(cnt_behind))
+            logger.info(" * Count: orbit too long   => {0}".format(cnt_long))
+
+    if ver:
+        logger.info("Total Count: start behind end => {0}".format(total_cnt_behind))
+        logger.info("Total Count: orbit too long   => {0}".format(total_cnt_long))
+
+    return black_reason_list
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
@@ -340,18 +452,21 @@ if __name__ == '__main__':
                      'logfile analysis, i.e. blacklist AVHRR GAC orbits'
                      'due to specific reason').format(os.path.basename(__file__)))
 
-    parser.add_argument('-dbf', '--dbfile', required=True,
+    parser.add_argument('--dbfile', required=True,
                         help='/path/to/database.sqlite3')
 
-    parser.add_argument('-ver', '--verbose', action="store_true",
+    parser.add_argument('--verbose', action="store_true",
                         help='increase output verbosity')
+
+    parser.add_argument('--l1c_timestamp_check', action="store_true",
+                        help='Sanity check w.r.t. start/end L1C timestamps')
 
     args = parser.parse_args()
 
     # -- some screen output if wanted
     logger.info("Parameter passed")
-    logger.info("Verbose    : %s" % args.verbose)
-    logger.info("DB_Sqlite3 : %s" % args.dbfile)
+    logger.info("Verbose            : %s" % args.verbose)
+    logger.info("DB_Sqlite3         : %s" % args.dbfile)
 
     # -- connect to database
     dbfile = AvhrrGacDatabase(dbfile=args.dbfile,
@@ -374,6 +489,17 @@ if __name__ == '__main__':
     for i in num:
         logger.info("{0} orbits are blacklisted due to {1}".
                     format(i['COUNT(*)'], reason))
+
+    # -- non-reasonable start/end l1c timestamps
+    if args.l1c_timestamp_check:
+        reason_list = sanity_check_l1c_timestamps(dbfile, args.verbose)
+        for reason in reason_list:
+            ret = "SELECT COUNT(*) FROM vw_std WHERE " \
+                  "blacklist_reason=\'{reason}\'".format(reason=reason)
+            num = dbfile.execute(ret)
+            for i in num:
+                logger.info("{0} orbits are blacklisted due to {1}".
+                            format(i['COUNT(*)'], reason))
 
     # -- commit changes
     logger.info("Commit all changes")
