@@ -192,15 +192,14 @@ def calc_midnight(stime, etime):
     """
     Check for midnight orbit & check if day has changed
     """
-    # 2008-07-31 22:29:51.400000|2008-08-01 00:18:15.400000
     date_diff = abs(etime.date() - stime.date()).days
     if date_diff > 1:
         logger.info("SUSPECT: {0} days difference".format(date_diff))
         logger.info("  --> start_time_l1c={0}".format(stime))
         logger.info("  -->   end_time_l1c={0}".format(etime))
 
-    # Max. 1 day difference
-    if date_diff <= 1:
+    # 2008-07-31 22:29:51.400000|2008-08-01 00:18:15.400000
+    if stime.date() < etime.date():
 
         # calculate how much time has passed
         # between start time and midnight
