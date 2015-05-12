@@ -458,6 +458,12 @@ if __name__ == '__main__':
     parser.add_argument('--verbose', action="store_true",
                         help='increase output verbosity')
 
+    parser.add_argument('--wrong_l1c_timestamp', action="store_true",
+                        help='Blacklist L1b files getting wrong l1c timestamp')
+
+    parser.add_argument('--corrupt_l1b_data', action="store_true", 
+                        help='Blacklist corrupt L1b files, i.e. all data masked out by pygac.')
+
     parser.add_argument('--l1c_timestamp_check', action="store_true",
                         help='Sanity check w.r.t. start/end L1C timestamps')
 
@@ -473,22 +479,24 @@ if __name__ == '__main__':
                               timeout=36000, exclusive=True)
 
     # -- wrong l1c timestamp conversion
-    reason = blacklist_single_orbits(dbfile, args.verbose)
-    ret = "SELECT COUNT(*) FROM vw_std WHERE " \
-          "blacklist_reason=\'{reason}\'".format(reason=reason)
-    num = dbfile.execute(ret)
-    for i in num:
-        logger.info("{0} orbits are blacklisted due to {1}".
-                    format(i['COUNT(*)'], reason))
+    if args.wrong_l1c_timestamp:
+        reason = blacklist_single_orbits(dbfile, args.verbose)
+        ret = "SELECT COUNT(*) FROM vw_std WHERE " \
+              "blacklist_reason=\'{reason}\'".format(reason=reason)
+        num = dbfile.execute(ret)
+        for i in num:
+            logger.info("{0} orbits are blacklisted due to {1}".
+                        format(i['COUNT(*)'], reason))
 
     # -- all l1b input corrupted on following dates
-    reason = blacklist_full_days(dbfile, args.verbose)
-    ret = "SELECT COUNT(*) FROM vw_std WHERE " \
-          "blacklist_reason=\'{reason}\'".format(reason=reason)
-    num = dbfile.execute(ret)
-    for i in num:
-        logger.info("{0} orbits are blacklisted due to {1}".
-                    format(i['COUNT(*)'], reason))
+    if args.corrupt_l1b_data:
+        reason = blacklist_full_days(dbfile, args.verbose)
+        ret = "SELECT COUNT(*) FROM vw_std WHERE " \
+              "blacklist_reason=\'{reason}\'".format(reason=reason)
+        num = dbfile.execute(ret)
+        for i in num:
+            logger.info("{0} orbits are blacklisted due to {1}".
+                        format(i['COUNT(*)'], reason))
 
     # -- non-reasonable start/end l1c timestamps
     if args.l1c_timestamp_check:
@@ -502,7 +510,9 @@ if __name__ == '__main__':
                             format(i['COUNT(*)'], reason))
 
     # -- commit changes
-    logger.info("Commit all changes")
-    dbfile.commit_changes()
+    if args.wrong_l1c_timestamp or args.corrupt_l1b_data \
+            or args.l1c_timestamp_check: 
+        logger.info("Commit all changes") 
+        dbfile.commit_changes()
 
     logger.info("%s finished" % os.path.basename(__file__))
