@@ -252,7 +252,11 @@ def map_avhrrgac_l1c(filename, channel, region, time, outputdir,
         # scaling. Here, vmin & vmax are set to the global minimum and maximum of
         # the data, respectively.
         # pcolor = m.pcolor(x, y, mtar, cmap='jet', vmin=0.0, vmax=1.0)
-        pcolor = m.pcolor(x, y, mtar, cmap='jet', vmin=np.min(tar), vmax=np.max(tar))
+        from matplotlib import cm
+        cmap = cm.get_cmap('jet')
+        cmap.set_bad('grey')
+        # pcolor = m.pcolor(x, y, mtar, cmap=cmap, vmin=np.min(tar), vmax=np.max(tar))
+        pcolor = m.scatter(x, y, c=mtar, s=1.0, edgecolor='none', cmap=cmap, vmin=np.min(tar), vmax=np.max(tar))
 
     # add grid lines
     logger.info("Finalize and save map: {0}".format(outtit))
