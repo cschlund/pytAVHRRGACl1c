@@ -5,6 +5,7 @@
 import os
 import numpy as np
 import datetime
+import time
 import math
 import matplotlib.pyplot as plt
 import subs_avhrrgac as subs
@@ -963,6 +964,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
 
         # get records for satellite
         date_list, ect_list = subs.get_ect_records(satellite, dbfile)
+	logger.info("{0}: {1} -- {2}".format(satellite, min(date_list), max(date_list)))
 
         if len(date_list) != 0:
 
@@ -977,8 +979,8 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
             dates = [datetime.datetime(dt.year, dt.month, dt.day, 0, 0)
                      for dt in date_list]
             # convert dates into seconds
-            date_seconds = [(dt - datetime.datetime(1970, 1, 1, 0, 0)).
-                                total_seconds() for dt in dates]
+            date_seconds = [(dt - datetime.datetime(1970, 1, 1, 0, 0)).total_seconds() 
+                             for dt in dates]
 
             # convert to numpy arrays
             sec_arr = array(seconds)
@@ -998,12 +1000,9 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
                             for k in range(total_bins)]
 
             # plot x and y
-            # ax.scatter(dat_arr, sec_arr,
-            #            color=color_list[cnt], alpha=.2, s=2)
-            # noinspection PyTypeChecker
+            #ax.scatter(dat_arr, sec_arr, color=color_list[cnt], alpha=.2, s=2)
             ax.plot(bins - bin_delta / 2., running_mean,
-                    color=color_list[cnt], lw=4, alpha=.9,
-                    label=satellite)
+                    color=color_list[cnt], lw=4, alpha=.9, label=satellite)
 
         # next satellite
         cnt += 1
@@ -1028,19 +1027,27 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     ax.yaxis.set_ticks(minor_seconds_label, minor=True)
 
     # modify x axis
-    start_date = int((datetime.datetime(sdate.year, sdate.month, sdate.day) -
-                      datetime.datetime(1970, 1, 1)).total_seconds())
-    end_date = int((datetime.datetime(edate.year, edate.month, edate.day) -
-                    datetime.datetime(1970, 1, 1)).total_seconds())
-    ax.set_xlim(start_date, end_date)
-    major_years_label = range(start_date, end_date, 2 * 365 * 24 * 60 * 60)
-    minor_years_label = range(start_date, end_date, 365 * 24 * 60 * 60)
-    years_strings = [str(datetime.datetime.fromtimestamp(s).strftime('%Y'))
-                     for s in major_years_label]
-    ax.xaxis.set_ticks(major_years_label)
-    ax.xaxis.set_ticklabels(years_strings)
-    ax.xaxis.set_ticks(minor_years_label, minor=True)
+    # -- start -- S. Finkensieper 2015-05-19
+    # Calculate number of years between sdate and edate (approximately) 
+    nyears = edate.year - sdate.year
+    # Create datetime objects for every first day of the year 
+    fdoys = [datetime.datetime(year=sdate.year + iyear, month=1, day=1) for iyear in range(nyears)]
+    fdoys2 = [fdoys[i] for i in range(1, nyears, 2)]
+    # Convert dates to seconds since 1970-1-1 
+    origin = datetime.datetime(1970, 1, 1)
+    start_sec = int((datetime.datetime(sdate.year, sdate.month, sdate.day) - origin).total_seconds()) 
+    end_sec = int((datetime.datetime(edate.year, edate.month, edate.day) - origin).total_seconds())
+    fdoys_sec = [(fdoy - origin).total_seconds() for fdoy in fdoys] 
+    fdoys2_sec = [fdoys_sec[i] for i in range(1, nyears, 2)]
+    # Set xaxis properties
+    ax.set_xlim(start_sec, end_sec)
+    fdoys_str = [fdoy.strftime('%Y-%m-%d') for fdoy in fdoys] 
+    fdoys2_str = [fdoys_str[i] for i in range(1, nyears, 2)]
+    ax.xaxis.set_ticks(fdoys2_sec)
+    ax.xaxis.set_ticklabels(fdoys2_str)
+    ax.xaxis.set_ticks(fdoys_sec, minor=True)
     plt.gcf().autofmt_xdate()
+    # --end -- S. Finkensieper 2015-05-19
 
     # set grid
     ax.grid(which='minor', alpha=0.3)
