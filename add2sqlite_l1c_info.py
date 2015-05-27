@@ -37,6 +37,9 @@ parser.add_argument('-dbf', '--db_file', required=True, type=str,
                     help='''/path/to/AVHRR_GAC_archive_L1b_L1c.sqlite3,'''
                          '''which should be updated with L1c information''')
 
+parser.add_argument('-tmpdir', '--tmp_dir', type=str, 
+                    help="Move files having fishy orbit duration to this directory.")
+
 parser.add_argument('-ver', '--verbose', action="store_true",
                     help='increase output verbosity')
 
@@ -71,8 +74,12 @@ try:
         logger.info("*** Skip %s -> no file dimensions!" % fil_name)
         sys.exit(0)
 
-    # -- read quality flag file
+    # -- file list for the orbit
+    sfil = fil_name.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
     qfil = fil_name.replace("ECC_GAC_avhrr_", "ECC_GAC_qualflags_")
+    fil_list = [fil_name, sfil, qfil]
+
+    # -- read quality flag file
     q = h5py.File(qfil, "r+")
     (row, col, total_records, last_scanline, data) = rh5.read_qualflags(q)
     q.close()
@@ -136,6 +143,21 @@ try:
                       across_track=data_across, along_track=data_along,
                       missing_scanlines=missing_scanlines,
                       equator_crossing_time=ect)
+
+    # -- check l1c timestamps
+    logger.info("*** Sanity check: l1c start and end timestamps")
+    ret = subs.check_l1c_timestamps(db, start_time_l1c, end_time_l1c, args.l1b_file)
+
+    # if orbit duration is fishy, move file and do not store it in archive
+    if ret != 0:
+        logger.info("Orbit duration is fishy: {0}".format(ret))
+        logger.info("Move {0} to {1}".format(fil_list, args.tmp_dir))
+
+        if not os.path.exists(args.tmp_dir):
+            os.makedirs(args.tmp_dir)
+
+        for fil in fil_list: 
+            os.system("mv" + " " + fil + " " + args.tmp_dir)
 
     # -- commit changes
     db.commit_changes()

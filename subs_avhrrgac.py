@@ -7,6 +7,7 @@ import sys
 import fnmatch
 import datetime
 import string
+import time
 import numpy as np
 import logging
 from math import floor
@@ -769,3 +770,47 @@ def set_fillvalue(fill_value, zonal_mean, zonal_stdv, zonal_nobs,
     return (np.asscalar(glm), np.asscalar(gls),
             np.asscalar(gln.astype(int)),
             mean, stdv, nobs.astype(int))
+
+
+def check_l1c_timestamps(dbfile, start_timestamp, end_timestamp, l1bfile):
+    """
+    After pygac and add2sqlite, check for start and end l1c timestamps.
+    If necessary blacklist the orbit.
+    """
+    # convert start and end dates to unix timestamp
+    d1_ts = time.mktime(start_timestamp.timetuple())
+    d2_ts = time.mktime(end_timestamp.timetuple())
+
+    # orbit duration in minutes
+    orbit_duration = int(d2_ts - d1_ts) / 60
+    max_orbit_duration = 120. # minutes
+
+    logger.info("L1bFile : {0}".format(l1bfile))
+    logger.info("L1COrbit: {0} -- {1}".format(start_timestamp, 
+                                              end_timestamp))
+
+    # start time lies behind end time, i.e. negative orbit length
+    if start_timestamp > end_timestamp:
+        txt = "negative_orbit_length"
+        logger.info("Blacklist=1 this orbit due to {0}".format(txt))
+        upd = "UPDATE orbits SET blacklist=1, " \
+              "blacklist_reason=\'{blr}\' " \
+              "WHERE filename=\'{fil}\'".format(fil=l1bfile, blr=txt)
+        dbfile.execute(upd)
+        return 1
+
+    # orbit is longer than max_orbit_duration (length)
+    elif orbit_duration > max_orbit_duration:
+        txt = "orbit_length_too_long"
+        logger.info("Blacklist=1 this orbit due to {0}".format(txt))
+        upd = "UPDATE orbits SET blacklist=1, " \
+              "blacklist_reason=\'{blr}\' " \
+              "WHERE filename=\'{fil}\'".format(fil=l1bfile, blr=txt)
+        dbfile.execute(upd)
+        return 1
+
+    # orbit length is OK
+    else:
+        logger.info("Orbit length is within valid range!")
+        return 0
+
