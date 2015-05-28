@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import subs_avhrrgac as subs
 from scipy import stats
 from matplotlib import gridspec
-from matplotlib.dates import MONDAY
+from matplotlib.dates import MONDAY, DayLocator
 from matplotlib.dates import YearLocator, MonthLocator, WeekdayLocator, DateFormatter
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as aa
@@ -178,7 +178,7 @@ def plot_time_series(sat_list, channel, select, start_date,
     mean_label = "Daily Global Mean\n"
     stdv_label = "Standard Deviation\n"
     nobs_label = "# of Observations\n"
-    date_label = "\nYear"
+    date_label = "\nDate"
 
     color_list = subs.get_color_list()
     cnt = 0
@@ -263,9 +263,11 @@ def plot_time_series(sat_list, channel, select, start_date,
     if isdata_cnt > 0:
 
         if len(sat_list) == 1:
-            date_diff = max(datelst).year - min(datelst).year
-            sdate_str = subs.date2str(min(datelst))
-            edate_str = subs.date2str(max(datelst))
+            min_x_date = min(datelst)
+            max_x_date = max(datelst)
+            delta_days = (max_x_date - min_x_date).days
+            sdate_str = subs.date2str(min_x_date)
+            edate_str = subs.date2str(max_x_date)
             sname = subs.full_sat_name(sat_list[0])[2]
             slist = subs.get_satellite_list()
             colid = slist.index(sname)
@@ -274,10 +276,14 @@ def plot_time_series(sat_list, channel, select, start_date,
                     '_' + channel + '_' + select + '_' + \
                     sname + '.png'
         else:
+            delta_days = (end_date - start_date).days
+            min_x_date = start_date
+            max_x_date = end_date
             sdate_str = subs.date2str(start_date)
             edate_str = subs.date2str(end_date)
             fbase = 'Plot_TimeSeries_' + sdate_str + '_' + edate_str + \
                     '_' + channel + '_' + select + '.png'
+
         ofile = os.path.join(outpath, fbase)
 
         # label axes
@@ -287,62 +293,63 @@ def plot_time_series(sat_list, channel, select, start_date,
         ax_rec.set_ylabel(nobs_label)
         ax_rec.set_xlabel(date_label)
 
+        # x axis range
+        ax_val.set_xlim(min_x_date, max_x_date)
+        ax_std.set_xlim(min_x_date, max_x_date)
+        ax_rec.set_xlim(min_x_date, max_x_date)
+
         # modify x axis
-        # beautify the x-labels
-        if len(sat_list) == 1:
-            years = YearLocator()
-            months = MonthLocator()
-            mondays = WeekdayLocator(MONDAY)
-            yearsFmt = DateFormatter('%Y')
-            monthsloc = MonthLocator(range(1, 13), bymonthday=1, interval=1)
-            monthsFmt = DateFormatter("%b '%y")
+        alldays = DayLocator()
+        allyears = YearLocator()
+        allmonths = MonthLocator()
+        mondays = WeekdayLocator(MONDAY)
+        yearsFormatter = DateFormatter('%Y-%m-%d')
+        # monthsFormatter = DateFormatter('%b %Y')
+        weekFormatter = DateFormatter("%b %d '%y")
+        # dayFormatter = DateFormatter('%d')
 
-            if date_diff < 2:
-                ax_val.xaxis.set_major_locator(monthsloc)
-                ax_val.xaxis.set_major_formatter(monthsFmt)
-                ax_val.xaxis.set_minor_locator(mondays)
-            else:
-                ax_val.xaxis.set_major_locator(years)
-                ax_val.xaxis.set_major_formatter(yearsFmt)
-                ax_val.xaxis.set_minor_locator(months)
+        nyears = int(delta_days / 365)
 
-            if date_diff < 2:
-                ax_std.xaxis.set_major_locator(monthsloc)
-                ax_std.xaxis.set_major_formatter(monthsFmt)
-                ax_std.xaxis.set_minor_locator(mondays)
-            else:
-                ax_std.xaxis.set_major_locator(years)
-                ax_std.xaxis.set_major_formatter(yearsFmt)
-                ax_std.xaxis.set_minor_locator(months)
-
-            if date_diff < 2:
-                ax_rec.xaxis.set_major_locator(monthsloc)
-                ax_rec.xaxis.set_major_formatter(monthsFmt)
-                ax_rec.xaxis.set_minor_locator(mondays)
-            else:
-                ax_rec.xaxis.set_major_locator(years)
-                ax_rec.xaxis.set_major_formatter(yearsFmt)
-                ax_rec.xaxis.set_minor_locator(months)
-
+        if delta_days <= 90:
+            minor_loc = alldays
+            major_loc = mondays
+            # major_fmt = weekFormatter
+            major_fmt = yearsFormatter
+        elif delta_days < 90 or nyears < 1:
+            minor_loc = mondays
+            major_loc = allmonths
+            major_fmt = yearsFormatter
+        elif 1 < nyears <= 5:
+            minor_loc = allmonths
+            major_loc = MonthLocator(range(1, 13), bymonthday=1, interval=3)
+            major_fmt = yearsFormatter
+        elif 5 < nyears <= 8:
+            minor_loc = allmonths
+            major_loc = MonthLocator(range(1, 13), bymonthday=1, interval=6)
+            major_fmt = yearsFormatter
+        elif 8 < nyears <= 12:
+            minor_loc = allmonths
+            major_loc = allyears
+            major_fmt = yearsFormatter
+        elif 12 < nyears <= 16:
+            minor_loc = YearLocator(1, month=7, day=1)
+            major_loc = allyears
+            major_fmt = yearsFormatter
         else:
+            minor_loc = allyears
+            major_loc = YearLocator(2, month=1, day=1)
+            major_fmt = yearsFormatter
 
-            major_years = YearLocator(2, month=1, day=1)
-            minor_years = YearLocator()
-            yearsFmt = DateFormatter('%Y')
-
-            ax_val.xaxis.set_major_locator(major_years)
-            ax_val.xaxis.set_major_formatter(yearsFmt)
-            ax_val.xaxis.set_minor_locator(minor_years)
-
-            ax_std.xaxis.set_major_locator(major_years)
-            ax_std.xaxis.set_major_formatter(yearsFmt)
-            ax_std.xaxis.set_minor_locator(minor_years)
-
-            ax_rec.xaxis.set_major_locator(major_years)
-            ax_rec.xaxis.set_major_formatter(yearsFmt)
-            ax_rec.xaxis.set_minor_locator(minor_years)
-
-        plt.gcf().autofmt_xdate()
+        ax_val.xaxis.set_major_locator(major_loc)
+        ax_std.xaxis.set_major_locator(major_loc)
+        ax_rec.xaxis.set_major_locator(major_loc)
+        ax_val.xaxis.set_minor_locator(minor_loc)
+        ax_std.xaxis.set_minor_locator(minor_loc)
+        ax_rec.xaxis.set_minor_locator(minor_loc)
+        ax_val.xaxis.set_major_formatter(major_fmt)
+        ax_std.xaxis.set_major_formatter(major_fmt)
+        ax_rec.xaxis.set_major_formatter(major_fmt)
+        plt.gcf().autofmt_xdate(rotation=20)
 
         # make grid
         ax_val.grid(which='major', alpha=0.7)
@@ -948,7 +955,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
 
     plt_title = "Equatorial Crossing Time of AVHRR's " \
                 "on-board NOAA/MetOp Polar Satellites\n"
-    x_title = "\nYear"
+    x_title = "\nDate"
     y_title = "Local Time (hour)\n"
 
     # count for satellite color
@@ -964,7 +971,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
 
         # get records for satellite
         date_list, ect_list = subs.get_ect_records(satellite, dbfile)
-	logger.info("{0}: {1} -- {2}".format(satellite, min(date_list), max(date_list)))
+        logger.info("{0}: {1} -- {2}".format(satellite, min(date_list), max(date_list)))
 
         if len(date_list) != 0:
 
@@ -1000,7 +1007,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
                             for k in range(total_bins)]
 
             # plot x and y
-            #ax.scatter(dat_arr, sec_arr, color=color_list[cnt], alpha=.2, s=2)
+            # ax.scatter(dat_arr, sec_arr, color=color_list[cnt], alpha=.2, s=2)
             ax.plot(bins - bin_delta / 2., running_mean,
                     color=color_list[cnt], lw=4, alpha=.9, label=satellite)
 
