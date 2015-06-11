@@ -14,7 +14,8 @@ import subs_plot_sql as psql
 
 from pycmsaf.logger import setup_root_logger
 
-logger = setup_root_logger(name='root')
+logdir = os.path.join(os.getcwd(),'log')
+logger = setup_root_logger(name='root', logdir=logdir, logfile=True)
 
 satlist = '|'.join(subs.get_satellite_list())
 

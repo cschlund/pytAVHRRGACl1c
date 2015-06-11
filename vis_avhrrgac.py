@@ -17,7 +17,8 @@ import subs_mapping as myplt
 import read_avhrrgac_h5 as rh5
 from pycmsaf.logger import setup_root_logger
 
-logger = setup_root_logger(name='root')
+logdir = os.path.join(os.getcwd(),'log')
+logger = setup_root_logger(name='root', logdir=logdir, logfile=True)
 
 work_dir = os.getcwd()
 work_out = os.path.join(work_dir, 'maps')

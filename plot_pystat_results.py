@@ -14,7 +14,8 @@ import subs_plot_sql as psql
 
 from pycmsaf.logger import setup_root_logger
 
-logger = setup_root_logger(name='root')
+logdir = os.path.join(os.getcwd(),'log')
+logger = setup_root_logger(name='root', logdir=logdir, logfile=True)
 
 chalist = '|'.join(mysub.get_channel_list())
 sellist = '|'.join(mysub.get_select_list())
