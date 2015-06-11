@@ -7,7 +7,16 @@
 *.txt
 *.sqlite3
 *.idea
+test*
+*test
 PYSTAT/**
 PYSTAT/
 OUT/
 maps/
+MAPS/
+figures/
+FIGS/
+log/
+LOG/
+logs/
+LOGS/
