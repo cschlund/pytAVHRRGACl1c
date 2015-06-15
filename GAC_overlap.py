@@ -172,7 +172,7 @@ if __name__ == '__main__':
         format(os.path.basename(__file__), add_cols[0], add_cols[1],
                add_cols[2], add_cols[3], add_cols[4]))
 
-    parser.add_argument('-s', '--sat', type=subs.satstring,
+    parser.add_argument('-s', '--satellites', type=subs.str2upper, nargs='*',
                         help='Available are: ' + satlist + ', default: use all')
     parser.add_argument('-g', '--sqlcomp',
                         help='/path/to/sqlitefile.sqlite3', required=True)
@@ -183,15 +183,15 @@ if __name__ == '__main__':
 
     # -- some screen output if wanted
     logger.info("Parameter passed")
-    logger.info("Satellite  : %s" % args.sat)
+    logger.info("Satellite  : %s" % args.satellites)
     logger.info("Verbose    : %s" % args.verbose)
     logger.info("DB_Sqlite3 : %s" % args.sqlcomp)
 
     # -- either use full sat list or only one
-    if args.sat is None:
+    if args.satellites is None:
         sat_list = subs.get_satellite_list()
     else:
-        sat_list = [args.sat]
+        sat_list = args.satellites
 
     # -- connect to database
     dbfile = AvhrrGacDatabase(dbfile=args.sqlcomp, timeout=36000,
