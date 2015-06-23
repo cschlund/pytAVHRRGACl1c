@@ -814,3 +814,24 @@ def check_l1c_timestamps(dbfile, start_timestamp, end_timestamp, l1bfile):
         logger.info("Orbit length is within valid range!")
         return 0
 
+
+def get_l1c_timestamps(filename):
+     # -- split filename
+     split_string = split_filename(filename)
+     start_date_string = split_string[5][0:-1]
+     end_date_string = split_string[6][0:-1]
+
+     # -- get timestamp of first scanline
+     start_datetime_string = ''.join(start_date_string.split('T'))
+     start_microseconds = int(start_datetime_string[-1]) * 1E5
+     start_time_l1c_help = datetime.datetime.strptime(start_datetime_string[0:-1], '%Y%m%d%H%M%S')
+     start_time_l1c = start_time_l1c_help + datetime.timedelta(microseconds=start_microseconds)
+
+     # -- get timestamp of last scanline
+     end_datetime_string = ''.join(end_date_string.split('T'))
+     end_microseconds = int(end_datetime_string[-1]) * 1E5
+     end_time_l1c_help = datetime.datetime.strptime(end_datetime_string[0:-1], '%Y%m%d%H%M%S')
+     end_time_l1c = end_time_l1c_help + datetime.timedelta(microseconds=end_microseconds)
+
+     return start_time_l1c, end_time_l1c
+

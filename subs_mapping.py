@@ -195,17 +195,19 @@ def map_avhrrgac_l1c(filename, channel, region, time, outputdir,
     Mapping subroutine for AVHRR GAC L1c derived from pygac.
     :return:
     """
-
+    sft = "%Y/%m/%d %H:%M:%S"
+    sdt, edt = subs.get_l1c_timestamps(filename)
     strlst = subs.split_filename(filename)
     platform = strlst[3]
     strsdate = strlst[5][0:8]
-    # stredate = strlst[6][0:8]
-    avhrrstr = strsdate + ": AVHRR GAC L1c / " + subs.full_sat_name(platform)[0]
+    date_str = sdt.strftime(sft) + " - " + edt.strftime(sft)
+    avhrrstr = "AVHRR GAC L1c / " + subs.full_sat_name(platform)[0]
     basfil = os.path.basename(filename)
     bastxt = os.path.splitext(basfil)[0]
     outfil = bastxt + '_' + channel + '_' + region + '_' + time + '.png'
     ofilen = os.path.join(outputdir, outfil)
-    outtit = avhrrstr + " - " + rl.REGIONS[region]["nam"] + " (" + time + ")"
+    outtit = avhrrstr + " - " + rl.REGIONS[region]["nam"] + \
+             " (" + time + ")" 
 
     # initialize figure
     fig = plt.figure()
