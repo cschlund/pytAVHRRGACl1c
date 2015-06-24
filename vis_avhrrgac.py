@@ -96,14 +96,21 @@ def map_l1c(args_l1c):
         a.close()
         f.close()
 
-        logger.info("Map AVHRR GAC L1c: "
-                    "{0}, {1}, {2}".format(args_l1c.channel, args_l1c.time,
-                                           args_l1c.region))
-
+        logger.info("Map AVHRR GAC L1c: {0}, {1}, {2}".
+                    format(args_l1c.channel, args_l1c.time, args_l1c.region))
         myplt.map_avhrrgac_l1c(fil, args_l1c.channel, args_l1c.region,
                                args_l1c.time, args_l1c.outputdir,
                                longitude, latitude, target,
                                args_l1c.basemap_background)
+
+        qfil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_qualflags_")
+        q = h5py.File(qfil, "r+")
+        (row, col, total_records, last_scanline, data) = rh5.read_qualflags(q)
+        q.close()
+
+        logger.info("Map AVHRR GAC L1c qualflag file")
+        myplt.plot_avhrrgac_qualflags(qfil, args.outputdir,row, col, 
+                                      total_records, last_scanline, data)
 
     return
 

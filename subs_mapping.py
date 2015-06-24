@@ -1,6 +1,7 @@
 
 import os
 import numpy as np
+from numpy import copy
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import regionslist as rl
@@ -282,6 +283,188 @@ def map_avhrrgac_l1c(filename, channel, region, time, outputdir,
 
     # save to file:
     fig.savefig(ofilen, bbox_inches='tight')
+    plt.close()
+    logger.info("Done: {0}".format(ofilen))
+
+    return
+
+
+def plot_avhrrgac_qualflags2(filename, outputdir, 
+                             qrow, qcol, recs, lastline, data):
+    """
+    Mapping subroutine for AVHRR GAC L1c derived from pygac: quality flags.
+    :return:
+    """
+    color_list = ['DimGray', 'Red', 'Blue', 'Lime', 
+                  'Magenta', 'DodgerBlue', 'Orange']
+    label_list = ["Scan Line Number",
+                  "fatal error flag", "insufficient data for calibration",
+                  "insufficient data for navigation",
+                  "solar contamination of blackbody occurred in Channel 3",
+                  "solar contamination of blackbody occurred in Channel 4",
+                  "solar contamination of blackbody occurred in Channel 5"]
+
+    sft = "%Y/%m/%d %H:%M:%S"
+    sdt, edt = subs.get_l1c_timestamps(filename)
+    strlst = subs.split_filename(filename)
+    platform = strlst[3]
+    platname = subs.full_sat_name(platform)[0]
+    strsdate = strlst[5][0:8]
+    date_str = sdt.strftime(sft) + " - " + edt.strftime(sft)
+    outtit = "Orbit length: " + date_str + '\n'
+    basfil = os.path.basename(filename)
+    bastxt = os.path.splitext(basfil)[0] + '.png'
+    ofilen = os.path.join(outputdir, bastxt)
+    ytitle = 'Quality Flag\n'
+    xtitle = '\n' + label_list[0] + ' of AVHRR/' + platname
+
+    # initialize figure
+    fig = plt.figure(figsize=(17,10))
+    ax = fig.add_subplot(211)
+    ay = fig.add_subplot(212)
+
+    # plot data
+    for i in range(1, 4, 1):
+        ax.plot(data[:,0], data[:,i], label=label_list[i], 
+                color=color_list[i], linewidth=2)
+
+    for i in range(4, 7, 1):
+        ay.plot(data[:,0], data[:,i], label=label_list[i], 
+                color=color_list[i], linewidth=2)
+
+    # set limits
+    x_range = range(0, lastline+1, 1)
+    major_xticks = range(0, lastline+1, 1000)
+    minor_xticks = range(0, lastline+1, 500)
+    ymax = np.max(data[:,1:6])*1.3
+    ax.set_xlim(0, lastline)
+    ay.set_xlim(0, lastline)
+    ay.set_ylim(-0.1, ymax)
+    ax.set_ylim(-0.1, ymax)
+    ax.set_xticks(major_xticks)
+    ax.set_xticks(minor_xticks, minor=True)
+    ay.set_xticks(major_xticks)
+    ay.set_xticks(minor_xticks, minor=True)
+
+    # legend
+    axleg = ax.legend(ncol=3, loc='best', fancybox=True)
+    axleg.get_frame().set_alpha(0.5)
+    ayleg = ay.legend(ncol=2, loc='best', fancybox=True)
+    ayleg.get_frame().set_alpha(0.5)
+
+    # set labels
+    ax.set_title(outtit)
+    ax.set_ylabel(ytitle)
+    ay.set_ylabel(ytitle)
+    #ax.set_xlabel(xtitle)
+    ay.set_xlabel(xtitle)
+    ax.grid(which='both', alpha=0.8)
+    ay.grid(which='both', alpha=0.8)
+
+    # save to file:
+    fig.savefig(ofilen, bbox_inches='tight')
+    plt.close()
+    logger.info("Done: {0}".format(ofilen))
+
+    return
+
+
+def plot_avhrrgac_qualflags(filename, outputdir, 
+                            qrow, qcol, recs, lastline, data):
+    """
+    Mapping subroutine for AVHRR GAC L1c derived from pygac: quality flags.
+    :return:
+    """
+    color_list = ['DimGray', 'Red', 'Navy', 'forestgreen', 
+                  'Magenta', 'DodgerBlue', 'Orange']
+    syms_list1 = ['.', '.', '.', '.', '.', '.', '.']
+    #syms_list1 = [',', '.', '1', 'x', '2', '+', '3']
+    syms_list2 = ['o', 'D', '8', '^', 'p', 's', '*']
+    label_list = ["Scan Line Number",
+                  "fatal error flag", "insufficient data for calibration",
+                  "insufficient data for navigation",
+                  "solar contamination of blackbody occurred in Channel 3",
+                  "solar contamination of blackbody occurred in Channel 4",
+                  "solar contamination of blackbody occurred in Channel 5"]
+
+    sft = "%Y/%m/%d %H:%M:%S"
+    sdt, edt = subs.get_l1c_timestamps(filename)
+    strlst = subs.split_filename(filename)
+    platform = strlst[3]
+    platname = subs.full_sat_name(platform)[0]
+    strsdate = strlst[5][0:8]
+    date_str = sdt.strftime(sft) + " - " + edt.strftime(sft)
+    outtit = "Orbit length: " + date_str + '\n'
+    basfil = os.path.basename(filename)
+    bastxt = os.path.splitext(basfil)[0] + '.png'
+    ofilen = os.path.join(outputdir, bastxt)
+    ytitle = 'Quality Flag\n'
+    xtitle = '\n' + label_list[0] + ' of AVHRR/' + platname
+
+    # initialize figure
+    fig = plt.figure(figsize=(17,10))
+    ax = fig.add_subplot(111)
+    #ax = fig.add_subplot(211)
+    #ay = fig.add_subplot(212)
+    x_max = lastline + 1
+    x_min = 0
+    y_max = 0.4
+    y_step = 0.05
+
+    # just for plotting issue
+    new_arr = copy(data).astype('float')
+    new_arr[:,1:][new_arr[:,1:] == 1.0] = 0.3
+
+    # plot data
+    for i in range(1, 7, 1):
+        #ax.plot(data[:,0], new_arr[:,i]+(i*0.014), 
+        #        syms_list1[i], markersize=10, 
+        #        color=color_list[i], label=label_list[i])
+        ax.scatter(data[:,0], new_arr[:,i]+(i*0.014), 
+                   color=color_list[i], alpha=.9, s=1,
+                   label=label_list[i])
+        #ay.plot(data[:,0], data[:,i], label=label_list[i], 
+        #        color=color_list[i], linewidth=0.8)
+
+    # set limits
+    x_range = range(0, x_max, 1)
+    major_xticks = range(x_min, x_max, 1000)
+    minor_xticks = range(x_min, x_max, 500)
+    major_yticks = np.arange(0, y_max, y_step)
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(0, y_max)
+    ax.set_xticks(major_xticks)
+    ax.set_yticks(major_yticks)
+    ax.set_xticks(minor_xticks, minor=True)
+
+    # legend
+    axleg = ax.legend(ncol=1, loc='center', 
+                      fancybox=True, fontsize=22, markerscale=5)
+    axleg.get_frame().set_alpha(0.5)
+
+    # set labels
+    ylabel_str = list()
+    for i in major_yticks:
+        if i == y_step:
+            ylabel_str.append('VALID\n')
+        elif i == y_max - y_step:
+            ylabel_str.append('INVALID\n')
+        else:
+            ylabel_str.append('')
+
+    ax.yaxis.set_ticklabels(ylabel_str, rotation=90)
+    ax.set_title(outtit)
+    ax.set_ylabel(ytitle)
+    ax.set_xlabel(xtitle)
+    ax.xaxis.grid(which='both', alpha=0.8)
+
+    # color good and bad areas
+    ax.axhspan(0.0, 0.1, facecolor='yellow', alpha=0.2)
+    ax.axhspan(0.3, 0.4, facecolor='grey', alpha=0.2)
+
+    # save to file:
+    fig.savefig(ofilen, bbox_inches='tight')
+    #plt.show()
     plt.close()
     logger.info("Done: {0}".format(ofilen))
 
