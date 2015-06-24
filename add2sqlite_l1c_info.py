@@ -95,6 +95,12 @@ try:
         number_of_missing_scanlines = abs(total_records - last_scanline)
         missing_scanlines = rh5.find_scanline_gaps(0, last_scanline, data)
 
+        if len(missing_scanlines) != number_of_missing_scanlines:
+            logger.info("WARNING! number_of_missing_scanlines {0} != {1} "
+                        "len(missing_scanlines)".
+                        format(number_of_missing_scanlines,
+                               len(missing_scanlines)))
+
         if args.verbose:
             logger.info("File:{0}, Row:{1}, Col:{2}, TotalRecords:{3}, "
                         "Last_ScanLine:{4}, NumberOfMissingScanlines:{5}, "
