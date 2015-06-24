@@ -52,7 +52,8 @@ def get_colorbar(param, data):
     return colmap, colnorm, bounds, ticks, labels
 
 
-def map_cloud_cci(filename, product, region, outputdir, background):
+def map_cloud_cci(filename, product, region, outputdir, 
+                  background, show_figure):
     """
     Map Cloud CCI results: L2, L3U, L3S.
     :return:
@@ -99,7 +100,7 @@ def map_cloud_cci(filename, product, region, outputdir, background):
              instyp + '/' + sattyp
 
     # initialize figure
-    fig = plt.figure()
+    fig = plt.figure(figsize=(17,10))
     ax = fig.add_subplot(111)
 
     # create basemap
@@ -184,6 +185,8 @@ def map_cloud_cci(filename, product, region, outputdir, background):
 
     # save to file:
     fig.savefig(ofilen, bbox_inches='tight')
+    if show_figure:
+        plt.show()
     plt.close()
     logger.info("Done: {0}".format(ofilen))
 
@@ -191,7 +194,7 @@ def map_cloud_cci(filename, product, region, outputdir, background):
 
 
 def map_avhrrgac_l1c(filename, channel, region, time, outputdir,
-                     lon, lat, tar, background):
+                     lon, lat, tar, background, show_figure):
     """
     Mapping subroutine for AVHRR GAC L1c derived from pygac.
     :return:
@@ -211,7 +214,7 @@ def map_avhrrgac_l1c(filename, channel, region, time, outputdir,
              " (" + time + ")" 
 
     # initialize figure
-    fig = plt.figure()
+    fig = plt.figure(figsize=(17,10))
     ax = fig.add_subplot(111)
 
     # create basemap
@@ -283,6 +286,8 @@ def map_avhrrgac_l1c(filename, channel, region, time, outputdir,
 
     # save to file:
     fig.savefig(ofilen, bbox_inches='tight')
+    if show_figure:
+        plt.show()
     plt.close()
     logger.info("Done: {0}".format(ofilen))
 
@@ -290,7 +295,8 @@ def map_avhrrgac_l1c(filename, channel, region, time, outputdir,
 
 
 def plot_avhrrgac_qualflags2(filename, outputdir, 
-                             qrow, qcol, recs, lastline, data):
+                             qrow, qcol, recs, lastline, data, 
+                             show_figure):
     """
     Mapping subroutine for AVHRR GAC L1c derived from pygac: quality flags.
     :return:
@@ -363,6 +369,8 @@ def plot_avhrrgac_qualflags2(filename, outputdir,
 
     # save to file:
     fig.savefig(ofilen, bbox_inches='tight')
+    if show_figure:
+        plt.show()
     plt.close()
     logger.info("Done: {0}".format(ofilen))
 
@@ -370,7 +378,8 @@ def plot_avhrrgac_qualflags2(filename, outputdir,
 
 
 def plot_avhrrgac_qualflags(filename, outputdir, 
-                            qrow, qcol, recs, lastline, data):
+                            qrow, qcol, recs, lastline, data,
+                            show_figure):
     """
     Mapping subroutine for AVHRR GAC L1c derived from pygac: quality flags.
     :return:
@@ -464,7 +473,8 @@ def plot_avhrrgac_qualflags(filename, outputdir,
 
     # save to file:
     fig.savefig(ofilen, bbox_inches='tight')
-    #plt.show()
+    if show_figure:
+        plt.show()
     plt.close()
     logger.info("Done: {0}".format(ofilen))
 

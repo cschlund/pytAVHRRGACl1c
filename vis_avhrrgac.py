@@ -66,7 +66,8 @@ def map_cci(args_cci):
     for f in fil_list:
         myplt.map_cloud_cci(f, args_cci.product, args_cci.region,
                             args_cci.outputdir,
-                            args_cci.basemap_background)
+                            args_cci.basemap_background,
+                            args_cci.show_figure)
 
     return
 
@@ -101,7 +102,8 @@ def map_l1c(args_l1c):
         myplt.map_avhrrgac_l1c(fil, args_l1c.channel, args_l1c.region,
                                args_l1c.time, args_l1c.outputdir,
                                longitude, latitude, target,
-                               args_l1c.basemap_background)
+                               args_l1c.basemap_background,
+                               args_l1c.show_figure)
 
         qfil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_qualflags_")
         q = h5py.File(qfil, "r+")
@@ -110,7 +112,8 @@ def map_l1c(args_l1c):
 
         logger.info("Map AVHRR GAC L1c qualflag file")
         myplt.plot_avhrrgac_qualflags(qfil, args.outputdir,row, col, 
-                                      total_records, last_scanline, data)
+                                      total_records, last_scanline, data,
+                                      args_l1c.show_figure)
 
     return
 
@@ -125,6 +128,8 @@ if __name__ == '__main__':
     parser.add_argument('-reg', '--region', help=defin, default='glo')
     parser.add_argument('-out', '--outputdir', help='/path/to/mapdir', default=work_out)
     parser.add_argument('-bmb', '--basemap_background', help='bluemarble/shaderelief/etopo')
+    parser.add_argument('-show', '--show_figure', action="store_true", 
+                        help='Show figure instead of saving saving')
     parser.add_argument('-ver', '--verbose', help='increase output verbosity', action="store_true")
 
     # define subcommands

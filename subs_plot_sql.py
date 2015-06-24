@@ -315,7 +315,7 @@ def plot_time_series(sat_list, channel, select, start_date,
             major_loc = mondays
             # major_fmt = weekFormatter
             major_fmt = yearsFormatter
-        elif delta_days < 90 or nyears < 1:
+        elif delta_days < 90 or nyears <= 1:
             minor_loc = mondays
             major_loc = allmonths
             major_fmt = yearsFormatter
@@ -352,12 +352,12 @@ def plot_time_series(sat_list, channel, select, start_date,
         plt.gcf().autofmt_xdate(rotation=20)
 
         # make grid
-        ax_val.grid(which='major', alpha=0.7)
-        ax_val.grid(which='minor', alpha=0.3)
-        ax_std.grid(which='major', alpha=0.7)
-        ax_std.grid(which='minor', alpha=0.3)
-        ax_rec.grid(which='major', alpha=0.7)
-        ax_rec.grid(which='minor', alpha=0.3)
+        ax_val.grid(which='major', alpha=0.9)
+        ax_val.grid(which='minor', alpha=0.4)
+        ax_std.grid(which='major', alpha=0.9)
+        ax_std.grid(which='minor', alpha=0.4)
+        ax_rec.grid(which='major', alpha=0.9)
+        ax_rec.grid(which='minor', alpha=0.4)
 
         # make legend
         num_of_sats = int(math.ceil(cnt / 2.))
