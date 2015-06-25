@@ -251,6 +251,12 @@ def read_avhrrgac(f, a, tim, cha, ver):
     sza = ma.masked_where(total_mask, sza)
 
     # select time
+    if tim == 'day_90sza':
+        # consider only daytime, i.e. sza < 90
+        lon = ma.masked_where(sza >= 90., lon)
+        lat = ma.masked_where(sza >= 90., lat)
+        tar = ma.masked_where(sza >= 90., tar)
+
     if tim == 'day':
         # consider only daytime, i.e. sza < 80
         lon = ma.masked_where(sza >= 80., lon)

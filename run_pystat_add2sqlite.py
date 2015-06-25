@@ -14,6 +14,7 @@ import datetime
 import subs_avhrrgac as mysub
 import read_avhrrgac_h5 as rh5
 from multiprocessing import Pool
+from numpy.core.umath_tests import inner1d
 from pycmsaf.logger import setup_root_logger
 
 logger = setup_root_logger(name='root')
@@ -158,17 +159,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # -- make some screen output if wanted
-    if args.verbose:
-        logger.info("Parameter passed")
-        logger.info("TEST       : %s" % args.test)
-        logger.info("Date       : %s" % args.date)
-        logger.info("Satellite  : %s" % args.satellite)
-        logger.info("Input Path : %s" % args.inpdir)
-        logger.info("Binsize    : %s" % args.binsize)
-        logger.info("Verbose    : %s" % args.verbose)
-        logger.info("DB_Sqlite3 : %s" % args.gsqlite)
-
     # -- some settings
     fill_value = -9999.
     pattern = 'ECC_GAC_avhrr*' + args.satellite + '*' + args.date + 'T*'
@@ -185,11 +175,14 @@ if __name__ == '__main__':
 
     # -- lists for generating total arrays
     if args.test is True:
-        cha_list = ['ch1']
-        sel_list = ['day']
+        #cha_list = ['ch1']
+        #sel_list = ['day']
+        cha_list = ['ch4']
+        sel_list = ['day_90sza', 'day', 'night', 'twilight']
     else:
         cha_list = mysub.get_channel_list()
         sel_list = mysub.get_select_list()
+        sel_list.append('day_90sza')
 
     # -- define latitudinal zone size:
     global zone_size
@@ -200,6 +193,20 @@ if __name__ == '__main__':
     # -- determine zone centers:
     zone_centers = np.arange(-90 + zone_rad, 90 + zone_rad, zone_size)
     nzones = len(zone_centers)
+
+    # -- make some screen output if wanted
+    if args.verbose:
+        logger.info("Parameter passed")
+        logger.info("TEST       : %s" % args.test)
+        logger.info("Date       : %s" % args.date)
+        logger.info("Satellite  : %s" % args.satellite)
+        logger.info("ChanList   : %s" % cha_list)
+        logger.info("SelectList : %s" % sel_list)
+        logger.info("Input Path : %s" % args.inpdir)
+        logger.info("Binsize    : %s" % args.binsize)
+        logger.info("Nzones     : %s" % nzones)
+        logger.info("Verbose    : %s" % args.verbose)
+        logger.info("DB_Sqlite3 : %s" % args.gsqlite)
 
     # -- initialize global mean, stdv, nobs parameters
     # saving output for each orbit
@@ -256,6 +263,8 @@ if __name__ == '__main__':
     for pos, fil in enumerate(fil_list):
         arglist.append((pos, fil))
 
+    if args.verbose: 
+        logger.info("{0} orbits will be processed".format(nfiles))
     pool = Pool(processes=nfiles)
     results = pool.map(func=readfiles, iterable=arglist)
 
@@ -278,25 +287,26 @@ if __name__ == '__main__':
 
     # -- only store good data
     if qflag is True:
+
         # -- create lists of mean, stdv, nobs for globa/zonal
         global_list = [global_mean, global_stdv, global_nobs]
-        zonal_list = [zonal_mean, zonal_stdv, zonal_nobs]
         all_global_list = [all_global_mean, all_global_stdv, all_global_nobs]
-        all_zonal_list = [all_zonal_mean, all_zonal_stdv, all_zonal_nobs]
 
         # -- Global means/stdv/nobs
         for position, item in enumerate(global_list):
             for chakey in item:
                 for selkey, selval in item[chakey].items():
-                    # mask zeros 
-                    mask = np.ma.equal(item[chakey][selkey], 0.)
-                    data = np.ma.masked_where(mask, item[chakey][selkey])
-
+                    # working on
+                    data_vec = item[chakey][selkey]
+                    nobs_vec = global_nobs[chakey][selkey]
+                    sum_nobs = np.ma.sum(nobs_vec)
+                    # if nobs, then sum up only == sum_nobs
                     if position is 2:
-                        ave = np.sum(data)
+                        ave = np.ma.sum(data_vec)
+                    # else mean & stdv: weight average with nobs
                     else:
-                        ave = data.mean()
-
+                        ave = np.ma.dot(data_vec,nobs_vec)/sum_nobs
+                    # store result in list
                     try:
                         all_item = all_global_list[position]
                         check = all_item[chakey][selkey]
@@ -305,19 +315,36 @@ if __name__ == '__main__':
                     except KeyError:
                         break
 
+        # -- create lists of mean, stdv, nobs for globa/zonal
+        zonal_list = [zonal_mean, zonal_stdv, zonal_nobs]
+        all_zonal_list = [all_zonal_mean, all_zonal_stdv, all_zonal_nobs]
+
         # -- Zonal means/stdv/nobs 
+        # axis=0 -> row: nfiles results
+        # axis=1 -> col: belt zones
         for position, item in enumerate(zonal_list):
             for chakey in item:
                 for selkey, selval in item[chakey].items():
-                    # mask zeros 
-                    mask = np.ma.equal(item[chakey][selkey], 0.)
-                    data = np.ma.masked_where(mask, item[chakey][selkey])
-
+                    # Working on
+                    #data_vec = item[chakey][selkey]
+                    #nobs_vec = zonal_nobs[chakey][selkey]
+                    data_vec = np.ma.filled(item[chakey][selkey], 0.)
+                    nobs_vec = np.ma.filled(zonal_nobs[chakey][selkey], 0.)
+                    sum_nobs = np.ma.sum(nobs_vec, axis=0)
+                    # if nobs, then sum up only == sum_nobs
                     if position is 2:
-                        ave = np.sum(data, axis=0)
+                        ave = np.ma.sum(data_vec, axis=0)
+                    # else mean & stdv: weight average with nobs
                     else:
-                        ave = data.mean(axis=0)
-
+                        data_trans = data_vec.transpose()
+                        nobs_trans = nobs_vec.transpose()
+                        # inner1d: np.dot of multi-dim matrix
+                        inn = inner1d(data_trans,nobs_trans)
+                        with np.errstate(divide='ignore', invalid='ignore'): 
+                            ave_unmasked = inn/sum_nobs
+                        # mask all nan elements
+                        ave = np.ma.masked_invalid(ave_unmasked)
+                    # store result in list
                     try:
                         all_item = all_zonal_list[position]
                         check = all_item[chakey][selkey]
@@ -335,8 +362,10 @@ if __name__ == '__main__':
         lite_satstr = mysub.full_sat_name(args.satellite)[2]
 
         all_satellites = mysub.get_satellite_list()
-        all_channels = mysub.get_channel_list()
-        all_selects = mysub.get_select_list()
+        #all_channels = mysub.get_channel_list()
+        #all_selects = mysub.get_select_list()
+        all_channels = cha_list
+        all_selects = sel_list
 
         tab_sat = 'satellites'
         tab_cha = 'channels'
@@ -396,26 +425,36 @@ if __name__ == '__main__':
                         check = all_zonal_mean[chakey][selkey]
 
                         if np.ma.count(check) == 0:
+                            if args.verbose: 
+                                logger.info("No db entry for: {0}/{1}".
+                                        format(chakey,selkey))
                             continue
 
                         if args.verbose:
-                            logger.info("{0} ({1})".
-                                        format(mysub.full_cha_name(chakey),
-                                               selkey))
+                            logger.info("{0} ({1})".format(
+                                mysub.full_cha_name(chakey), selkey))
 
                         zm = all_zonal_list[0][chakey][selkey]
                         zn = all_zonal_list[2][chakey][selkey]
                         gn = all_global_list[2][chakey][selkey]
                         gmean_check = np.ma.dot(zm, zn) / gn
 
-                        if args.verbose:
-                            logger.info("Global mean based on zonal means: "
-                                        "{0} = {1} (global)".
-                                        format(gmean_check,
-                                               all_global_list[0][chakey][selkey]))
-
-                            logger.info("Global nobs based on zonal nobs: "
-                                        "{0} = {1} (global)".format(np.sum(zn), gn))
+                        # sanity check
+                        if gmean_check != all_global_list[0][chakey][selkey]:
+                            logger.info("WARNING: Global mean based on zonal means: "
+                                        "{0} != {1} (global)".format(gmean_check, 
+                                            all_global_list[0][chakey][selkey]))
+                        if args.verbose: 
+                            logger.info("OK: Global mean based on zonal means: " 
+                                        "{0} == {1} (global)".format(gmean_check, 
+                                            all_global_list[0][chakey][selkey]))
+                        # sanity check
+                        if np.ma.sum(zn) != gn:
+                            logger.info("WARNING: Global nobs based on zonal nobs: "
+                                        "{0} != {1} (global)".format(np.ma.sum(zn), gn))
+                        if args.verbose: 
+                            logger.info("OK: Global nobs based on zonal nobs: " 
+                                        "{0} == {1} (global)".format(np.ma.sum(zn), gn))
 
                         # -- get chaID
                         get_id = "SELECT id FROM {0} " \
