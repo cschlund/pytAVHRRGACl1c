@@ -18,7 +18,7 @@ logdir = os.path.join(os.getcwd(),'log')
 logger = setup_root_logger(name='root', logdir=logdir, logfile=True)
 
 chalist = '|'.join(mysub.get_channel_list())
-sellist = '|'.join(mysub.get_select_list())
+sellist = '|'.join(mysub.get_pystat_select_list())
 satlist = '|'.join(mysub.get_satellite_list())
 
 
@@ -26,6 +26,12 @@ def plot_results():
     for channel in cha_list:
         for select in sel_list:
             if args.target == 'global':
+
+                try: 
+                    check = cur.execute("SELECT OrbitCount FROM statistics")
+                except Exception as e: 
+                    if select == 'day_90sza':
+                        continue
 
                 psql.plot_time_series(sat_list, channel, select,
                                       start_date, end_date, args.outdir,
@@ -112,7 +118,7 @@ if __name__ == '__main__':
 
     # -- time selection
     if args.time is None:
-        sel_list = mysub.get_select_list()
+        sel_list = mysub.get_pystat_select_list()
     else:
         sel_list = [args.time]
 
@@ -151,9 +157,7 @@ if __name__ == '__main__':
     try:
         dbfile = lite.connect(args.dbfile,
                               detect_types=lite.PARSE_DECLTYPES | lite.PARSE_COLNAMES)
-
         dbfile.row_factory = mysub.dict_factory
-
         cur = dbfile.cursor()
 
         plot_results()

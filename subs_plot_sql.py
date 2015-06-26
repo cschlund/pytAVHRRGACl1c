@@ -24,7 +24,6 @@ logger = logging.getLogger('root')
 warnings.filterwarnings("ignore")
 
 
-# noinspection PyUnboundLocalVariable
 def get_id(table, column, value, sql):
     """
     Get value from a table and column.
@@ -107,6 +106,61 @@ def read_zonal_stats(sat, cha, sel, dt, sql):
     return mean_list, stdv_list, nobs_list, lats
 
 
+def read_global_newstats(sat, cha, sel, sd, ed, sql):
+    """
+    Read sqlite database (sql): 
+    return global statistics for a given satellite (sat), 
+    channel (cha), time selection (sel) between 
+    start_date (sd) and end_date (ed).
+    """
+
+    # reflectance
+    if cha == "ch1" or cha == "ch2" or cha == "ch3a":
+        minval = 0.
+        maxval = 1.5
+    # brightness temperature
+    else:
+        minval = 140.
+        maxval = 350.
+
+    glob_list = ("OrbitCount", "GlobalMean", 
+                 "GlobalStdv", "GlobalNobs")
+
+    mean_list = list()
+    stdv_list = list()
+    nobs_list = list()
+    date_list = list()
+    orbs_cnts = list()
+
+    sat_id = get_id("satellites", "id", sat, sql)
+    cha_id = get_id("channels", "id", cha, sql)
+    sel_id = get_id("selects", "id", sel, sql)
+
+    get_data = "SELECT date, {0}, {1}, {2}, {3} " \
+               "FROM statistics WHERE satelliteID={4} AND " \
+               "channelID={5} AND selectID={6} AND " \
+               "date>=\'{7}\' AND date<=\'{8}\' AND " \
+               "GlobalMean >= {9} AND GlobalMean <= {10} " \
+               "ORDER BY date".format(glob_list[0], glob_list[1], 
+                                      glob_list[2], glob_list[3],
+                                      sat_id, cha_id, sel_id, sd, ed,
+                                      minval, maxval)
+    # print get_data
+    results = sql.execute(get_data)
+
+    for result in results:
+        if result['date'] is not None:
+            date_list.append(result['date'])
+            orbs_cnts.append(result[glob_list[0]])
+            mean_list.append(result[glob_list[1]])
+            stdv_list.append(result[glob_list[2]])
+            nobs_list.append(result[glob_list[3]])
+        else:
+            return None
+
+    return date_list, mean_list, stdv_list, nobs_list, orbs_cnts
+
+
 def read_global_stats(sat, cha, sel, sd, ed, sql):
     """
     Read sqlite database (sql): 
@@ -159,7 +213,32 @@ def read_global_stats(sat, cha, sel, sd, ed, sql):
     return date_list, mean_list, stdv_list, nobs_list
 
 
-# noinspection PyUnboundLocalVariable,PyUnboundLocalVariable,PyUnboundLocalVariable
+def get_number_of_orbits_per_day(satellite, date_list, db):
+    """
+    get number of valid orbits per day for a specific
+    satellite from the archive database containing
+    the L1B and L1C information of AVHRR GAC.
+    """
+    orbit_cnt_list = []
+
+    for sdt in date_list:
+        edt = sdt + datetime.timedelta(days=1)
+        #logger.info("Working on: {0} - {1}".format(sdt, edt))
+        get_data = "SELECT COUNT(*) " \
+                   "FROM vw_std WHERE blacklist=0 AND " \
+                   "satellite_name=\'{satellite}\' AND " \
+                   "start_time_l1c BETWEEN " \
+                   "\'{sdt}\' AND \'{edt}\' ".format(satellite=satellite, 
+                                                     sdt=sdt, edt=edt)
+
+        for row in db.execute(get_data):
+            if row['COUNT(*)']:
+                nums =  int(row['COUNT(*)'])
+                orbit_cnt_list.append(nums)
+
+    return orbit_cnt_list
+
+
 def plot_time_series(sat_list, channel, select, start_date,
                      end_date, outpath, cursor, verbose, ascinpdir,
                      show_fig):
@@ -209,9 +288,20 @@ def plot_time_series(sat_list, channel, select, start_date,
                  asc_nobslst) = read_globstafile(ifile, channel, select,
                                                  start_date, end_date)
 
-        (datelst, meanlst, stdvlst,
-         nobslst) = read_global_stats(satellite, channel, select,
-                                      start_date, end_date, cursor)
+
+        try: 
+            check = cursor.execute("SELECT OrbitCount FROM statistics")
+        except Exception as e: 
+            flag = False
+            #logger.info("WARNING: {0}".format(e))
+            (datelst, meanlst, stdvlst,
+             nobslst) = read_global_stats(satellite, channel, select,
+                                          start_date, end_date, cursor)
+        else:
+            flag = True
+            (datelst, meanlst, stdvlst, 
+             nobslst, orb_cnts_lst) = read_global_newstats(satellite, channel, 
+                                        select, start_date, end_date, cursor)
 
         if not datelst:
             pass
@@ -285,6 +375,18 @@ def plot_time_series(sat_list, channel, select, start_date,
                     '_' + channel + '_' + select + '.png'
 
         ofile = os.path.join(outpath, fbase)
+
+        # get number of valid orbits per day
+        if len(sat_list) == 1 and flag:
+            max_cnts = max(orb_cnts_lst)
+            ax2 = ax_rec.twinx()
+            ax2.plot(datelst, orb_cnts_lst, color='r', linewidth=1.5)
+            ax2.set_ylabel('Orbits/day', color='r')
+            ax2.set_ylim(0, max_cnts + 5)
+            ax_rec.set_ylim(0, max(nobslst)+max(nobslst)*0.1)
+            ax2.grid(which='major', alpha=0.8, color='r')
+            for tl in ax2.get_yticklabels():
+                tl.set_color('r')
 
         # label axes
         ax_val.set_title(plot_label)
@@ -408,9 +510,19 @@ def plot_time_series_linfit(sat_list, channel, select, start_date,
     # -- loop over satellites
     for satellite in sat_list:
 
-        (datelst, meanlst, stdvlst,
-         nobslst) = read_global_stats(satellite, channel, select,
-                                      start_date, end_date, cursor)
+        try: 
+            check = cursor.execute("SELECT OrbitCount FROM statistics")
+        except Exception as e: 
+            flag = False
+            #logger.info("WARNING: {0}".format(e))
+            (datelst, meanlst, stdvlst,
+             nobslst) = read_global_stats(satellite, channel, select,
+                                          start_date, end_date, cursor)
+        else:
+            flag = True
+            (datelst, meanlst, stdvlst, 
+             nobslst, orb_cnts_lst) = read_global_newstats(satellite, channel, 
+                                        select, start_date, end_date, cursor)
 
         if not datelst:
             pass
@@ -813,9 +925,19 @@ def plot_zonal_results(sat_list, channel, select, start_date,
 
             sat_label = subs.full_sat_name(satellite)[0]
 
-            (datelst, meanlst, stdvlst,
-             nobslst) = read_global_stats(satellite, channel, select,
-                                          dt.date(), dt.date(), cur)
+            try: 
+                check = cursor.execute("SELECT OrbitCount FROM statistics")
+            except Exception as e: 
+                flag = False
+                #logger.info("WARNING: {0}".format(e))
+                (datelst, meanlst, stdvlst,
+                 nobslst) = read_global_stats(satellite, channel, select,
+                                              dt.date(), dt.date(), cur)
+            else:
+                flag = True
+                (datelst, meanlst, stdvlst, 
+                 nobslst, orb_cnts_lst) = read_global_newstats(satellite, channel, 
+                                            select, dt.date(), dt.date(), cur)
             if meanlst:
                 global_mean = meanlst.pop()
 
