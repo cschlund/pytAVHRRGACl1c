@@ -438,17 +438,21 @@ if __name__ == '__main__':
 
                         # sanity check
                         if gmean_check != all_global_list[0][chakey][selkey]:
+                            gdiff = abs(gmean_check - all_global_list[0][chakey][selkey])
                             logger.info("WARNING: Global mean based on zonal means: "
-                                        "{0} != {1} (global)".format(gmean_check, 
-                                            all_global_list[0][chakey][selkey]))
+                                        "{0} != {1} (global), difference={2}".
+                                        format(gmean_check,all_global_list[0][chakey][selkey],
+                                               gdiff))
                         if args.verbose: 
                             logger.info("OK: Global mean based on zonal means: " 
                                         "{0} == {1} (global)".format(gmean_check, 
                                             all_global_list[0][chakey][selkey]))
                         # sanity check
                         if np.ma.sum(zn) != gn:
+                            gdiff = abs(np.ma.sum(zn) - gn)
                             logger.info("WARNING: Global nobs based on zonal nobs: "
-                                        "{0} != {1} (global)".format(np.ma.sum(zn), gn))
+                                        "{0} != {1} (global), difference={2}".
+                                        format(np.ma.sum(zn), gn, gdiff))
                         if args.verbose: 
                             logger.info("OK: Global nobs based on zonal nobs: " 
                                         "{0} == {1} (global)".format(np.ma.sum(zn), gn))
