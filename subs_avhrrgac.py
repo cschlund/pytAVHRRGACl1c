@@ -521,6 +521,16 @@ def get_select_list():
     return selects
 
 
+def get_pystat_select_list():
+    """
+    List of selected times in pystat calculation and
+    later for the routines which are plotting statistics.
+    """
+
+    selects = ['day_90sza', 'day', 'night', 'twilight']
+    return selects
+
+
 def get_color_list():
     """
     List of colors used in the plotting routines.

@@ -181,8 +181,7 @@ if __name__ == '__main__':
         sel_list = ['day_90sza', 'day', 'night', 'twilight']
     else:
         cha_list = mysub.get_channel_list()
-        sel_list = mysub.get_select_list()
-        sel_list.append('day_90sza')
+        sel_list = mysub.get_pystat_select_list()
 
     # -- define latitudinal zone size:
     global zone_size
@@ -362,10 +361,8 @@ if __name__ == '__main__':
         lite_satstr = mysub.full_sat_name(args.satellite)[2]
 
         all_satellites = mysub.get_satellite_list()
-        #all_channels = mysub.get_channel_list()
-        #all_selects = mysub.get_select_list()
-        all_channels = cha_list
-        all_selects = sel_list
+        all_channels = mysub.get_channel_list()
+        all_selects = mysub.get_pystat_select_list()
 
         tab_sat = 'satellites'
         tab_cha = 'channels'
