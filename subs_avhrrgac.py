@@ -386,16 +386,17 @@ def alter_statistics_table(db, belts):
     run_pystat_add2sqlite.py: add statistics to existing table
     """
 
-    glob_list = ('GlobalMean', 'GlobalStdv', 'GlobalNobs')
+    glob_list = ('OrbitCount', 'GlobalMean', 'GlobalStdv', 'GlobalNobs')
+    typ1_list = ('INTEGER', 'FLOAT', 'FLOAT', 'INTEGER')
     zona_list = ('ZonalMean', 'ZonalStdv', 'ZonalNobs')
-    type_list = ('FLOAT', 'FLOAT', 'INTEGER')
+    typ2_list = ('FLOAT', 'FLOAT', 'INTEGER')
 
-    for glo, typ in zip(glob_list, type_list):
+    for glo, typ in zip(glob_list, typ1_list):
         act = "ALTER TABLE statistics ADD COLUMN " \
               "{0} {1}".format(glo, typ)
         db.execute(act)
 
-    for zon, typ in zip(zona_list, type_list):
+    for zon, typ in zip(zona_list, typ2_list):
         for idx, lat in enumerate(belts):
             bel = zon + str(idx)
             act = "ALTER TABLE statistics ADD COLUMN " \

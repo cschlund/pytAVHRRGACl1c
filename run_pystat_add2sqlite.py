@@ -489,7 +489,7 @@ if __name__ == '__main__':
                         # -- add statistics to args.gsqlite db
                         # noinspection PyUnboundLocalVariable,PyUnboundLocalVariable,PyUnboundLocalVariable
                         prim_list = [sat_id, lite_datstr, cha_id, sel_id]
-                        base_list = prim_list + [glm, gls, gln]
+                        base_list = prim_list + [nfiles, glm, gls, gln]
                         full_list = base_list + zonal_mean_list + zonal_stdv_list + zonal_nobs_list
                         tuple_len = len(full_list)
                         holders = ','.join('?' * tuple_len)
