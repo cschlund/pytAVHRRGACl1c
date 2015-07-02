@@ -23,6 +23,48 @@ def str2upper(string_object):
     return string_object.upper()
 
 
+def blacklist_n17_data(db, ver):
+    """
+    List of days for NOAA-17, which should be blacklisted,
+    because data is bad and AVHRR scan motor degraded and
+    finally, stalled on 15 Oct 2010.
+    """
+    black_reason = "bad_l1c_quality"
+    start_time = datetime.datetime(2010, 3, 1, 0, 0, 0)
+    end_time = datetime.datetime(2012, 1, 1, 0, 0, 0)
+    sat_id = db._get_id_by_name(table='satellites', name="NOAA17")
+
+    if ver:
+        logger.info("Blacklist all L1b orbits between "
+                    "{0} and {1}".format(start_time, end_time))
+
+    upd = "UPDATE orbits SET blacklist=1, blacklist_reason=\'{blr}\' " \
+          "WHERE satellite_id = \'{sat_id}\' AND start_time_l1b BETWEEN " \
+          "\'{start_time}\' AND \'{end_time}\' ".format(blr=black_reason,
+                                                        sat_id=sat_id,
+                                                        start_time=start_time,
+                                                        end_time=end_time)
+    db.execute(upd)
+
+    cmd = "SELECT * from orbits WHERE " \
+          "satellite_id = \'{sat_id}\' AND " \
+          "start_time_l1b BETWEEN \'{start_time}\' AND \'{end_time}\' " \
+          "ORDER BY start_time_l1b".format(sat_id=sat_id,
+                                           start_time=start_time,
+                                           end_time=end_time)
+    res = db.execute(cmd)
+
+    if ver:
+        for r in res:
+            logger.info("L1b Filename    : {0}".format(r['filename']))
+            logger.info("start_time_l1b  : {0}".format(r['start_time_l1b']))
+            logger.info("end_time_l1b    : {0}".format(r['end_time_l1b']))
+            logger.info("blacklist       : {0}".format(r['blacklist']))
+            logger.info("blacklist_reason: {0}\n".format(r['blacklist_reason']))
+
+    return black_reason
+
+
 def blacklist_days():
     """
     List of days, which did not provide any reasonable L1c orbits.
@@ -296,20 +338,28 @@ if __name__ == '__main__':
                         help="List of satellites, which should be considered")
 
     parser.add_argument('--wrong_l1c_timestamp', action="store_true",
-                        help='''Blacklist L1b files getting wrong l1c timestamp. '''
-                             '''This must be done before GAC_overlap.py, 
-                             otherwise it will be aborted due to ambiguous entries''')
+                        help='''Blacklist L1b files getting wrong l1c timestamp.
+                             This must be done before GAC_overlap.py, otherwise 
+                             it will be aborted due to ambiguous entries.''')
 
     parser.add_argument('--no_valid_l1c_data', action="store_true", 
-                        help='''Blacklist days, where no valid l1c data is available. '''
-                             '''ATTENTION: only if you know what you are doing! '''
-                             '''The list_of_invalid_days changes from processing to processing due to pygac updates.''')
+                        help='''Blacklist days, where no valid l1c data is available. 
+                             ATTENTION: only if you know what you are doing! 
+                             The list_of_invalid_days changes from processing 
+                             to processing due to pygac updates.''')
+
+    parser.add_argument('--bad_n17_data', action="store_true",
+                        help='''Blacklist all days between 2010-03-01 and
+                        2011-12-31 of NOAA17 because data show problems. AVHRR
+                        scan motor stalled on 15 Oct 2010.''')
 
     args = parser.parse_args()
 
     # -- define list of satellites
     if args.satellites:
         sat_list = args.satellites
+    elif args.bad_n17_data:
+        sat_list = ["NOAA17"]
     else:
         sat_list = get_satellite_list()
 
@@ -320,6 +370,7 @@ if __name__ == '__main__':
     logger.info("Satellites         : {0}".format(sat_list))
     logger.info("wrong_l1c_timestamp: {0}".format(args.wrong_l1c_timestamp))
     logger.info("no_valid_l1c_data  : {0}".format(args.no_valid_l1c_data))
+    logger.info("bad_l1c_quality    : {0}".format(args.bad_n17_data))
 
     # -- connect to database
     dbfile = AvhrrGacDatabase(dbfile=args.dbfile,
@@ -345,8 +396,19 @@ if __name__ == '__main__':
             logger.info("{0} orbits are blacklisted due to {1}".
                         format(i['COUNT(*)'], reason))
 
+    # -- blacklist noaa17 bad quality data
+    if args.bad_n17_data: 
+        reason = blacklist_n17_data(dbfile, args.verbose)
+        ret = "SELECT COUNT(*) FROM vw_std WHERE " \
+              "blacklist_reason=\'{reason}\'".format(reason=reason)
+        num = dbfile.execute(ret)
+        for i in num:
+            logger.info("{0} orbits are blacklisted due to {1}".
+                        format(i['COUNT(*)'], reason))
+
     # -- commit changes
-    if args.wrong_l1c_timestamp or args.no_valid_l1c_data: 
+    if args.wrong_l1c_timestamp or args.no_valid_l1c_data \
+            or args.bad_n17_data: 
         logger.info("Commit all changes") 
         dbfile.commit_changes()
 
