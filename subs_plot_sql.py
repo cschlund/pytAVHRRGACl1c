@@ -306,6 +306,10 @@ def plot_time_series(sat_list, channel, select, start_date,
         if not datelst:
             pass
         else:
+            min_datelst = min(datelst)
+            max_datelst = max(datelst)
+            diff_days = (max_datelst - min_datelst).days
+
             if len(datelst) > 1:
                 isdata_cnt += 1
 
@@ -388,13 +392,6 @@ def plot_time_series(sat_list, channel, select, start_date,
             for tl in ax2.get_yticklabels():
                 tl.set_color('r')
 
-        # label axes
-        ax_val.set_title(plot_label)
-        ax_val.set_ylabel(mean_label)
-        ax_std.set_ylabel(stdv_label)
-        ax_rec.set_ylabel(nobs_label)
-        ax_rec.set_xlabel(date_label)
-
         # x axis range
         ax_val.set_xlim(min_x_date, max_x_date)
         ax_std.set_xlim(min_x_date, max_x_date)
@@ -415,10 +412,14 @@ def plot_time_series(sat_list, channel, select, start_date,
         if delta_days <= 90:
             minor_loc = alldays
             major_loc = mondays
+            major_loc_str = " (major ticks: Mondays)"
+            date_label = date_label + major_loc_str
             # major_fmt = weekFormatter
             major_fmt = yearsFormatter
         elif delta_days < 90 or nyears <= 1:
             minor_loc = mondays
+            minor_loc_str = " (minor ticks: Mondays)"
+            date_label = date_label + minor_loc_str
             major_loc = allmonths
             major_fmt = yearsFormatter
         elif 1 < nyears <= 5:
@@ -441,6 +442,13 @@ def plot_time_series(sat_list, channel, select, start_date,
             minor_loc = allyears
             major_loc = YearLocator(2, month=1, day=1)
             major_fmt = yearsFormatter
+
+        # label axes
+        ax_val.set_title(plot_label)
+        ax_val.set_ylabel(mean_label)
+        ax_std.set_ylabel(stdv_label)
+        ax_rec.set_ylabel(nobs_label)
+        ax_rec.set_xlabel(date_label)
 
         ax_val.xaxis.set_major_locator(major_loc)
         ax_std.xaxis.set_major_locator(major_loc)
