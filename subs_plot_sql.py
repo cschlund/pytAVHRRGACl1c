@@ -382,15 +382,19 @@ def plot_time_series(sat_list, channel, select, start_date,
 
         # get number of valid orbits per day
         if len(sat_list) == 1 and flag:
+            if sat_list[0] == 'NOAA15':
+                satcol='b'
+            else:
+                satcol='r'
             max_cnts = max(orb_cnts_lst)
             ax2 = ax_rec.twinx()
-            ax2.plot(datelst, orb_cnts_lst, color='r', linewidth=1.5)
-            ax2.set_ylabel('Orbits/day', color='r')
-            ax2.set_ylim(0, max_cnts + 5)
+            ax2.plot(datelst, orb_cnts_lst, color=satcol, linewidth=1.5)
+            ax2.set_ylabel('Orbits/day', color=satcol)
+            ax2.set_ylim(0, max_cnts + 10)
             ax_rec.set_ylim(0, max(nobslst)+max(nobslst)*0.1)
-            ax2.grid(which='major', alpha=0.8, color='r')
+            ax2.grid(which='major', alpha=0.8, color=satcol)
             for tl in ax2.get_yticklabels():
-                tl.set_color('r')
+                tl.set_color(satcol)
 
         # x axis range
         ax_val.set_xlim(min_x_date, max_x_date)
