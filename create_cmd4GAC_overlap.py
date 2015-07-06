@@ -5,6 +5,7 @@
 import os, sys
 import calendar
 import time, datetime
+from subs_avhrrgac import get_satellite_list
 
 basedir   = os.getcwd()
 proname   = 'GAC_overlap'
@@ -25,6 +26,7 @@ f.close()
 # cmd file
 cmdfile = os.path.join(basedir, proname+'.cmd')
 sqlcomp = os.path.join(ipath, dbfile)
+satlist = get_satellite_list()
 
 # create err and out logfilenames
 base_filename = proname + '_' + str(timestamp)
@@ -55,21 +57,24 @@ set -x
 cd ''' + basedir + '''
 mkdir -p ''' + basedir + '''/log
 
-# --- options for python script
-PROG=''' + pytname + '''
-SLQT="-g '''+sqlcomp+''' "
-python ${PROG} ${SQLT} > ''' + outfil2 + ''' 2> ''' + errfil2 + '''
-
-status=${?}
-if [ $status -ne 0 ]; then
-  echo " --- FAILED"
-  return 1
-fi
-
-# --- end of ''' + cmdfile + ''' ---
 '''
-
 f.write(line)
+
+for sat in satlist:
+    line = '''python '''+pytname+''' -g '''+sqlcomp+''' -s '''+sat+''' >> '''+outfil2+''' 2>> '''+errfil2
+    f.write(line+'\n')
+
+    line = '''status=${?}'''
+    f.write(line+'\n')
+    line = '''if [ $status -ne 0 ]; then'''
+    f.write(line+'\n')
+    line = '''   echo " --- FAILED for '''+sat+'''"'''
+    f.write(line+'\n')
+    line = '''   return 1'''
+    f.write(line+'\n')
+    line = '''fi'''
+    f.write(line+'\n\n')
+
 f.close()
 
 print (" *** %s finished for %s " % (sys.argv[0], cmdfile))

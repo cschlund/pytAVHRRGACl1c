@@ -7,6 +7,7 @@
 *.txt
 *.sqlite3
 *.idea
+*.cmd
 test*
 *test
 PYSTAT/**
