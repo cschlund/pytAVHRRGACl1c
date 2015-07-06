@@ -30,10 +30,10 @@ satlist = get_satellite_list()
 
 # create err and out logfilenames
 base_filename = proname + '_' + str(timestamp)
-errfile = os.path.join(workdir, "log", base_filename + "_log.err")
-outfile = os.path.join(workdir, "log", base_filename + "_log.out")
-errfil2 = os.path.join(workdir, "log", base_filename + "_log2.err")
-outfil2 = os.path.join(workdir, "log", base_filename + "_log2.out")
+errfile = os.path.join(workdir, base_filename + "_log.err")
+outfile = os.path.join(workdir, base_filename + "_log.out")
+errfil2 = os.path.join(workdir, base_filename + "_log2.err")
+outfil2 = os.path.join(workdir, base_filename + "_log2.out")
 
 # write cmd file
 f = open(cmdfile, mode="w")
@@ -55,7 +55,6 @@ line = '''#!/bin/ksh
 set -x
 
 cd ''' + workdir + '''
-mkdir -p ''' + workdir + '''/log
 
 '''
 f.write(line)

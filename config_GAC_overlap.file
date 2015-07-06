@@ -9,4 +9,4 @@
 #	2015-07-06 created: C. Schlundt	DWD KU22		    
 
 ipath=/scratch/ms/de/sf7/cschlund/GAC_PROC/ECFlow_AvhrrGacL1c_proc/sql
-dbfile=AVHRR_GAC_archive_v2_newstats_overlap.sqlite3
+dbfile=AVHRR_GAC_archive_v2_newstats_post_overlap.sqlite3
