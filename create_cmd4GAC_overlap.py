@@ -18,22 +18,22 @@ f = open(cfgfile, mode="r+")
 for lines in f:
   line = lines.rstrip('\n')
   if "ipath=" in line:
-    ipath = line.split("=")[1]
+    workdir = line.split("=")[1]
   if "dbfile=" in line:
     dbfile = line.split("=")[1]
 f.close()
 
 # cmd file
 cmdfile = os.path.join(basedir, proname+'.cmd')
-sqlcomp = os.path.join(ipath, dbfile)
+sqlcomp = os.path.join(workdir, dbfile)
 satlist = get_satellite_list()
 
 # create err and out logfilenames
 base_filename = proname + '_' + str(timestamp)
-errfile = os.path.join(basedir, "log", base_filename + "_log.err")
-outfile = os.path.join(basedir, "log", base_filename + "_log.out")
-errfil2 = os.path.join(basedir, "log", base_filename + "_log2.err")
-outfil2 = os.path.join(basedir, "log", base_filename + "_log2.out")
+errfile = os.path.join(workdir, "log", base_filename + "_log.err")
+outfile = os.path.join(workdir, "log", base_filename + "_log.out")
+errfil2 = os.path.join(workdir, "log", base_filename + "_log2.err")
+outfil2 = os.path.join(workdir, "log", base_filename + "_log2.out")
 
 # write cmd file
 f = open(cmdfile, mode="w")
@@ -54,8 +54,8 @@ line = '''#!/bin/ksh
 
 set -x
 
-cd ''' + basedir + '''
-mkdir -p ''' + basedir + '''/log
+cd ''' + workdir + '''
+mkdir -p ''' + workdir + '''/log
 
 '''
 f.write(line)
