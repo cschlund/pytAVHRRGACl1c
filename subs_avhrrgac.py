@@ -10,6 +10,8 @@ import string
 import time
 import numpy as np
 import logging
+import calendar
+from dateutil.rrule import rrule, MONTHLY
 from math import floor
 
 logger = logging.getLogger('root')
@@ -846,3 +848,41 @@ def get_l1c_timestamps(filename):
 
      return start_time_l1c, end_time_l1c
 
+
+def get_monthly_ect_averages(satellite, datlst, ectlst): 
+    """
+    Calculate the monthly ECT averages using date_list and ect_list.
+    """
+
+    ects = list()   # ects in seconds
+    datsec = list() # dates in seconds
+    datobj = list() # dates as datetime objects
+
+    logger.info("Calculate monthly ECT averages for {0}".format(satellite))
+
+    # midnights for ectlst
+    midnights = [datetime.datetime(ect.year, ect.month, ect.day, 0, 0) for ect in ectlst]
+    # convert ectlst into seconds
+    seconds = [(ect - m).total_seconds() for ect, m in zip(ectlst, midnights)]
+
+    for mm in rrule(MONTHLY, dtstart=min(datlst), until=max(datlst)): 
+
+        tmplst = list()
+        ystr = mm.strftime('%Y')
+        mstr = mm.strftime('%m')
+        ndays = calendar.monthrange(int(ystr),int(mstr))[1]
+        mindt = datetime.datetime(int(ystr), int(mstr), 1, 0, 0, 0)
+        maxdt = datetime.datetime(int(ystr), int(mstr), ndays, 23, 59, 59)
+
+        for idx,dt in enumerate(datlst):
+            if mindt <= dt <= maxdt:
+                tmplst.append(seconds[idx])
+
+        if len(tmplst) > 0:
+            date_in_sec = (mindt - datetime.datetime(1970, 1, 1, 0, 0)).total_seconds()
+            monave = sum(tmplst) / float(len(tmplst))
+            ects.append(monave)
+            datsec.append(date_in_sec)
+            datobj.append(mindt)
+
+    return ects, datsec, datobj

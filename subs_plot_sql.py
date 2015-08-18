@@ -1084,8 +1084,13 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
 
     # output file
     ofile = "Plot_AVHRR_equat_cross_time_" + subs.date2str(sdate) + \
-            "_" + subs.date2str(edate) + ".png"
-    outfile = os.path.join(outdir, ofile)
+            "_" + subs.date2str(edate)
+    outfile = os.path.join(outdir, ofile + '.png')
+    txtfile = os.path.join(outdir, ofile + '.txt')
+    f = open(txtfile, mode="w")
+    f.write('# Equatorial Crossing Time of AVHRRs onboard NOAA and METOP satellites\n')
+    f.write("# 1.Satellite  2.YearMonth 3.Local Time Ascending Node (LTAN)\n")
+    f.close()
 
     plt_title = "Equatorial Crossing Time of AVHRR's " \
                 "on-board NOAA/MetOp Polar Satellites\n"
@@ -1144,6 +1149,24 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
             # ax.scatter(dat_arr, sec_arr, color=color_list[cnt], alpha=.2, s=2)
             ax.plot(bins - bin_delta / 2., running_mean,
                     color=color_list[cnt], lw=4, alpha=.9, label=satellite)
+
+
+            # write monthly ect averages into txt file
+            (ectmean, date_in_seconds, 
+             date_as_dtobject) = subs.get_monthly_ect_averages(satellite, date_list, ect_list)
+            yearmonth = [d.strftime('%Y%m') for d in date_as_dtobject]
+            ect_in_seconds = [e/3600. for e in ectmean]
+
+            f = open(txtfile, mode="a")
+            for idx,val in enumerate(ectmean):
+                line = '{0:8s}{1:8s}{2:10.4f}\n'.format(satellite, yearmonth[idx], 
+                                                        ect_in_seconds[idx])
+                f.write(line)
+            f.close()
+
+            # plot shows bumps
+            #ax.plot(date_in_seconds, ectmean, 
+            #        color=color_list[cnt], lw=4, alpha=.9, label=satellite)
 
         # next satellite
         cnt += 1
