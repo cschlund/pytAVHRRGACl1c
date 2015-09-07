@@ -213,8 +213,8 @@ def calc_midnight(stime, etime):
 
         # calculate the orbit line under the
         # assumption of 2 scanlines/second
-        midnight_diff_msec = midnight_diff.seconds + midnight_diff.microseconds / 1000000
-        midnight_orbit_calc = midnight_diff_msec * 2
+        midnight_diff_sec = int(round(midnight_diff.total_seconds()))
+        midnight_orbit_calc = midnight_diff_sec * 2
 
     else:
 
@@ -235,8 +235,8 @@ def calc_overlap(stime, etime):
     # assumption: 2 scanlines per second
 
     timediff = etime - stime
-    timediff_msec = timediff.days * 24 * 60 * 60 + timediff.seconds + timediff.microseconds / 1000000
-    overlap_rows = timediff_msec * 2
+    timediff_sec = int(round(timediff.total_seconds()))
+    overlap_rows = timediff_sec * 2
 
     if overlap_rows < 0:
         logger.info("overlap_rows = {0}".format(overlap_rows))
