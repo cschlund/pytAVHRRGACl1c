@@ -4,7 +4,6 @@
 
 import os
 import argparse
-import subs_avhrrgac as subs
 from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
 from pycmsaf.logger import setup_root_logger
 
