@@ -2,8 +2,8 @@
 # --- README ---
 # ============================================================================
 
-usage: add2sqlite_l1c_info.py [-h] -dat DATE -sat SATELLITE -inp INPDIR -sql
-                              SQLITE [-ver]
+usage: add2sqlite_l1c_info.py [-h] -l1b L1B_FILE -l1c L1C_FILE -dir L1C_PATH
+                              -dbf DB_FILE [-tmpdir TMP_DIR] [-ver]
 
 add2sqlite_l1c_info.py reads pyGAC L1c output h5 orbit files (avhrr,
 qualflags) and adds to L1b sqlite database, valuable L1c information for each
@@ -15,15 +15,19 @@ overlapping scanlines of two consecutive orbits.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -dat DATE, --date DATE
-                        String, e.g. 20000101, 2000-01-01
-  -sat SATELLITE, --satellite SATELLITE
-                        String, e.g. noaa19, NOAA19
-  -inp INPDIR, --inpdir INPDIR
-                        String, e.g. /path/to/input/files.h5
-  -sql SQLITE, --sqlite SQLITE
-                        /path/to/AVHRR_GAC_archive_L1b_L1c.sqlite3, which
+  -l1b L1B_FILE, --l1b_file L1B_FILE
+                        e.g., NSS.GHRR.NJ.D96015.S0112.E0306.B0537071.WI.gz
+  -l1c L1C_FILE, --l1c_file L1C_FILE
+                        e.g., ECC_GAC_avhrr_noaa14_99999_19960115T0112111Z_199
+                        60115T0306281Z.h5
+  -dir L1C_PATH, --l1c_path L1C_PATH
+                        Directory where L1c files are located.
+  -dbf DB_FILE, --db_file DB_FILE
+                        /path/to/AVHRR_GAC_archive_L1b_L1c.sqlite3,which
                         should be updated with L1c information
+  -tmpdir TMP_DIR, --tmp_dir TMP_DIR
+                        Move files having fishy orbit duration to this
+                        directory.
   -ver, --verbose       increase output verbosity
 
 # ============================================================================
@@ -53,47 +57,45 @@ optional arguments:
 
 # ============================================================================
 
-usage: vis_avhrrgac_l1c.py [-h] -c CHANNEL -f FILENAME [-r REGION] [-t TIME]
-                           [-v]
+usage: GAC_overlap.py [-h] --sqlfile SQLFILE
 
-This script displays one AVHRR GAC Level 1c orbit processed in the framework
-of cloud_cci (gyGAC).
+GAC_overlap.py calculates the number of overlapping rows. 3 columns are added:
+'start_scanline_endcut' and 'end_scanline_endcut' and 'midnight_scanline' .
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -c CHANNEL, --channel CHANNEL
-                        ch1|ch2|ch3b|ch4|ch5|ch3a
-  -f FILENAME, --filename FILENAME
-                        /path/to/ECC_GAC_file.h5
-  -r REGION, --region REGION
-                        afr, eur, ger, glo, rus
-  -t TIME, --time TIME  day|night|twilight, default is all
-  -v, --verbose         increase output verbosity
+  -h, --help         show this help message and exit
+  --sqlfile SQLFILE  /path/to/database.sqlite3
 
 # ============================================================================
 
-usage: GAC_overlap.py [-h] [-s SAT] -g SQLCOMP [-v]
+usage: vis_avhrrgac.py [-h] [-reg REGION] [-out OUTPUTDIR]
+                       [-bmb BASEMAP_BACKGROUND] [-show] [-ver]
+                       {map_l1c,map_cci} ...
 
-GAC_overlap.py calculates the number of overlapping rows. Five columns are
-added: 'start_scanline_begcut' and 'end_scanline_begcut' in case the beginning
-of the orbits will be cut, 'start_scanline_endcut' and 'end_scanline_endcut'
-in case the end of the orbit will be cut, and 'midnight_scanline' giving the
-midnight orbit scan line.
+vis_avhrrgac.py displays AVHRR GAC data (pygac: l1c; cloud_cci: l2, l3u, l3c, l3s).
+
+positional arguments:
+  {map_l1c,map_cci}     Select a Subcommand
 
 optional arguments:
   -h, --help            show this help message and exit
-  -s SAT, --sat SAT     Available are: NOAA7|NOAA9|NOAA11|NOAA12|NOAA14|NOAA15
-                        |NOAA16|NOAA17|NOAA18|NOAA19|METOPA|METOPB, default:
-                        use all
-  -g SQLCOMP, --sqlcomp SQLCOMP
-                        /path/to/sqlitefile.sqlite3
-  -v, --verbose         increase output verbosity
+  -reg REGION, --region REGION
+                        afr, ame, aus, eur, ger, glo, nam, npol, rus, sam,
+                        spol
+  -out OUTPUTDIR, --outputdir OUTPUTDIR
+                        /path/to/mapdir
+  -bmb BASEMAP_BACKGROUND, --basemap_background BASEMAP_BACKGROUND
+                        bluemarble/shaderelief/etopo
+  -show, --show_figure  Show figure instead of saving saving
+  -ver, --verbose       increase output verbosity
 
 # ============================================================================
 
-usage: plot_pystat_results.py [-h] -db DBFILE -out OUTDIR -sd SDATE -ed EDATE
-                              [-cha CHANNEL] [-tim TIME] [-sat SATELLITE]
-                              [-tar TARGET] [-fit] [-ver] [-asc ASCIIFILES]
+usage: plot_pystat_results.py [-h] -db DBFILE -out OUTDIR [-sd SDATE]
+                              [-ed EDATE] [-cha CHANNEL] [-tim TIME]
+                              [-sats [SATELLITES [SATELLITES ...]]]
+                              [-tar TARGET] [-fit] [-ver] [-show]
+                              [-asc ASCIIFILES]
 
 plot_pystat_results.py displays pystat results, i.e. daily global and zonal
 means and standard deviations stored in a sqlite database.
@@ -112,8 +114,9 @@ optional arguments:
                         Channel abbreviation, available:
                         ch1|ch2|ch3b|ch4|ch5|ch3a
   -tim TIME, --time TIME
-                        Time abbreviation, available: day|night|twilight
-  -sat SATELLITE, --satellite SATELLITE
+                        Time abbreviation, available:
+                        day_90sza|day|night|twilight
+  -sats [SATELLITES [SATELLITES ...]], --satellites [SATELLITES [SATELLITES ...]]
                         Satellite, available: NOAA7|NOAA9|NOAA11|NOAA12|NOAA14
                         |NOAA15|NOAA16|NOAA17|NOAA18|NOAA19|METOPA|METOPB
   -tar TARGET, --target TARGET
@@ -127,7 +130,78 @@ optional arguments:
   -fit, --linfit        If you want to plot a time series including a linear
                         regression (plot per satellite/channel/time).
   -ver, --verbose       increase output verbosity
+  -show, --show_figure  Show figure instead of saving saving
   -asc ASCIIFILES, --asciifiles ASCIIFILES
                         read old pystat results stored in ascii files
+
+# ============================================================================
+#
+usage: get_equator_crossing_time.py [-h] --start_date START_DATE --end_date
+                                    END_DATE --l1c_path L1C_PATH [--verbose]
+
+get_equator_crossing_time.py calculates the equator crossing time for each
+orbit for the ascending node, i.e. local time of ascending node (LTAN).
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --start_date START_DATE
+                        e.g., 19960115
+  --end_date END_DATE   e.g., 19960121
+  --l1c_path L1C_PATH   Directory where L1c files are located.
+  --verbose             increase output verbosity
+
+# ============================================================================
+
+usage: plot_avhrr_ect_ltan.py [-h] -db DBFILE -out OUTDIR [-sd SDATE]
+                              [-ed EDATE]
+                              [-sats [SATELLITES [SATELLITES ...]]] [-ver]
+                              [-show]
+
+{0} displays AVHRR/NOAAs equator crossing time (local time of ascending node),
+which is stored in the AVHRR GAC archive database after L1c processing.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -db DBFILE, --dbfile DBFILE
+                        String, i.e. /path/to/db.sqlite3
+  -out OUTDIR, --outdir OUTDIR
+                        String, i.e. /path/to/plot_out/
+  -sd SDATE, --sdate SDATE
+                        String, Start Date
+  -ed EDATE, --edate EDATE
+                        String, End Date
+  -sats [SATELLITES [SATELLITES ...]], --satellites [SATELLITES [SATELLITES ...]]
+                        Satellite, available: NOAA7|NOAA9|NOAA11|NOAA12|NOAA14
+                        |NOAA15|NOAA16|NOAA17|NOAA18|NOAA19|METOPA|METOPB
+  -ver, --verbose       increase output verbosity
+  -show, --show_figure  Show figure instead of saving saving
+
+# ============================================================================
+
+usage: post_proc_avhrrgac_database.py [-h] --dbfile DBFILE [--verbose]
+                                      [--satellites [SATELLITES [SATELLITES ...]]]
+                                      [--wrong_l1c_timestamp]
+                                      [--no_valid_l1c_data] [--bad_n17_data]
+
+post_proc_avhrrgac_database.py corrects AVHRR GAC archive database based on
+logfile analysis, i.e. blacklist AVHRR GAC orbitsdue to specific reason
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --dbfile DBFILE       /path/to/database.sqlite3
+  --verbose             increase output verbosity
+  --satellites [SATELLITES [SATELLITES ...]]
+                        List of satellites, which should be considered
+  --wrong_l1c_timestamp
+                        Blacklist L1b files getting wrong l1c timestamp. This
+                        must be done before GAC_overlap.py, otherwise it will
+                        be aborted due to ambiguous entries.
+  --no_valid_l1c_data   Blacklist days, where no valid l1c data is available.
+                        ATTENTION: only if you know what you are doing! The
+                        list_of_invalid_days changes from processing to
+                        processing due to pygac updates.
+  --bad_n17_data        Blacklist all days between 2010-03-01 and 2011-12-31
+                        of NOAA17 because data show problems. AVHRR scan motor
+                        stalled on 15 Oct 2010.
 
 # ============================================================================
