@@ -23,6 +23,51 @@ def str2upper(string_object):
     return string_object.upper()
 
 
+def wrong_ydim(db, ver):
+    """
+    List of l1b files, which have a wrong y-dimension, i.e. along_track.
+    """
+    blist = list()
+    black_reason = "along_track_too_long"
+
+    blist = ["NSS.GHRR.NK.D09357.S2056.E2242.B6037880.WI.gz",
+             "NSS.GHRR.NK.D10075.S0422.E0617.B6155152.WI.gz",
+             "NSS.GHRR.NK.D10298.S2008.E2150.B6473637.WI.gz",
+             "NSS.GHRR.NK.D11129.S1504.E1552.B6752424.WI.gz",
+             "NSS.GHRR.NK.D12036.S1904.E2022.B7140001.WI.gz",
+             "NSS.GHRR.NL.D07100.S0445.E0638.B3375152.WI.gz",
+             "NSS.GHRR.NL.D08218.S0916.E1102.B4057273.WI.gz",
+             "NSS.GHRR.NL.D11317.S0738.E0932.B5744243.WI.gz",
+             "NSS.GHRR.NN.D06032.S0311.E0506.B0361920.GC.gz",
+             "NSS.GHRR.NN.D09253.S0123.E0318.B2219293.WI.gz",
+             "NSS.GHRR.NN.D12226.S0457.E0652.B3726061.WI.gz",
+             "NSS.GHRR.NP.D14087.S0248.E0316.B2645555.SV.gz",
+             "NSS.GHRR.NP.D14365.S2230.E2349.B3038989.GC.gz",
+             "NSS.GHRR.NC.D84283.S0744.E0931.B1699899.WI.gz"]
+    
+    for i in blist:
+        upd = "UPDATE orbits SET blacklist=1, " \
+              "blacklist_reason=\'{blr}\' " \
+              "WHERE filename=\'{fil}\' and blacklist=0 ".format(blr=black_reason, fil=i)
+        db.execute(upd)
+
+        if ver:
+            cmd = "SELECT * FROM orbits WHERE blacklist_reason=\'{blr}\' ".format(blr=black_reason)
+            res = db.execute(cmd)
+            for r in res:
+                logger.info("L1b Filename : {0}".format(r['filename']))
+                logger.info("start_time_l1b : {0}".format(r['start_time_l1b']))
+                logger.info("start_time_l1c : {0}".format(r['start_time_l1c']))
+                logger.info("end_time_l1b : {0}".format(r['end_time_l1b']))
+                logger.info("end_time_l1c : {0}".format(r['end_time_l1c']))
+                logger.info("along_track : {0}".format(r['along_track']))
+                logger.info("across_track : {0}".format(r['across_track']))
+                logger.info("blacklist : {0}".format(r['blacklist']))
+                logger.info("blacklist_reason: {0}\n".format(r['blacklist_reason']))
+
+    return black_reason
+
+
 def blacklist_n17_data(db, ver):
     """
     List of days for NOAA-17, which should be blacklisted,
@@ -353,6 +398,10 @@ if __name__ == '__main__':
                         2011-12-31 of NOAA17 because data show problems. AVHRR
                         scan motor stalled on 15 Oct 2010.''')
 
+    parser.add_argument('--along_track_too_long', action="store_true",
+                        help='''Diana found during CLARA-A2 processing orbits, 
+                        which are too long in the along_track dimension.''')
+
     args = parser.parse_args()
 
     # -- define list of satellites
@@ -365,12 +414,13 @@ if __name__ == '__main__':
 
     # -- some screen output if wanted
     logger.info("*** Parameter passed ***")
-    logger.info("Verbose            : %s" % args.verbose)
-    logger.info("DB_Sqlite3         : %s" % args.dbfile)
-    logger.info("Satellites         : {0}".format(sat_list))
-    logger.info("wrong_l1c_timestamp: {0}".format(args.wrong_l1c_timestamp))
-    logger.info("no_valid_l1c_data  : {0}".format(args.no_valid_l1c_data))
-    logger.info("bad_l1c_quality    : {0}".format(args.bad_n17_data))
+    logger.info("Verbose             : %s" % args.verbose)
+    logger.info("DB_Sqlite3          : %s" % args.dbfile)
+    logger.info("Satellites          : {0}".format(sat_list))
+    logger.info("wrong_l1c_timestamp : {0}".format(args.wrong_l1c_timestamp))
+    logger.info("no_valid_l1c_data   : {0}".format(args.no_valid_l1c_data))
+    logger.info("bad_l1c_quality     : {0}".format(args.bad_n17_data))
+    logger.info("along_track_too_long: {0}".format(args.along_track_too_long))
 
     # -- connect to database
     dbfile = AvhrrGacDatabase(dbfile=args.dbfile,
@@ -406,9 +456,19 @@ if __name__ == '__main__':
             logger.info("{0} orbits are blacklisted due to {1}".
                         format(i['COUNT(*)'], reason))
 
+    # -- blacklist l1b orbits having too long along_track dimension
+    if args.along_track_too_long: 
+        reason = wrong_ydim(dbfile, args.verbose)
+        ret = "SELECT COUNT(*) FROM vw_std WHERE " \
+              "blacklist_reason=\'{reason}\'".format(reason=reason)
+        num = dbfile.execute(ret)
+        for i in num:
+            logger.info("{0} orbits are blacklisted due to {1}".
+                        format(i['COUNT(*)'], reason))
+
     # -- commit changes
     if args.wrong_l1c_timestamp or args.no_valid_l1c_data \
-            or args.bad_n17_data: 
+            or args.bad_n17_data or args.along_track_too_long: 
         logger.info("Commit all changes") 
         dbfile.commit_changes()
 
