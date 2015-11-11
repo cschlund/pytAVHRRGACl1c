@@ -409,7 +409,9 @@ def full_sat_name(sat):
 
     m1_list = ["m01", "metopb", "metop01", "M1", "METOPB"]
     m2_list = ["m02", "metopa", "metop02", "M2", "METOPA"]
+    na_list = ["n06", "noaa6", "noaa06", "NA", "NOAA6"]
     nc_list = ["n07", "noaa7", "noaa07", "NC", "NOAA7"]
+    ne_list = ["n08", "noaa8", "noaa08", "NE", "NOAA8"]
     nf_list = ["n09", "noaa9", "noaa09", "NF", "NOAA9"]
     ng_list = ["n10", "noaa10", "NG", "NOAA10"]
     nh_list = ["n11", "noaa11", "NH", "NOAA11"]
@@ -431,10 +433,20 @@ def full_sat_name(sat):
         abbr = "metopa"
         lite = "METOPA"
 
+    elif sat in na_list:
+        name = "NOAA-6"
+        abbr = "noaa6"
+        lite = "NOAA6"
+
     elif sat in nc_list:
         name = "NOAA-7"
         abbr = "noaa7"
         lite = "NOAA7"
+
+    elif sat in ne_list:
+        name = "NOAA-8"
+        abbr = "noaa8"
+        lite = "NOAA8"
 
     elif sat in nf_list:
         name = "NOAA-9"
