@@ -351,9 +351,10 @@ def get_satellite_list():
     SATELLITE list: sqlite3 nomenclature
     """
 
-    satellites = ['NOAA7', 'NOAA9', 'NOAA11', 'NOAA12',
-                  'NOAA14', 'NOAA15', 'NOAA16', 'NOAA17',
-                  'NOAA18', 'NOAA19', 'METOPA', 'METOPB']
+    satellites = ['NOAA6',  'NOAA7',  'NOAA8',  'NOAA9', 'NOAA10',
+                  'NOAA11', 'NOAA12', 'NOAA14', 
+                  'NOAA15', 'NOAA16', 'NOAA17', 'NOAA18', 
+                  'NOAA19', 'METOPA', 'METOPB']
     return satellites
 
 
