@@ -441,7 +441,7 @@ def full_sat_name(sat):
         name = "NOAA-6"
         abbr = "noaa6"
         lite = "NOAA6"
-        color= 'firebrick4'
+        color= 'slategray'
 
     elif sat in nc_list:
         name = "NOAA-7"
@@ -453,7 +453,7 @@ def full_sat_name(sat):
         name = "NOAA-8"
         abbr = "noaa8"
         lite = "NOAA8"
-        color= 'DimGray'
+        color= 'lightpink'
 
     elif sat in nf_list:
         name = "NOAA-9"

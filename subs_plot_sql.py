@@ -259,7 +259,6 @@ def plot_time_series(sat_list, channel, select, start_date,
     nobs_label = "# of Observations\n"
     date_label = "\nDate"
 
-    color_list = subs.get_color_list()
     cnt = 0
     lwd = 2
 
@@ -276,6 +275,9 @@ def plot_time_series(sat_list, channel, select, start_date,
 
     # -- loop over satellites
     for satellite in sat_list:
+
+        # get color for satellite
+        name, abbr, lite, satcolor = subs.full_sat_name(satellite)
 
         # if ascii files inpdir is given
         if ascinpdir is not None:
@@ -322,32 +324,32 @@ def plot_time_series(sat_list, channel, select, start_date,
                 # stdvlst = [stdvlst[i] for i in xrange(len(stdvlst)) if msk[i]]
 
                 # date vs. global mean
-                # ax_val.plot(datelst, meanlst, marker='o', color=color_list[cnt])
+                # ax_val.plot(datelst, meanlst, marker='o', color=satcolor)
                 ax_val.plot(datelst, meanlst, label=satellite,
-                            color=color_list[cnt], linewidth=lwd)
+                            color=satcolor, linewidth=lwd)
 
                 if ascinpdir is not None and len(asc_datelst) > 10:
                     ax_val.plot(asc_datelst, asc_meanlst, 'o',
-                                color=color_list[cnt], linewidth=lwd)
+                                color=satcolor, linewidth=lwd)
 
                 # date vs. global stdv
-                # ax_std.plot(datelst, stdvlst, 'o', color=color_list[cnt])
+                # ax_std.plot(datelst, stdvlst, 'o', color=satcolor)
                 ax_std.plot(datelst, stdvlst, label=satellite,
-                            color=color_list[cnt], linewidth=lwd)
+                            color=satcolor, linewidth=lwd)
 
                 if ascinpdir is not None and len(asc_datelst) > 10:
                     ax_std.plot(asc_datelst, asc_stdvlst, 'o',
-                                color=color_list[cnt], linewidth=lwd)
+                                color=satcolor, linewidth=lwd)
 
                 # date vs. global nobs
-                # ax_rec.plot(datelst, nobslst, 'o', color=color_list[cnt])
+                # ax_rec.plot(datelst, nobslst, 'o', color=satcolor)
                 ax_rec.plot(datelst, nobslst, label=satellite,
                             marker='o', markersize=5, alpha=0.8,
-                            color=color_list[cnt], linewidth=lwd)
+                            color=satcolor, linewidth=lwd)
 
                 if ascinpdir is not None and len(asc_datelst) > 10:
                     ax_rec.plot(asc_datelst, asc_nobslst, 'o',
-                                color=color_list[cnt], linewidth=lwd)
+                                color=satcolor, linewidth=lwd)
 
         # set new color for next satellite
         cnt += 1
@@ -515,8 +517,6 @@ def plot_time_series_linfit(sat_list, channel, select, start_date,
     nobs_label = "# of Observations\n"
     date_label = "\nTime"
 
-    # color_list = subs.get_color_list()
-    # cnt = 0
     lwd = 2
 
     # -- loop over satellites
@@ -915,7 +915,6 @@ def plot_zonal_results(sat_list, channel, select, start_date,
 
     fill_value = -9999.0
     chan_label = subs.full_cha_name(channel)
-    color_list = subs.get_color_list()
     cnt = 0
 
     # -- loop over days
@@ -935,7 +934,7 @@ def plot_zonal_results(sat_list, channel, select, start_date,
         # -- loop over satellites
         for satellite in sat_list:
 
-            sat_label = subs.full_sat_name(satellite)[0]
+            sat_label, abbr, lite, satcolor = subs.full_sat_name(satellite)
 
             try: 
                 check = cursor.execute("SELECT OrbitCount FROM statistics")
@@ -968,7 +967,7 @@ def plot_zonal_results(sat_list, channel, select, start_date,
                 slist.append(zstdv)
                 rlist.append(znobs)
                 blist.append(belts)
-                clist.append(color_list[cnt])
+                clist.append(satcolor)
                 plist.append(satellite)
 
                 # ---------------------------------------------------
@@ -1100,7 +1099,6 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
 
     # count for satellite color
     cnt = 0
-    color_list = subs.get_color_list()
 
     # initialize plot
     fig = plt.figure(figsize=(15, 10))
@@ -1111,6 +1109,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
 
         # get color for satellite
         name, abbr, lite, satcolor = subs.full_sat_name(satellite)
+
         # get records for satellite
         date_list, ect_list = subs.get_ect_records(satellite, dbfile)
         if not date_list:
@@ -1151,9 +1150,9 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
                             for k in range(total_bins)]
 
             # plot x and y
-            # ax.scatter(dat_arr, sec_arr, color=color_list[cnt], alpha=.2, s=2)
+            # ax.scatter(dat_arr, sec_arr, color=satcolor, alpha=.2, s=2)
             # ax.plot(bins - bin_delta / 2., running_mean,
-            #         color=color_list[cnt], lw=4, alpha=.9, label=satellite)
+            #         color=satcolor, lw=4, alpha=.9, label=satellite)
             ax.plot(bins - bin_delta / 2., running_mean,
                     color=satcolor, lw=4, alpha=.9, label=satellite)
 
@@ -1173,7 +1172,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
 
             # plot shows bumps
             #ax.plot(date_in_seconds, ectmean, 
-            #        color=color_list[cnt], lw=4, alpha=.9, label=satellite)
+            #        color=satcolor, lw=4, alpha=.9, label=satellite)
 
         # next satellite
         cnt += 1
