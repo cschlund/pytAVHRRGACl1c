@@ -406,6 +406,7 @@ def full_sat_name(sat):
             name = for plotting routines (name on the PLOT)
             abbr = pygac nomenclature
             lite = sqlite3 nomenclature
+            color= color for plotting
     """
 
     m1_list = ["m01", "metopb", "metop01", "M1", "METOPB"]
@@ -428,83 +429,98 @@ def full_sat_name(sat):
         name = "MetOp-B"
         abbr = "metopb"
         lite = "METOPB"
+        color= 'Olive'
 
     elif sat in m2_list:
         name = "MetOp-A"
         abbr = "metopa"
         lite = "METOPA"
+        color= 'Gold'
 
     elif sat in na_list:
         name = "NOAA-6"
         abbr = "noaa6"
         lite = "NOAA6"
+        color= 'firebrick4'
 
     elif sat in nc_list:
         name = "NOAA-7"
         abbr = "noaa7"
         lite = "NOAA7"
+        color= 'Magenta'
 
     elif sat in ne_list:
         name = "NOAA-8"
         abbr = "noaa8"
         lite = "NOAA8"
+        color= 'DimGray'
 
     elif sat in nf_list:
         name = "NOAA-9"
         abbr = "noaa9"
         lite = "NOAA9"
+        color= 'DodgerBlue'
 
     elif sat in ng_list:
         name = "NOAA-10"
         abbr = "noaa10"
         lite = "NOAA10"
+        color= 'MediumSlateBlue'
 
     elif sat in nh_list:
         name = "NOAA-11"
         abbr = "noaa11"
         lite = "NOAA11"
+        color= 'DarkOrange'
 
     elif sat in nd_list:
         name = "NOAA-12"
         abbr = "noaa12"
         lite = "NOAA12"
+        color= 'Lime'
 
     elif sat in nj_list:
         name = "NOAA-14"
         abbr = "noaa14"
         lite = "NOAA14"
+        color= 'Sienna'
 
     elif sat in nk_list:
         name = "NOAA-15"
         abbr = "noaa15"
         lite = "NOAA15"
+        color= 'Red'
 
     elif sat in nl_list:
         name = "NOAA-16"
         abbr = "noaa16"
         lite = "NOAA16"
+        color= 'DarkGreen'
 
     elif sat in nm_list:
         name = "NOAA-17"
         abbr = "noaa17"
         lite = "NOAA17"
+        color= 'Turquoise'
 
     elif sat in nn_list:
         name = "NOAA-18"
         abbr = "noaa18"
         lite = "NOAA18"
+        color= 'DarkMagenta'
 
     elif sat in np_list:
         name = "NOAA-19"
         abbr = "noaa19"
         lite = "NOAA19"
+        color= 'Navy'
 
     else:
         message = "\n * The satellite name you've chosen is not " \
                   "available in the current list!\n"
         sys.exit(message)
 
-    return name, abbr, lite
+    return name, abbr, lite, color
 
 
 def full_cha_name(target):

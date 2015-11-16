@@ -1079,8 +1079,9 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
         logger.info("Plot LTAN")
 
     # morning satellites shift by minus 12 hours
-    am_sats = ['NOAA10', 'NOAA12', 'NOAA15',
-               'NOAA17', 'METOPA', 'METOPB']
+    am_sats = ['NOAA6',  'NOAA8',  'NOAA10', 
+               'NOAA12', 'NOAA15', 'NOAA17', 
+               'METOPA', 'METOPB']
 
     # output file
     ofile = "Plot_AVHRR_equat_cross_time_" + subs.date2str(sdate) + \
@@ -1108,8 +1109,12 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     # loop over satellites
     for satellite in sat_list:
 
+        # get color for satellite
+        name, abbr, lite, satcolor = subs.full_sat_name(satellite)
         # get records for satellite
         date_list, ect_list = subs.get_ect_records(satellite, dbfile)
+        if not date_list:
+            continue
         logger.info("{0}: {1} -- {2}".format(satellite, min(date_list), max(date_list)))
 
         if len(date_list) != 0:
@@ -1147,8 +1152,10 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
 
             # plot x and y
             # ax.scatter(dat_arr, sec_arr, color=color_list[cnt], alpha=.2, s=2)
+            # ax.plot(bins - bin_delta / 2., running_mean,
+            #         color=color_list[cnt], lw=4, alpha=.9, label=satellite)
             ax.plot(bins - bin_delta / 2., running_mean,
-                    color=color_list[cnt], lw=4, alpha=.9, label=satellite)
+                    color=satcolor, lw=4, alpha=.9, label=satellite)
 
 
             # write monthly ect averages into txt file
@@ -1218,8 +1225,11 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     ax.grid(which='major', alpha=0.7)
 
     # make legend
-    num_of_sats = int(math.ceil(cnt / 2.))
-    leg = ax.legend(ncol=num_of_sats, loc='best', fancybox=True, fontsize=18)
+    if cnt < 13: 
+        num_of_sats = int(math.ceil(cnt / 2.))
+    else:
+        num_of_sats = int(math.ceil(cnt / 3.))
+    leg = ax.legend(ncol=num_of_sats, loc='center', fancybox=True, fontsize=18)
     # plt.tight_layout(rect=(0.02, 0.02, 1.98, 0.98))
     plt.tight_layout()
     leg.get_frame().set_alpha(0.5)
