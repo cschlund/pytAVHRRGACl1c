@@ -1196,7 +1196,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     # modify y axis
     hour_start = 4 * 3600
     hour_end = 22 * 3600
-    ax.set_ylim(hour_start, hour_end)
+    ax.set_ylim(hour_end, hour_start)
     major_seconds_label = range(hour_start + 3600, hour_end, 2 * 3600)
     minor_seconds_label = range(hour_start + 3600, hour_end, 3600)
     seconds_strings = [str(datetime.timedelta(seconds=s))[0:-3]
@@ -1237,7 +1237,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
         num_of_sats = int(math.ceil(cnt / 2.))
     else:
         num_of_sats = int(math.ceil(cnt / 3.))
-    leg = ax.legend(ncol=num_of_sats, loc='upper left', fancybox=True, fontsize=18)
+    leg = ax.legend(ncol=num_of_sats, loc='lower left', fancybox=True, fontsize=18)
     # plt.tight_layout(rect=(0.02, 0.02, 1.98, 0.98))
     plt.tight_layout()
     leg.get_frame().set_alpha(0.5)
