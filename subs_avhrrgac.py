@@ -351,8 +351,8 @@ def get_satellite_list():
     SATELLITE list: sqlite3 nomenclature
     """
 
-    satellites = ['NOAA6',  'NOAA7',  'NOAA8',  'NOAA9', 'NOAA10',
-                  'NOAA11', 'NOAA12', 'NOAA14', 
+    satellites = ['TIROSN', 'NOAA6',  'NOAA7',  'NOAA8',  
+                  'NOAA9',  'NOAA10', 'NOAA11', 'NOAA12', 'NOAA14', 
                   'NOAA15', 'NOAA16', 'NOAA17', 'NOAA18', 
                   'NOAA19', 'METOPA', 'METOPB']
     return satellites
@@ -411,6 +411,7 @@ def full_sat_name(sat):
 
     m1_list = ["m01", "metopb", "metop01", "M1", "METOPB"]
     m2_list = ["m02", "metopa", "metop02", "M2", "METOPA"]
+    tn_list = ["n05", "noaa5", "noaa05", "TN", "NOAA5", "TIROSN"]
     na_list = ["n06", "noaa6", "noaa06", "NA", "NOAA6"]
     nc_list = ["n07", "noaa7", "noaa07", "NC", "NOAA7"]
     ne_list = ["n08", "noaa8", "noaa08", "NE", "NOAA8"]
@@ -436,6 +437,12 @@ def full_sat_name(sat):
         abbr = "metopa"
         lite = "METOPA"
         color= 'Gold'
+
+    elif sat in tn_list:
+        name = "NOAA-5"
+        abbr = "noaa5"
+        lite = "TIROSN"
+        color= 'black'
 
     elif sat in na_list:
         name = "NOAA-6"
