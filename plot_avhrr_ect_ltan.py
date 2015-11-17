@@ -34,7 +34,7 @@ if __name__ == '__main__':
                         help='String, i.e. /path/to/plot_out/')
 
     parser.add_argument('-sd', '--sdate', type=subs.datestring,
-                        default='1979-01-01', help='String, Start Date')
+                        default='1978-01-01', help='String, Start Date')
 
     parser.add_argument('-ed', '--edate', type=subs.datestring,
                         default='2016-01-01', help='String, End Date')
