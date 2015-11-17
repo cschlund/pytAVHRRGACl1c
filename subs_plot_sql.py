@@ -315,38 +315,47 @@ def plot_time_series(sat_list, channel, select, start_date,
             if len(datelst) > 1:
                 isdata_cnt += 1
 
-                # # print min(nobslst), max(nobslst)
-                # # the mask (filter)
-                # msk = [(el > 1000) for el in nobslst]
-                # nobslst = [nobslst[i] for i in xrange(len(nobslst)) if msk[i]]
-                # datelst = [datelst[i] for i in xrange(len(datelst)) if msk[i]]
-                # meanlst = [meanlst[i] for i in xrange(len(meanlst)) if msk[i]]
-                # stdvlst = [stdvlst[i] for i in xrange(len(stdvlst)) if msk[i]]
+                # missing dates
+                date_set = set(datelst[0]+datetime.timedelta(x) 
+                            for x in range((datelst[-1]-datelst[0]).days))
+                missing = sorted(date_set - set(datelst))
+                for miss in missing:
+                    logger.info("MISSING date: {0}".format(miss))
+
+                #new_datelst = list()
+                #new_meanlst = list()
+                #alldays = list(rrule(DAILY, dtstart=min_datelst, until=max_datelst))
+                #for adt in alldays:
+                #    if adt.date() in datelst:
+                #        yes = datelst.index(adt.date())
+                #        new_datelst.append(datelst[yes])
+                #        new_meanlst.append(meanlst[yes])
+                #    else:
+                #        new_datelst.append(np.nan)
+                #        new_meanlst.append(np.nan)
+
+                #for counter, new in enumerate(new_datelst):
+                #    print new_datelst[counter], new_meanlst[counter]
+
 
                 # date vs. global mean
-                # ax_val.plot(datelst, meanlst, marker='o', color=satcolor)
                 ax_val.plot(datelst, meanlst, label=satellite,
                             color=satcolor, linewidth=lwd)
-
                 if ascinpdir is not None and len(asc_datelst) > 10:
                     ax_val.plot(asc_datelst, asc_meanlst, 'o',
                                 color=satcolor, linewidth=lwd)
 
                 # date vs. global stdv
-                # ax_std.plot(datelst, stdvlst, 'o', color=satcolor)
                 ax_std.plot(datelst, stdvlst, label=satellite,
                             color=satcolor, linewidth=lwd)
-
                 if ascinpdir is not None and len(asc_datelst) > 10:
                     ax_std.plot(asc_datelst, asc_stdvlst, 'o',
                                 color=satcolor, linewidth=lwd)
 
                 # date vs. global nobs
-                # ax_rec.plot(datelst, nobslst, 'o', color=satcolor)
                 ax_rec.plot(datelst, nobslst, label=satellite,
                             marker='o', markersize=5, alpha=0.8,
                             color=satcolor, linewidth=lwd)
-
                 if ascinpdir is not None and len(asc_datelst) > 10:
                     ax_rec.plot(asc_datelst, asc_nobslst, 'o',
                                 color=satcolor, linewidth=lwd)
