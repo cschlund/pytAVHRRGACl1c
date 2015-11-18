@@ -29,6 +29,36 @@ def str2upper(string_object):
     return string_object.upper()
 
 
+def pre_blacklist_reasons():
+    """
+    These blacklist reasons have been found and implemented so far,
+    before the AVHRR GAC L1c processing based on L1B filenames.
+    Additionally blacklisted are L1B files, which are redudant, 
+    i.e. where sql column "redundant=1".
+    """
+    return ['old', 'too_small', 'too_long', 
+            'ground_station_duplicate', 'redundant']
+
+
+def proc_blacklist_reasons():
+    """
+    These blacklist reasons have been found and implemented so far,
+    during the AVHRR GAC L1c processing based on start and end l1c
+    timestamps.
+    """
+    return ['orbit_length_too_long', 'negative_orbit_length']
+
+
+def post_blacklist_reasons():
+    """
+    These blacklist reasons have been found and implemented so far,
+    after the AVHRR GAC L1c processing based on logfile and pystat
+    analyses.
+    """
+    return ['wrong_l1c_timestamp', 'no_valid_l1c_data', 
+            'bad_l1c_quality', 'along_track_too_long']
+
+
 def ect_convert_to_datetime(time_hours):
     # time_hours = 23.99431
     time_minutes = time_hours * 60
