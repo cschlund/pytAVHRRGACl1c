@@ -105,6 +105,7 @@ def blacklist_wrong_ydim(db, ver):
               "blacklist_reason=\'{blr}\' " \
               "WHERE filename=\'{fil}\' and blacklist=0 "
         db.execute(upd.format(blr=black_reason, fil=i))
+
         if ver:
             cmd = "SELECT * FROM orbits WHERE " \
                   "blacklist_reason=\'{blr}\' "
@@ -126,20 +127,17 @@ def bad_l1c_data(db, ver, start_time, end_time, sat_id):
     upd = "UPDATE orbits SET blacklist=1, blacklist_reason=\'{blr}\' " \
           "WHERE satellite_id = \'{sat_id}\' AND " \
           "start_time_l1b BETWEEN \'{start_time}\' AND \'{end_time}\' "
-
     db.execute(upd.format(blr=black_reason, sat_id=sat_id,
                           start_time=start_time,end_time=end_time))
-
-    cmd = "SELECT * from orbits WHERE satellite_id = \'{sat_id}\' AND " \
-          "start_time_l1b BETWEEN \'{start_time}\' AND \'{end_time}\' " \
-          "ORDER BY start_time_l1b"
-
-    res = db.execute(cmd.format(sat_id=sat_id, start_time=start_time, 
-                                end_time=end_time))
 
     if ver: 
         logger.info("Blacklist all L1b orbits between "
                     "{0} and {1}".format(start_time, end_time))
+        cmd = "SELECT * from orbits WHERE satellite_id = \'{sat_id}\' AND " \
+              "start_time_l1b BETWEEN \'{start_time}\' AND \'{end_time}\' " \
+              "ORDER BY start_time_l1b"
+        res = db.execute(cmd.format(sat_id=sat_id, start_time=start_time, 
+                                    end_time=end_time))
         print_verbose(res) 
 
     return black_reason
@@ -204,21 +202,15 @@ def blacklist_days():
     
     # fill dict with dates based on logfile analysis, where no L1c files have
     # been created during AVHRR GAC L1C procession VERSION 2
-    bdict2["NOAA7"]["198205"] = [28,29,30,31]
-    bdict2["NOAA7"]["198209"] = [25,26]
+    bdict2["NOAA7"]["198205"] = [28]
     bdict2["NOAA7"]["198307"] = [27,28,29,30,31]
-    bdict2["NOAA7"]["198308"] = [1,2,6]
+    bdict2["NOAA7"]["198308"] = [1,2]
     bdict2["NOAA7"]["198309"] = [21,22,23,24,25,26]
-    bdict2["NOAA7"]["198401"] = [14,15]
-    bdict2["NOAA7"]["198404"] = [10]
     bdict2["NOAA7"]["198407"] = [23]
-    bdict2["NOAA7"]["198412"] = [6]
-    bdict2["NOAA9"]["198603"] = [14,15]
     bdict2["NOAA11"]["199409"] = [14,15,16,17,18,19,20,25,28]
     bdict2["NOAA11"]["199410"] = [6,8,9,10,11,12]
     bdict2["NOAA12"]["199310"] = [13,14,15,16,17,18,19]
     bdict2["NOAA14"]["200101"] = [1]
-    bdict2["NOAA14"]["200105"] = [31]
     bdict2["NOAA14"]["200112"] = [17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
     bdict2["NOAA14"]["200207"] = [28]
     bdict2["NOAA15"]["200007"] = [11,23,24,25,26,27,29,30]
@@ -239,9 +231,6 @@ def blacklist_days():
     bdict2["NOAA19"]["200902"] = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]
     bdict2["METOPA"]["200709"] = [18]
     bdict2["METOPA"]["200803"] = [20]
-    bdict2["METOPB"]["201304"] = [10,11,12,13,14]
-    bdict2["METOPB"]["201305"] = [17,18,19]
-    bdict2["METOPB"]["201410"] = [17,24,25,26,27,28]
     bdict2["METOPB"]["201412"] = [31]
 
     return bdict2, blacklist_reason
@@ -323,13 +312,24 @@ def blacklist_no_valid_l1c_data(db, ver):
                     db.execute(upd.format(blr=black_reason, sat_id=sat_id,
                                           start_time=start_time, end_time=end_time))
 
-                    cmd = "SELECT * from orbits WHERE satellite_id=\'{sat_id}\' AND " \
-                          "blacklist_reason=\'{blr}\' AND " \
+                    # security check
+                    cmd = "SELECT COUNT(*) from orbits WHERE satellite_id=\'{sat_id}\' AND " \
                           "start_time_l1b BETWEEN \'{start_time}\' AND \'{end_time}\' " \
                           "ORDER BY start_time_l1b"
                     res = db.execute(cmd.format(sat_id=sat_id,start_time=start_time,
-                                                end_time=end_time,blr=black_reason))
+                                            end_time=end_time,blr=black_reason))
+                    numcheck = res[0]['COUNT(*)']
+                    if numcheck == 0: 
+                        logger.info("ATTENTION: No orbits={0} for {1} and {2}".
+                                format(numcheck,dt,sat))
+
                     if ver:
+                        cmd = "SELECT * from orbits WHERE satellite_id=\'{sat_id}\' AND " \
+                              "blacklist_reason=\'{blr}\' AND " \
+                              "start_time_l1b BETWEEN \'{start_time}\' AND \'{end_time}\' " \
+                              "ORDER BY start_time_l1b"
+                        res = db.execute(cmd.format(sat_id=sat_id,start_time=start_time,
+                                                end_time=end_time,blr=black_reason))
                         print_verbose(res,sat) 
 
             print_changes(db, black_reason,[sat])
@@ -359,10 +359,10 @@ def blacklist_wrong_l1c_timestamp(db, ver):
               "blacklist_reason=\'{blr}\' WHERE filename=\'{fil}\'"
         db.execute(upd.format(fil=fil, blr=black_reason))
 
-        cmd = "SELECT * FROM vw_std WHERE filename=\'{fil}\' AND " \
-              "satellite_name=\'{satnam}\'"
-        res = db.execute(cmd.format(fil=fil, satnam=satnam))
         if ver:
+            cmd = "SELECT * FROM vw_std WHERE filename=\'{fil}\' AND " \
+                  "satellite_name=\'{satnam}\'"
+            res = db.execute(cmd.format(fil=fil, satnam=satnam))
             print_verbose(res) 
 
     print_changes(db, black_reason)
@@ -459,10 +459,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # -- consider all satellites
-    if 'ALL' in args.satellites:
-        satlist = get_satellite_list()
-    else:
-        satlist = args.satellites
+    if args.satellites:
+        if 'ALL' in args.satellites:
+            satlist = get_satellite_list()
+        else:
+            satlist = args.satellites
 
     # -- some screen output if wanted
     if len(sys.argv[1:]) > 0: 
