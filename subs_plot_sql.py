@@ -277,7 +277,7 @@ def plot_time_series(sat_list, channel, select, start_date,
     for satellite in sat_list:
 
         # get color for satellite
-        name, abbr, lite, satcolor = subs.full_sat_name(satellite)
+        satcolor = subs.color_satstring(satellite)
 
         # if ascii files inpdir is given
         if ascinpdir is not None:
@@ -943,7 +943,8 @@ def plot_zonal_results(sat_list, channel, select, start_date,
         # -- loop over satellites
         for satellite in sat_list:
 
-            sat_label, abbr, lite, satcolor = subs.full_sat_name(satellite)
+            satcolor = subs.color_satstring(satellite)
+            sat_label = subs.plot_satstring(satellite)
 
             try: 
                 check = cursor.execute("SELECT OrbitCount FROM statistics")
@@ -1117,7 +1118,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     for satellite in sat_list:
 
         # get color for satellite
-        name, abbr, lite, satcolor = subs.full_sat_name(satellite)
+        satcolor = subs.color_satstring(satellite)
 
         # get records for satellite
         date_list, ect_list = subs.get_ect_records(satellite, dbfile)
