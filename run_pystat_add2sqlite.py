@@ -138,7 +138,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--date', type=mysub.datestring,
                         help='Date String, e.g. 20090126', required=True)
 
-    parser.add_argument('-s', '--satellite', type=mysub.satstring,
+    parser.add_argument('-s', '--satellite', type=mysub.pygac_satstring,
                         help='Satellite, e.g. metop02', required=True)
 
     parser.add_argument('-i', '--inpdir',
