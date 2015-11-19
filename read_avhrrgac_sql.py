@@ -3,6 +3,7 @@
 #
 
 import os
+import sys
 import argparse
 import datetime
 import time
@@ -15,7 +16,8 @@ from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
 from pycmsaf.logger import setup_root_logger
 
 logdir = os.path.join(os.getcwd(),'log')
-logger = setup_root_logger(name='root', logdir=logdir, logfile=True)
+logger = setup_root_logger(name='root', logdir=logdir, 
+                           append=True, logfile=True)
 
 
 def print_verbose(sqlres, sat=None): 
@@ -371,7 +373,6 @@ def blacklist_wrong_l1c_timestamp(db, ver):
 
 if __name__ == '__main__':
 
-    satlist = get_satellite_list()
     prelist = pre_blacklist_reasons()
     proclist = proc_blacklist_reasons()
     postlist = post_blacklist_reasons()
@@ -389,7 +390,8 @@ if __name__ == '__main__':
 
     parser.add_argument('-s', '--satellites', type=str2upper, nargs='*',
                         help='Select a specific satellite in combination '
-                        'with --show* options. SatList: {0}'.format(satlist))
+                        'with --show* options. SatList: {0}'.
+                        format(get_satellite_list()))
 
     parser.add_argument('-a', '--show_all', action="store_true",
                         help='SHOW all whitelisted L1b orbits. '
@@ -456,8 +458,15 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # -- consider all satellites
+    if 'ALL' in args.satellites:
+        satlist = get_satellite_list()
+    else:
+        satlist = args.satellites
+
     # -- some screen output if wanted
-    logger.info("DBFILE : %s" % args.dbfile)
+    if len(sys.argv[1:]) > 0: 
+        logger.info("{0}".format(sys.argv[1:]))
 
     # -- connect to database
     dbfile = AvhrrGacDatabase(dbfile=args.dbfile,
@@ -479,26 +488,26 @@ if __name__ == '__main__':
 
     # -- show total listing
     if args.show_all: 
-        print_changes(dbfile, 'all_l1b', args.satellites)
+        print_changes(dbfile, 'all_l1b', satlist)
     if args.show_all_blacklisted: 
-        print_changes(dbfile, 'all_blacklisted', args.satellites)
+        print_changes(dbfile, 'all_blacklisted', satlist)
     if args.show_l1b_whitelist: 
-        print_changes(dbfile, 'all_l1b_white', args.satellites)
+        print_changes(dbfile, 'all_l1b_white', satlist)
     if args.show_l1c_whitelist: 
-        print_changes(dbfile, 'all_l1c_white', args.satellites)
+        print_changes(dbfile, 'all_l1c_white', satlist)
     if args.show_l1c_missing: 
-        print_changes(dbfile, 'all_l1c_missing', args.satellites)
+        print_changes(dbfile, 'all_l1c_missing', satlist) 
 
     # -- show blacklistings
     sumup = 0
     if args.show_pre: 
         for i in prelist: 
-            print_changes(dbfile, i, args.satellites)
+            print_changes(dbfile, i, satlist)
     if args.show_proc: 
         for i in proclist: 
-            print_changes(dbfile, i, args.satellites)
+            print_changes(dbfile, i, satlist)
     if args.show_post: 
         for i in postlist: 
-            print_changes(dbfile, i, args.satellites)
+            print_changes(dbfile, i, satlist)
 
-    logger.info("%s finished" % os.path.basename(__file__))
+    logger.info("%s finished\n\n" % os.path.basename(__file__))
