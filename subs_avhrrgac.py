@@ -209,8 +209,11 @@ def pre_blacklist_reasons():
     Additionally blacklisted are L1B files, which are redudant, 
     i.e. where sql column "redundant=1".
     """
-    return ['old', 'too_small', 'too_long', 
-            'ground_station_duplicate', 'redundant']
+    return {'pre1':'old', 
+            'pre2':'too_small',
+            'pre3':'too_long',
+            'pre4':'ground_station_duplicate',
+            'pre5':'redundant'}
 
 
 def proc_blacklist_reasons():
@@ -219,7 +222,8 @@ def proc_blacklist_reasons():
     during the AVHRR GAC L1c processing based on start and end l1c
     timestamps.
     """
-    return ['orbit_length_too_long', 'negative_orbit_length']
+    return {'proc1':'orbit_length_too_long', 
+            'proc2':'negative_orbit_length'}
 
 
 def post_blacklist_reasons():
@@ -228,9 +232,10 @@ def post_blacklist_reasons():
     after the AVHRR GAC L1c processing based on logfile and pystat
     analyses.
     """
-    return ['wrong_l1c_timestamp', 'no_valid_l1c_data', 
-            'bad_l1c_quality', 'along_track_too_long']
-
+    return {'post1':'wrong_l1c_timestamp', 
+            'post2':'no_valid_l1c_data', 
+            'post3':'bad_l1c_quality', 
+            'post4':'along_track_too_long'}
 
 def split_filename(fil):
     # dirname  = os.path.dirname(fil)
