@@ -241,7 +241,7 @@ def get_number_of_orbits_per_day(satellite, date_list, db):
 
 def plot_time_series(sat_list, channel, select, start_date,
                      end_date, outpath, cursor, verbose, ascinpdir,
-                     show_fig):
+                     show_fig, linesty):
     """
     Plot time series based on pystat results.
     """
@@ -340,22 +340,24 @@ def plot_time_series(sat_list, channel, select, start_date,
 
 
                 # date vs. global mean
-                ax_val.plot(datelst, meanlst, label=satellite,
-                            color=satcolor, linewidth=lwd)
+                ax_val.plot(datelst, meanlst, linesty, linewidth=lwd,
+                            label=satellite, color=satcolor, 
+                            alpha=0.8, markersize=5 )
                 if ascinpdir is not None and len(asc_datelst) > 10:
                     ax_val.plot(asc_datelst, asc_meanlst, 'o',
                                 color=satcolor, linewidth=lwd)
 
                 # date vs. global stdv
-                ax_std.plot(datelst, stdvlst, label=satellite,
-                            color=satcolor, linewidth=lwd)
+                ax_std.plot(datelst, stdvlst, linesty, linewidth=lwd,
+                            label=satellite, color=satcolor,
+                            alpha=0.8, markersize=5 )
                 if ascinpdir is not None and len(asc_datelst) > 10:
                     ax_std.plot(asc_datelst, asc_stdvlst, 'o',
                                 color=satcolor, linewidth=lwd)
 
                 # date vs. global nobs
-                ax_rec.plot(datelst, nobslst, label=satellite,
-                            marker='o', markersize=5, alpha=0.8,
+                ax_rec.plot(datelst, nobslst, '--o', label=satellite,
+                            markersize=5, alpha=0.8,
                             color=satcolor, linewidth=lwd)
                 if ascinpdir is not None and len(asc_datelst) > 10:
                     ax_rec.plot(asc_datelst, asc_nobslst, 'o',
@@ -400,7 +402,9 @@ def plot_time_series(sat_list, channel, select, start_date,
                 satcol='r'
             max_cnts = max(orb_cnts_lst)
             ax2 = ax_rec.twinx()
-            ax2.plot(datelst, orb_cnts_lst, color=satcol, linewidth=1.5)
+            ax2.plot(datelst, orb_cnts_lst, '--o', 
+                     color=satcol, linewidth=1.5, 
+                     markersize=5, alpha=0.8)
             ax2.set_ylabel('Orbits/day', color=satcol)
             ax2.set_ylim(0, max_cnts + 10)
             ax_rec.set_ylim(0, max(nobslst)+max(nobslst)*0.1)
@@ -486,7 +490,10 @@ def plot_time_series(sat_list, channel, select, start_date,
         ax_rec.grid(which='minor', alpha=0.4)
 
         # make legend
-        num_of_sats = int(math.ceil(cnt / 2.))
+        if cnt > 8: 
+            num_of_sats = int(math.ceil(cnt / 2.))
+        else:
+            num_of_sats = cnt
         # leg = ax_val.legend(ncol=num_of_sats, loc='best', fancybox=True)
         leg = ax_std.legend(ncol=num_of_sats, loc='best', fancybox=True)
         plt.tight_layout(rect=(0.02, 0.02, 0.98, 0.98))

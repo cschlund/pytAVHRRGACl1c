@@ -38,7 +38,7 @@ def plot_results():
                 psql.plot_time_series(sat_list, channel, select,
                                       start_date, end_date, args.outdir,
                                       cur, args.verbose, args.asciifiles,
-                                      args.show_figure)
+                                      args.show_figure, args.linestyle)
 
                 if args.linfit:
                     psql.plot_time_series_linfit(sat_list, channel, select,
@@ -101,10 +101,12 @@ if __name__ == '__main__':
                         help='increase output verbosity', action="store_true")
 
     parser.add_argument('-show', '--show_figure', action="store_true",
-                        help='Show figure instead of saving saving')
+                        help='Show figure.')
 
     parser.add_argument('-asc', '--asciifiles', type=str,
                         help='read old pystat results stored in ascii files')
+
+    parser.add_argument('--linestyle', default='-', help='Default is \'-\' ')
 
     args = parser.parse_args()
 
@@ -154,6 +156,7 @@ if __name__ == '__main__':
         logger.info("TimeS.LinF : %s" % args.linfit)
         logger.info("Old asciiF : %s" % args.asciifiles)
         logger.info("Show fig   : %s" % args.show_figure)
+        logger.info("Linestyle  : %s" % args.linestyle)
         logger.info("Verbose    : %s\n" % args.verbose)
 
     try:
