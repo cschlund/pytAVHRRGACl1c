@@ -315,12 +315,13 @@ def plot_time_series(sat_list, channel, select, start_date,
             if len(datelst) > 1:
                 isdata_cnt += 1
 
-                # missing dates
-                date_set = set(datelst[0]+datetime.timedelta(x) 
-                            for x in range((datelst[-1]-datelst[0]).days))
-                missing = sorted(date_set - set(datelst))
-                for miss in missing:
-                    logger.info("MISSING date: {0}".format(miss))
+                if verbose:
+                    # missing dates
+                    date_set = set(datelst[0]+datetime.timedelta(x) 
+                                for x in range((datelst[-1]-datelst[0]).days))
+                    missing = sorted(date_set - set(datelst))
+                    for miss in missing:
+                        logger.info("MISSING date: {0}".format(miss))
 
                 #new_datelst = list()
                 #new_meanlst = list()
