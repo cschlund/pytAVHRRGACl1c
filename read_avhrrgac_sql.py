@@ -45,7 +45,7 @@ def print_changes(db, reason, satname=None):
     if reason is 'all_l1b':
         sqltxt = sqltxt + "filename is not null "
     elif reason is 'all_blacklisted':
-        sqltxt = sqltxt + "blacklist=1 "
+        sqltxt = sqltxt + "filename is not null AND blacklist=1 "
     elif reason is 'all_l1b_white':
         sqltxt = sqltxt + "filename is not null AND blacklist=0 "
     elif reason is 'all_l1c_white':
@@ -53,7 +53,7 @@ def print_changes(db, reason, satname=None):
     elif reason is 'all_l1c_missing':
         sqltxt = sqltxt + "start_time_l1c is null AND blacklist=0 "
     elif reason is 'redundant':
-        sqltxt = sqltxt + "redundant=1 "
+        sqltxt = sqltxt + "redundant=1 AND blacklist=1 AND blacklist_reason LIKE 'NSS%' "
         logtxt = logtxt + "blacklisted "
     else:
         sqltxt = sqltxt + "blacklist_reason=\'{0}\' ".format(reason)
@@ -126,6 +126,7 @@ def bad_l1c_data(db, ver, start_time, end_time, sat_id):
 
     upd = "UPDATE orbits SET blacklist=1, blacklist_reason=\'{blr}\' " \
           "WHERE satellite_id = \'{sat_id}\' AND " \
+          "redundant=0 AND blacklist=0 AND " \
           "start_time_l1b BETWEEN \'{start_time}\' AND \'{end_time}\' "
     db.execute(upd.format(blr=black_reason, sat_id=sat_id,
                           start_time=start_time,end_time=end_time))
@@ -464,6 +465,8 @@ if __name__ == '__main__':
             satlist = get_satellite_list()
         else:
             satlist = args.satellites
+    else:
+        satlist = args.satellites
 
     # -- some screen output if wanted
     if len(sys.argv[1:]) > 0: 
