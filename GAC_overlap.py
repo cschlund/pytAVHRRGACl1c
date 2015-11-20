@@ -8,7 +8,8 @@ from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
 from pycmsaf.logger import setup_root_logger
 
 logdir = os.path.join(os.getcwd(),'log')
-logger = setup_root_logger(name='root', logdir=logdir, logfile=True)
+logger = setup_root_logger(name='root', logdir=logdir, 
+                           append=True, logfile=True)
 
 
 def get_new_cols():
