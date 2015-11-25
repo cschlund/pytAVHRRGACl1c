@@ -103,6 +103,37 @@ def blacklist_wrong_ydim(db, ver):
     db.commit_changes()
 
 
+def blacklist_pygac_indexerror(db, ver):
+    """
+    pyGAC resulted in IndexError: index out of bounds
+    pyGAC failed on these orbits after pyGAC was updated
+    w.r.t. NOAA-7 and NOAA-9 clock drift error correction
+    has been enabled,
+    i.e. pyGAC was successful on these orbits when
+    clock drift error correction was disabled, which explains
+    the existing L1c timestamps. 
+    However, these L1c orbits are not in the ECFS archive,
+    therefore, they have to be blacklisted!
+    """
+    black_reason, blist = pb.list_indexerror()
+
+    for i in blist:
+        upd = "UPDATE orbits SET blacklist=1, " \
+              "blacklist_reason=\'{blr}\' " \
+              "WHERE filename=\'{fil}\' and blacklist=0 "
+        db.execute(upd.format(blr=black_reason, fil=i))
+
+    if ver:
+        cmd = "SELECT * FROM vw_std WHERE " \
+              "blacklist_reason=\'{blr}\' "
+        res = db.execute(cmd.format(blr=black_reason))
+        print_verbose(res) 
+
+    print_changes(db, black_reason)
+    logger.info("COMMIT CHANGES FOR \'{0}\'\n".format(black_reason))
+    db.commit_changes()
+
+
 def blacklist_bad_l1c_quality(db, ver):
     """
     Blacklist all dates between sdate and edate for given satellite.
@@ -313,6 +344,9 @@ if __name__ == '__main__':
                         help='''Diana found during CLARA-A2 processing orbits, 
                         which are too long in the along_track dimension.''')
 
+    parser.add_argument('-ie', '--pygac_indexerror', action="store_true",
+                        help="pyGAC provided an IndexError, i.e no L1c orbit.")
+
     args = parser.parse_args()
 
     # -- consider all satellites
@@ -341,6 +375,8 @@ if __name__ == '__main__':
         blacklist_bad_l1c_quality(dbfile, args.verbose)
     if args.along_track_too_long: 
         blacklist_wrong_ydim(dbfile, args.verbose)
+    if args.pygac_indexerror:
+        blacklist_pygac_indexerror(dbfile, args.verbose)
 
     # -- show total listing
     if args.show_all: 

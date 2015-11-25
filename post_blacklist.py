@@ -32,6 +32,29 @@ def list_bad_l1c_quality():
     return pdict['post3'], bdict
 
 
+def list_indexerror():
+    """
+    pyGAC resulted in IndexError: index out of bounds
+    pyGAC failed on these orbits after pyGAC was updated
+    w.r.t. NOAA-7 and NOAA-9 clock drift error correction
+    has been enabled,
+    i.e. pyGAC was successful on these orbits when
+    clock drift error correction was disabled.
+    """
+    pdict = post_blacklist_reasons()
+
+    olist = ["NSS.GHRR.NC.D82046.S0524.E0718.B0334243.WI.gz",
+             "NSS.GHRR.NC.D82160.S1451.E1636.B0495758.GC.gz",
+             "NSS.GHRR.NC.D82321.S0611.E0803.B0722526.WI.gz",
+             "NSS.GHRR.NF.D86309.S0228.E0421.B0977172.WI.gz",
+             "NSS.GHRR.NF.D87049.S0356.E0547.B1125354.WI.gz",
+             "NSS.GHRR.NF.D87140.S0231.E0425.B1253637.WI.gz",
+             "NSS.GHRR.NF.D87140.S0420.E0614.B1253738.WI.gz",
+             "NSS.GHRR.NF.D87217.S0204.E0358.B1362223.WI.gz"]
+
+    return pdict['post5'], olist
+
+
 def list_along_track_too_long():
     """
     Diana Stein found these L1b orbits during CLARA-A2

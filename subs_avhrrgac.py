@@ -235,7 +235,9 @@ def post_blacklist_reasons():
     return {'post1':'wrong_l1c_timestamp', 
             'post2':'no_valid_l1c_data', 
             'post3':'bad_l1c_quality', 
-            'post4':'along_track_too_long'}
+            'post4':'along_track_too_long',
+            'post5':'pygac_indexerror'}
+
 
 def split_filename(fil):
     # dirname  = os.path.dirname(fil)
