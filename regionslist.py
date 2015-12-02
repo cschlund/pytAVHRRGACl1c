@@ -50,6 +50,11 @@ REGIONS = dict(
          "geo": {"llcrnrlat": -90, "urcrnrlat": 90, "llcrnrlon": -180, "urcrnrlon": 180,
                  "projection": 'cyl', "resolution": 'c'}},
 
+    glo_ortho={"nam": "Global_ortho",
+               "par": [-90.,120.,30.],
+               "mer": [0.,420.,60.],
+               "geo": {"lon_0": 0, "lat_0": 60, "projection": 'ortho', "resolution": 'l'}},
+
     ame={"nam": "America",
          "par": [-90, 91, 30],
          "mer": [-180, 181, 60],
