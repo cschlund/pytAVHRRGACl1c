@@ -7,18 +7,19 @@
 # C.Schlundt: March, 2015
 #
 
+import matplotlib
+matplotlib.use('GTK3Agg')
 import os
 import sys
-import h5py
 import argparse
 import regionslist as rl
 import subs_avhrrgac as mysub
 import subs_mapping as myplt
-import read_avhrrgac_h5 as rh5
 from pycmsaf.logger import setup_root_logger
 
 logdir = os.path.join(os.getcwd(),'log')
-logger = setup_root_logger(name='root', logdir=logdir, logfile=True)
+logger = setup_root_logger(name='root', logdir=logdir, 
+                           append=True, logfile=True)
 
 work_dir = os.getcwd()
 work_out = os.path.join(work_dir, 'maps')
@@ -26,138 +27,71 @@ avail = sorted(rl.REGIONS.keys())
 defin = ', '.join(map(str, avail))
 chalist = '|'.join(mysub.get_channel_list())
 sellist = '|'.join(mysub.get_select_list())
-l3clist = ', '.join(mysub.get_cloudcci_l3c_products())
-l3ulist = ', '.join(mysub.get_cloudcci_l3u_products())
 
 
-def get_file_list(subargs):
+def get_file_list(sargs):
     """
     Verify file list and return it.
     """
-    if subargs.files:
-        file_list = subargs.files
+    if sargs.files:
+        file_list = sargs.files
+        file_list.sort()
+        return file_list
 
-    elif subargs.pattern and subargs.inputdir:
-        file_list = mysub.find(subargs.pattern, subargs.inputdir)
+    elif sargs.date and sargs.inputdir:
+        pattern = 'ECC_GAC_avhrr_*'+sargs.date+'*'
+        file_list = mysub.find(pattern, sargs.inputdir)
         message = "No files available for "
         if not file_list:
-            logger.info(message + subargs.pattern)
+            logger.info(message+sargs.date+' in '+sargs.inputdir)
             sys.exit(0)
-
+        else:
+            file_list.sort()
+            return file_list
+      
     else:
-        logger.info("Use either --files or --datestring "
-                    "in combination with --inputdir and --satellite.")
+        logger.info("Option 1: use -fil=filenames ")
+        logger.info("Option 2: use -inp=inpdir -dat=date.")
         sys.exit(0)
-
-    return file_list
-
-
-def map_cci(args_cci):
-    """
-    Visualize AVHRR GAC cloud_cci results.
-    """
-    # set file list
-    fil_list = get_file_list(args_cci)
-
-    # create output directory if not existing
-    if not os.path.exists(args_cci.outputdir):
-        os.makedirs(args_cci.outputdir)
-
-    for f in fil_list:
-        myplt.map_cloud_cci(f, args_cci.product, args_cci.region,
-                            args_cci.outputdir,
-                            args_cci.basemap_background,
-                            args_cci.show_figure)
-
-    return
-
-def map_l1c(args_l1c):
-    """
-    Visualize AVHRR GAC L1c data. 1 file per orbit.
-    """
-    # set file list
-    fil_list = get_file_list(args_l1c)
-
-    # create output directory if not existing
-    if not os.path.exists(args_l1c.outputdir):
-        os.makedirs(args_l1c.outputdir)
-
-    # loop over file list
-    for fil in fil_list:
-
-        logger.info("Read: {0}".format(fil))
-
-        afil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
-        f = h5py.File(fil, "r+")
-        a = h5py.File(afil, "r+")
-        (latitude, longitude, target) = rh5.read_avhrrgac(f, a, args_l1c.time,
-                                                          args_l1c.channel,
-                                                          # args_l1c.verbose)
-                                                          False)
-        a.close()
-        f.close()
-
-        logger.info("Map AVHRR GAC L1c: {0}, {1}, {2}".
-                    format(args_l1c.channel, args_l1c.time, args_l1c.region))
-        myplt.map_avhrrgac_l1c(fil, args_l1c.channel, args_l1c.region,
-                               args_l1c.time, args_l1c.outputdir,
-                               longitude, latitude, target,
-                               args_l1c.basemap_background,
-                               args_l1c.show_figure)
-
-        qfil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_qualflags_")
-        q = h5py.File(qfil, "r+")
-        (row, col, total_records, last_scanline, data) = rh5.read_qualflags(q)
-        q.close()
-
-        logger.info("Map AVHRR GAC L1c qualflag file")
-        myplt.plot_avhrrgac_qualflags(qfil, args.outputdir,row, col, 
-                                      total_records, last_scanline, data,
-                                      args_l1c.show_figure)
-
-    return
 
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
-        description='''{0} displays AVHRR GAC data (pygac: l1c;
-        cloud_cci: l2, l3u, l3c, l3s).'''.format(os.path.basename(__file__)))
+        description='''{0} displays AVHRR GAC data (pygac: l1c).
+        Note: the orbits are simply plotted onto the map without
+        any averaging.'''.format(os.path.basename(__file__)))
 
     # add main arguments
+    parser.add_argument('-dbf', '--dbfile', help='/path/to/dbfile', required=True)
     parser.add_argument('-reg', '--region', help=defin, default='glo')
-    parser.add_argument('-out', '--outputdir', help='/path/to/mapdir', default=work_out)
-    parser.add_argument('-bmb', '--basemap_background', help='bluemarble/shaderelief/etopo')
-    parser.add_argument('-show', '--show_figure', action="store_true", 
-                        help='Show figure instead of saving saving')
+    parser.add_argument('-out', '--outputdir', help='/pwd/maps', default=work_out)
+    parser.add_argument('-bmb', '--background', help='bluemarble/shaderelief/etopo',
+                        default=None)
     parser.add_argument('-ver', '--verbose', help='increase output verbosity', action="store_true")
-
-    # define subcommands
-    subparsers = parser.add_subparsers(help="Select a Subcommand")
-
-    # plot l1c data
-    map_l1c_parser = subparsers.add_parser('map_l1c', description="Map pygac results.")
-    map_l1c_parser.add_argument('-cha', '--channel', help=chalist + ', default is ch1', default='ch1')
-    map_l1c_parser.add_argument('-fil', '--files', nargs='*', help='List of full qualified files.')
-    map_l1c_parser.add_argument('-pat', '--pattern', type=str, help='e.g. ECC_GAC_avhrr_metopb_99999_20130520T*')
-    map_l1c_parser.add_argument('-inp', '--inputdir', help='/path/to/l1c/files')
-    map_l1c_parser.add_argument('-tim', '--time', default='all', help=sellist + ', default is all')
-    map_l1c_parser.set_defaults(func=map_l1c)
-
-    # plot cloud cci data
-    map_cci_parser = subparsers.add_parser('map_cci', description="Map cloud cci results.")
-    map_cci_parser.add_argument('-pro', '--product', required=True,
-                                help='<<L3U PRODUCTS>> ' + l3ulist + ' <<L3C PRODUCTS>> ' + l3clist)
-    map_cci_parser.add_argument('-fil', '--files', nargs='*', help='List of full qualified files.')
-    map_cci_parser.add_argument('-pat', '--pattern', type=str, help='e.g. 200801-ESACCI-L3C*')
-    map_cci_parser.add_argument('-inp', '--inputdir', help='/path/to/cci/files')
-    map_cci_parser.set_defaults(func=map_cci)
-
+    parser.add_argument('-cha', '--channel', help=chalist + ', default is ch1', default='ch1')
+    parser.add_argument('-fil', '--files', nargs='*', help='List of full qualified files.')
+    parser.add_argument('-dat', '--date', type=mysub.datestring, help='2008-07-01')
+    parser.add_argument('-inp', '--inputdir', help='/path/to/l1c/files')
+    parser.add_argument('-tim', '--time', default='all', help=sellist + ', default is all')
+    parser.add_argument('-off', '--overlap_off', action="store_true",
+                        help='Overlap is not taken into account.')
+    parser.add_argument('-qfl', '--qflag', action="store_true",
+                        help='Plot qflag file.')
+                        
     # Parse arguments
     args = parser.parse_args()
 
     # Call function associated with the selected subcommand
     logger.info("*** {0} start for {1}".format(sys.argv[0], args))
-    args.func(args)
 
-    logger.info("*** {0} succesfully finished".format(sys.argv[0]))
+    # get file list
+    fil_list = get_file_list(args)
+    
+    # create output directory if not existing
+    if not os.path.exists(args.outputdir):
+        os.makedirs(args.outputdir)
+    
+    myplt.map_avhrrgac_l1c(fil_list, args)
+
+    logger.info("*** {0} succesfully finished\n\n".format(sys.argv[0]))
