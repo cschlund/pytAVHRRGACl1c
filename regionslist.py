@@ -38,6 +38,19 @@ REGIONS = dict(
          "geo": {"lon_0": 10, "lat_0": 52, "height": 4000e3, "width": 4000e3,
                  "projection": 'stere', "resolution": 'l'}},
 
+    over={"nam": "GAC Overlap: Stereographic Proj.",
+          "par": [-90, 91, 30],
+          "mer": [-180, 181, 20],
+          "geo": {"lon_0": 0, "lat_0": 65, "height": 2300e3, "width": 4000e3,
+                  "projection": 'stere', "resolution": 'l'}},
+
+    over2={"nam": "GAC Overlap Equidistant Cylindrical Proj.",
+           "par": [-90, 91, 10],
+           "mer": [-180, 181, 10],
+           # lower left corner, upper right corner
+           "geo": {"llcrnrlat": 50, "urcrnrlat": 80, "llcrnrlon": -35, "urcrnrlon": 35,
+                   "projection": 'cyl', "resolution": 'c'}},
+
     ger={"nam": "Germany",
          "par": [-90, 91, 2],
          "mer": [-180, 181, 2],
