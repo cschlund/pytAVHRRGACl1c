@@ -17,6 +17,51 @@ logger = logging.getLogger('root')
 warnings.filterwarnings("ignore")
 
 
+def slice_data(longitude, latitude, target, xdim, ydim, filecount, 
+               halforbit, sline, eline, region, overlap_off=None): 
+
+    start_x = 0
+    end_x = xdim
+
+    # without overlap correction
+    if overlap_off:
+        start_y = 0
+        end_y = ydim
+        # plot second half of first orbit and 
+        #      first half of next orbit
+        if region.startswith('over'): 
+            if isEven(filecount) == False: 
+                start_y = halforbit
+            else:
+                end_y = halforbit
+
+    # with overlap correction
+    else:
+        start_y = sline
+        end_y = eline+1
+        # plot second half of first orbit and 
+        #      first half of next orbit
+        if region.startswith('over'): 
+            if isEven(filecount) == False: 
+                start_y = halforbit
+            else:
+                end_y = halforbit
+
+    logger.info("FileCount = {0}".format(filecount))
+    logger.info("Slice data along x-axis {0}:{1}".format(start_x, end_x))
+    logger.info("Slice data along y-axis {0}:{1}".format(start_y, end_y))
+
+    lon = longitude[start_y:end_y, start_x:end_x]
+    lat = latitude[start_y:end_y, start_x:end_x]
+    tar = target[start_y:end_y, start_x:end_x]
+
+    return lon, lat, tar
+
+
+def isEven(number): 
+    return number % 2 == 0
+
+
 def get_minmax_target(args):
     if args.channel is 'ch1' or \
             args.channel is 'ch2' or \
@@ -54,7 +99,9 @@ def read_scanlines(ifile, records):
         if sdt == rec['start_time_l1c'] and edt == rec['end_time_l1c']:
             sl = rec['start_scanline_endcut']
             el = rec['end_scanline_endcut']
-            return sl, el
+            yd = rec['along_track']
+            xd = rec['across_track']
+            return sl, el, xd, yd
 
 
 def get_plot_info(flist, args):
@@ -112,13 +159,23 @@ def map_avhrrgac_l1c(flist, args):
     tarmin, tarmax = get_minmax_target(args)
 
     cnt = 0
+    cut = 6000
+
     # loop over file list
     for fil in flist:
 
-        # get scanlines
-        sl, el = read_scanlines(fil, recs)
-        logger.info("Start_Scanline: {0}".format(sl))
-        logger.info("End_Scanline  : {0}".format(el))
+        # file counter
+        cnt += 1
+
+        # get scanlines and dimension of orbit
+        sl, el, xdim, ydim = read_scanlines(fil, recs)
+        logger.info("Start -- End Scanlines: {0}:{1}".format(sl,el))
+        logger.info("Across & Along Track  : {0}:{1}".format(xdim, ydim))
+        logger.info("Overlapping scanlines : {0}".format(ydim-el))
+
+        ## test
+        #el = el - 1
+        #el = el + 1
 
         # read file
         afil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
@@ -130,41 +187,18 @@ def map_avhrrgac_l1c(flist, args):
         a.close()
         f.close()
 
-        if args.overlap_off:
-            lon = lo[:,:]
-            lat = la[:,:]
-            tar = ta[:,:]
-            #if cnt == 0:
-            #    lon = lo[6000:,:]
-            #    lat = la[6000:,:]
-            #    tar = ta[6000:,:]
-            #    cnt = cnt + 1
-            #else:
-            #    lon = lo[0:6000,:]
-            #    lat = la[0:6000,:]
-            #    tar = ta[0:6000,:]
-            #    cnt = cnt + 1
-        else:
-            lon = lo[sl:el+1,:]
-            lat = la[sl:el+1,:]
-            tar = ta[sl:el+1,:]
-            #if cnt == 0:
-            #    lon = lo[6000:el+1,:]
-            #    lat = la[6000:el+1,:]
-            #    tar = ta[6000:el+1,:]
-            #    cnt = cnt + 1
-            #else:
-            #    lon = lo[sl:6000,:]
-            #    lat = la[sl:6000,:]
-            #    tar = ta[sl:6000,:]
-            #    cnt = cnt + 1
+        # slice data
+        lon, lat, tar = slice_data(lo, la, ta, xdim, ydim, 
+                                   cnt, cut, sl, el, 
+                                   args.region, args.overlap_off) 
 
 
         logger.info("Original target shape : {0}".format(ta.shape))
         logger.info("Truncated target shape: {0}".format(tar.shape))
 
+
+        # plot qflag file as additional information
         if args.qflag:
-            # plot qflag file as additional information
             qfil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_qualflags_")
             q = h5py.File(qfil, "r+")
             (row, col, total, last, data) = rh5.read_qualflags(q)
@@ -172,6 +206,7 @@ def map_avhrrgac_l1c(flist, args):
             logger.info("Map AVHRR GAC L1c qualflag file")
             plot_avhrrgac_qualflags(qfil, args.outputdir,row, col, total, last, data)
     
+
         logger.info("Plot {0} data onto map".format(fil))
         # Split dataset west-east at the prime meridian in order to avoid misplaced
         # polygons produced by pcolor when lon crosses the dateline (i.e. jumps from
@@ -198,7 +233,7 @@ def map_avhrrgac_l1c(flist, args):
             cmap = cm.get_cmap('jet')
             cmap.set_bad('grey')
             # pcolor = m.pcolor(x, y, mtar, cmap=cmap, vmin=np.min(tar), vmax=np.max(tar))
-            pcolor = m.scatter(x, y, c=mtar, s=1.0, edgecolor='none', alpha=0.3,
+            pcolor = m.scatter(x, y, c=mtar, s=1.0, edgecolor='none', alpha=0.5,
                                cmap=cmap, vmin=tarmin, vmax=tarmax)
 
 
