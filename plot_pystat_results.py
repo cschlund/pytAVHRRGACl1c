@@ -17,7 +17,8 @@ import subs_plot_sql as psql
 from pycmsaf.logger import setup_root_logger
 
 logdir = os.path.join(os.getcwd(),'log')
-logger = setup_root_logger(name='root', logdir=logdir, logfile=True)
+logger = setup_root_logger(name='root', logdir=logdir, 
+                           append=True, logfile=True)
 
 chalist = '|'.join(mysub.get_channel_list())
 sellist = '|'.join(mysub.get_pystat_select_list())
@@ -142,6 +143,10 @@ if __name__ == '__main__':
     if not os.path.exists(args.outdir):
         os.makedirs(args.outdir)
 
+    # -- some screen output if wanted
+    if len(sys.argv[1:]) > 0: 
+        logger.info("{0}\n".format(sys.argv[1:]))
+
     # -- summary of settings if verbose mode
     if args.verbose:
         logger.info("Parameter passed")
@@ -170,8 +175,8 @@ if __name__ == '__main__':
         dbfile.close()
 
         if args.verbose:
-            logger.info("{0} finished".format(sys.argv[0]))
+            logger.info("{0} finished\n\n".format(sys.argv[0]))
 
     except lite.Error, e:
-        logger.info("ERROR {0} ".format(e.args[0]))
+        logger.info("ERROR {0} \n\n".format(e.args[0]))
         sys.exit(1)
