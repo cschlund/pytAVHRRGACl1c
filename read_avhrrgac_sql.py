@@ -40,6 +40,7 @@ def print_changes(db, reason, satname=None):
     """
     PRINT results to screen.
     """
+    postdict = post_blacklist_reasons()
     sqltxt = "SELECT COUNT(*) FROM vw_std WHERE "
     logtxt = "{0:24s} -> {1:8d} orbits "
 
@@ -53,6 +54,24 @@ def print_changes(db, reason, satname=None):
         sqltxt = sqltxt + "start_time_l1c is not null AND blacklist=0 "
     elif reason is 'all_l1c_missing':
         sqltxt = sqltxt + "start_time_l1c is null AND blacklist=0 "
+
+    elif reason is 'pygac_failed':
+        sqltxt = sqltxt + "( start_time_l1c is null AND blacklist=0 "
+        if satname:
+            sqltxt = sqltxt + "AND satellite_name=\'{sat}\' "
+        for key in sorted(postdict):
+            if 'wrong' in postdict[key]:
+                continue
+            if 'indexerror' in postdict[key]:
+                continue
+            if 'along_track' in postdict[key]:
+                continue
+            sqltxt = sqltxt + ") OR ( start_time_l1c is null AND "
+            sqltxt = sqltxt + "blacklist_reason=\'{0}\' ".format(postdict[key])
+            if satname:
+                sqltxt = sqltxt + "AND satellite_name=\'{sat}\' "
+        sqltxt = sqltxt + ") "
+
     elif reason is 'redundant':
         sqltxt = sqltxt + "redundant=1 AND blacklist=1 AND blacklist_reason LIKE 'NSS%' "
         logtxt = logtxt + "blacklisted "
@@ -393,6 +412,10 @@ if __name__ == '__main__':
                         help='SHOW all whitelisted L1c orbits which are missing '
                         'because pyGAC failed.')
 
+    parser.add_argument('-pf', '--show_pygac_failed', action="store_true",
+                        help='SHOW all whitelisted & blacklisted L1c orbits '
+                        'which are missing because pyGAC failed.')
+
     parser.add_argument('-pre', '--show_pre', action="store_true",
                         help='SHOW all orbits which have been blacklisted '
                         'before the AVHRR GAC L1c processing due to {0}.'.
@@ -491,6 +514,9 @@ if __name__ == '__main__':
         print_changes(dbfile, 'all_l1c_white', satlist)
     if args.show_l1c_missing: 
         print_changes(dbfile, 'all_l1c_missing', satlist) 
+    if args.show_pygac_failed:
+        print_changes(dbfile, 'pygac_failed', satlist)
+
 
     # -- show blacklistings
     sumup = 0
