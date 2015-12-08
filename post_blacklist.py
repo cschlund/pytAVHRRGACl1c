@@ -136,6 +136,15 @@ def list_no_valid_l1c_data():
     
     # fill dict with dates based on logfile analysis, where no L1c files have
     # been created during AVHRR GAC L1C procession VERSION 2
+    bdict2["NOAA8"]["198405"] = [31]
+    bdict2["NOAA8"]["198406"] = [1,2,3]
+    bdict2["NOAA8"]["198508"] = [10,11]
+    bdict2["NOAA8"]["198509"] = [16]
+    bdict2["NOAA10"]["198808"] = [16,17,18,19,20,21,22]
+    bdict2["NOAA10"]["198906"] = [1,2,3,4,5,6]
+    bdict2["NOAA10"]["199004"] = [25,26,27,28,29,30]
+    bdict2["NOAA10"]["199005"] = [1]
+    bdict2["NOAA10"]["199101"] = [8,9,10,11,12,13,14]
     bdict2["NOAA7"]["198205"] = [28]
     bdict2["NOAA7"]["198307"] = [27,28,29,30,31]
     bdict2["NOAA7"]["198308"] = [1,2]
