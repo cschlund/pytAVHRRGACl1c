@@ -236,7 +236,8 @@ def post_blacklist_reasons():
             'post2':'no_valid_l1c_data', 
             'post3':'bad_l1c_quality', 
             'post4':'along_track_too_long',
-            'post5':'pygac_indexerror'}
+            'post5':'pygac_indexerror',
+            'post6':'ch3a_zero_reflectance'}
 
 
 def split_filename(fil):

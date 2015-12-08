@@ -5,31 +5,47 @@ import datetime
 from subs_avhrrgac import get_satellite_list
 from subs_avhrrgac import post_blacklist_reasons
 
-def list_bad_l1c_quality():
+
+def list_ch3a_zero_reflectance():
     """
-    Blacklist orbits where the L1c quality is not OK, mainly
-    based on pystat analysis.
+    There are periods where channel 3a is active
+    but contains zero reflectance measurements.
     """
     pdict = post_blacklist_reasons()
     bdict = dict()
-    satlist = ["NOAA6","NOAA8","NOAA17"]
+    satlist = ["NOAA15","NOAA15","NOAA15","NOAA15","NOAA18","NOAA19"]
     datlist = ["sdate","edate"]
+    x = 0
     for s in satlist:
-        bdict[s] = dict()
+        bdict[x] = dict()
+        bdict[x][s] = dict()
         for d in datlist:
-            bdict[s][d] = 0
+            bdict[x][s][d] = 0
+        x += 1
 
-    # NOAA-6
-    bdict["NOAA6"]["sdate"] = datetime.datetime(1981, 8, 14, 0, 0, 0)
-    bdict["NOAA6"]["edate"] = datetime.datetime(1982, 8,  2, 0, 0, 0)
-    # NOAA-8
-    bdict["NOAA8"]["sdate"] = datetime.datetime(1983, 5,  4, 0, 0, 0)
-    bdict["NOAA8"]["edate"] = datetime.datetime(1983, 9, 19, 0, 0, 0)
-    # NOAA-17
-    bdict["NOAA17"]["sdate"] = datetime.datetime(2010, 3, 1, 0, 0, 0)
-    bdict["NOAA17"]["edate"] = datetime.datetime(2012, 1, 1, 0, 0, 0)
+    # NOAA-15
+    # period
+    bdict[0]["NOAA15"]["sdate"] = datetime.datetime(1999, 3,  9,  0,  0,  0)
+    bdict[0]["NOAA15"]["edate"] = datetime.datetime(1999, 4, 20, 23, 59, 59)
+    # single day
+    bdict[1]["NOAA15"]["sdate"] = datetime.datetime(2000, 4, 8,  0,  0,  0)
+    bdict[1]["NOAA15"]["edate"] = datetime.datetime(2000, 4, 8, 23, 59, 59)
+    # single day
+    bdict[2]["NOAA15"]["sdate"] = datetime.datetime(2000, 5, 18,  0,  0,  0)
+    bdict[2]["NOAA15"]["edate"] = datetime.datetime(2000, 5, 18, 23, 59, 59)
+    # single day
+    bdict[3]["NOAA15"]["sdate"] = datetime.datetime(2000, 6, 16,  0,  0,  0)
+    bdict[3]["NOAA15"]["edate"] = datetime.datetime(2000, 6, 16, 23, 59, 59)
+    # NOAA-18
+    # period
+    bdict[4]["NOAA18"]["sdate"] = datetime.datetime(2005, 6, 23,  0,  0,  0)
+    bdict[4]["NOAA18"]["edate"] = datetime.datetime(2005, 8,  5, 23, 59, 59)
+    # NOAA-19
+    # period
+    bdict[5]["NOAA19"]["sdate"] = datetime.datetime(2009, 3, 19,  0,  0,  0)
+    bdict[5]["NOAA19"]["edate"] = datetime.datetime(2009, 5, 14, 23, 59, 59)
 
-    return pdict['post3'], bdict
+    return pdict['post6'], bdict
 
 
 def list_indexerror():
@@ -79,6 +95,33 @@ def list_along_track_too_long():
              "NSS.GHRR.NC.D84283.S0744.E0931.B1699899.WI.gz"]
 
     return pdict['post4'], olist
+
+
+def list_bad_l1c_quality():
+    """
+    Blacklist orbits where the L1c quality is not OK, mainly
+    based on pystat analysis.
+    """
+    pdict = post_blacklist_reasons()
+    bdict = dict()
+    satlist = ["NOAA6","NOAA8","NOAA17"]
+    datlist = ["sdate","edate"]
+    for s in satlist:
+        bdict[s] = dict()
+        for d in datlist:
+            bdict[s][d] = 0
+
+    # NOAA-6
+    bdict["NOAA6"]["sdate"] = datetime.datetime(1981, 8, 14,  0,  0,  0)
+    bdict["NOAA6"]["edate"] = datetime.datetime(1982, 8,  2, 23, 59, 59)
+    # NOAA-8
+    bdict["NOAA8"]["sdate"] = datetime.datetime(1983, 5,  4,  0,  0,  0)
+    bdict["NOAA8"]["edate"] = datetime.datetime(1983, 9, 19, 23, 59, 59)
+    # NOAA-17
+    bdict["NOAA17"]["sdate"] = datetime.datetime(2010, 3, 1,  0,  0,  0)
+    bdict["NOAA17"]["edate"] = datetime.datetime(2012, 1, 1, 23, 59, 59)
+
+    return pdict['post3'], bdict
 
 
 def list_no_valid_l1c_data():

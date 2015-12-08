@@ -172,6 +172,45 @@ def blacklist_bad_l1c_quality(db, ver):
         db.commit_changes()
 
 
+def blacklist_ch3a_zero_reflectance(db, ver):
+    """
+    There are periods where channel 3a is active
+    but contains only zero reflectances.
+    """
+    black_reason, bdict = pb.list_ch3a_zero_reflectance()
+
+    for idx in bdict.keys():
+        for satkey in bdict[idx]:
+            sdate = bdict[idx][satkey]["sdate"]
+            edate = bdict[idx][satkey]["edate"]
+            satid = db._get_id_by_name(table='satellites', name=satkey)
+
+            logger.info("Blacklist orbits between {0} & {1} for {2}".
+                    format(sdate, edate, satkey))
+
+            upd = "UPDATE orbits SET blacklist=1, blacklist_reason=\'{blr}\' " \
+                  "WHERE satellite_id = \'{satid}\' AND " \
+                  "redundant=0 AND blacklist=0 AND " \
+                  "start_time_l1b BETWEEN \'{sdate}\' AND \'{edate}\' "
+            db.execute(upd.format(blr=black_reason, satid=satid,
+                                  sdate=sdate, edate=edate))
+
+            if ver: 
+                cmd = "SELECT * from vw_std WHERE " \
+                      "satellite_id = \'{satid}\' AND " \
+                      "blacklist_reason=\'{blr}\' AND " \
+                      "start_time_l1b BETWEEN \'{sdate}\' AND \'{edate}\' " \
+                      "ORDER BY start_time_l1b"
+                res = db.execute(cmd.format(satid=satid,blr=black_reason,
+                                            sdate=sdate,edate=edate))
+                print_verbose(res) 
+
+            print_changes(db, black_reason, [satkey])
+            logger.info("COMMIT CHANGES FOR \'{0}\'\n".format(black_reason))
+            db.commit_changes()
+
+
+
 def blacklist_no_valid_l1c_data(db, ver):
     """
     Blacklist all orbits of days, where no valid L1c data available
@@ -347,6 +386,9 @@ if __name__ == '__main__':
     parser.add_argument('-ie', '--pygac_indexerror', action="store_true",
                         help="pyGAC provided an IndexError, i.e no L1c orbit.")
 
+    parser.add_argument('-ch3a', '--ch3a_zero_reflectance', action="store_true",
+                        help="Channel 3a is active but has zero reflectances.")
+
     args = parser.parse_args()
 
     # -- consider all satellites
@@ -377,6 +419,9 @@ if __name__ == '__main__':
         blacklist_wrong_ydim(dbfile, args.verbose)
     if args.pygac_indexerror:
         blacklist_pygac_indexerror(dbfile, args.verbose)
+    if args.ch3a_zero_reflectance:
+        blacklist_ch3a_zero_reflectance(dbfile, args.verbose)
+
 
     # -- show total listing
     if args.show_all: 
