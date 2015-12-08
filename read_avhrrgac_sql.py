@@ -4,6 +4,7 @@
 
 import os
 import sys
+import re
 import argparse
 import datetime
 import time
@@ -308,6 +309,49 @@ def blacklist_wrong_l1c_timestamp(db, ver):
     db.commit_changes()
 
 
+def identify_empty_days(db, log, slist, ver):
+    """
+    Compare SQL entries with maketarfile.1 logfile in order to
+    identify days where no L1c orbits have been produced 
+    although whitelisted L1b orbits were provided as input to pygac,
+    i.e. pygac failed.
+    """
+    obj = open(log, mode="r")
+    lines = obj.readlines()
+    obj.close()
+
+    for ll in lines:
+        line = ll.strip('\n')
+        for sat in slist: 
+            s = re.search(sat,line) 
+            if s: 
+                satellite = s.group()
+                if 'No L1c files for' in line:
+                    splitline = line.split()
+                    date = splitline[-1]
+                    y = int(date[0:4])
+                    m = int(date[4:6])
+                    d = int(date[6:8])
+                    dt = datetime.date(y,m,d)
+                    start_time = datetime.datetime(y, m, d, 0, 0, 0)
+                    end_time = datetime.datetime(y, m, d, 23, 59, 59)
+                    cmd = "SELECT COUNT(*) from vw_std " \
+                          "WHERE satellite_name=\'{sat}\' AND " \
+                          "blacklist=0 AND " \
+                          "start_time_l1b BETWEEN " \
+                          "\'{start_time}\' AND \'{end_time}\' " \
+                          "ORDER BY start_time_l1b"
+                    res = db.execute(cmd.format(sat=satellite,
+                                                start_time=start_time,
+                                                end_time=end_time))
+                    numcheck = res[0]['COUNT(*)']
+                    if numcheck > 0: 
+                        #logger.info("{0}".format(line))
+                        logger.info("{0:2d} whitelisted orbits but "
+                                    "no L1c output for {1} and {2}".
+                                    format(numcheck, dt, satellite))
+
+
 if __name__ == '__main__':
 
     predict = pre_blacklist_reasons()
@@ -362,6 +406,12 @@ if __name__ == '__main__':
     parser.add_argument('-post', '--show_post', action="store_true",
                         help='SHOW all orbits regarding {0}.'.
                         format(sorted(postdict.values())))
+    
+    parser.add_argument('-s4d', '--search4days', type=str,
+                        help='''Compare maketarfile.log with SQL and identify
+                                days where no valid l1c data is provided 
+                                although there are whitelisted l1b input files,
+                                e.g. -s4d=noaa6_grep_no_l1c_files_for.log ''')
 
     parser.add_argument('-ts', '--wrong_l1c_timestamp', action="store_true",
                         help='''Blacklist L1b files getting wrong l1c timestamp.
@@ -407,6 +457,13 @@ if __name__ == '__main__':
     # -- connect to database
     dbfile = AvhrrGacDatabase(dbfile=args.dbfile,
                               timeout=36000, exclusive=True)
+
+    # -- search4days: analyse SQL and LOGs, where no L1c results
+    #                 have been provided although whitelisted L1b 
+    #                 orbits are available, i.e. pygac failed!
+    if args.search4days:
+        identify_empty_days(dbfile, args.search4days, 
+                            get_satellite_list(), args.verbose)
 
     # -- blacklisting
     if args.wrong_l1c_timestamp: 
