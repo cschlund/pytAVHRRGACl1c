@@ -1259,3 +1259,86 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
         logger.info("Shown: {0} ".format(os.path.basename(outfile)))
     logger.info("Done {0}".format(outfile))
     plt.close()
+
+
+def plot_miss_scls(dbfile, outdir, sdate, edate,
+                   satellite, verbose, show_fig):
+    """
+    Plot missing scanlines per day per satellite.
+    """
+    # plot settings
+    satcol = subs.color_satstring(satellite)
+    satstr = subs.plot_satstring(satellite)
+    ptitle = satstr + " / AVHRR GAC L1C"
+    ytitle = "# of Missing Scanlines\n"
+    xtitle = "\nDate"
+    
+    # get data records
+    dates, counts, gaps = subs.get_datagaps_records(satellite, dbfile)
+
+    if len(dates) == 0:
+        logger.info("! No dates available for {0} !".format(satellite))
+        return
+
+    sd = min(dates)
+    ed = max(dates)
+    mindt = sd.strftime('%Y-%m-%d')
+    maxdt = ed.strftime('%Y-%m-%d')
+    sdstr = sd.strftime('%Y/%m/%d')
+    edstr = ed.strftime('%Y/%m/%d')
+    ptitle = ptitle + ' (' + sdstr + ' - ' + edstr + ')\n'
+
+    # convert dates into seconds
+    origin = datetime.datetime(1970, 1, 1, 0, 0, 0, 0)
+    seconds = [(dt - origin).total_seconds() for dt in dates]
+
+    # initialize plot
+    base = plt.figure(figsize=(14,7))
+    fig = base.add_subplot(111)
+
+    # plot missing scanlines
+    fig.vlines(seconds, 0, counts, colors=satcol, linestyle='solid',lw=2)
+
+    # modify x labels
+    nyears = ed.year+1 - sd.year
+    fdoys = [datetime.datetime(year=sd.year + iyear, month=1, day=1, 
+             hour=0, minute=0, second=0, microsecond=0) for iyear in range(nyears+1)]
+    fdoys_sec = [(fdoy - origin).total_seconds() for fdoy in fdoys]
+    fdoys_str = [fdoy.strftime('%Y-%m-%d') for fdoy in fdoys]
+    minor = [datetime.datetime(year=sd.year + iyear, month=7, day=1, 
+             hour=0, minute=0, second=0, microsecond=0) for iyear in range(nyears+1)]
+    minor_sec = [(m - origin).total_seconds() for m in minor]
+    start_sec = int((datetime.datetime(sd.year,1,1,0,0,0,0) - origin).total_seconds())
+    end_sec = int((datetime.datetime(ed.year+1,1,1,0,0,0,0) - origin).total_seconds())
+
+    # limits
+    fig.xaxis.set_ticks(fdoys_sec)
+    fig.xaxis.set_ticklabels(fdoys_str)
+    fig.xaxis.set_ticks(minor_sec, minor=True)
+    fig.set_ylim(min(counts) - max(counts)/10., max(counts) + max(counts)/10.)
+    fig.set_xlim(start_sec, end_sec)
+    plt.gcf().autofmt_xdate()
+
+    # annotate plot
+    fig.set_title(ptitle, fontsize=20)
+    fig.set_xlabel(xtitle, fontsize=20)
+    fig.set_ylabel(ytitle, fontsize=20)
+
+    # set grid
+    fig.grid(which='minor', alpha=0.3)
+    fig.grid(which='major', alpha=0.7)
+
+    # png settings
+    dtstr = mindt + '_' + maxdt + '_'
+    fbase = 'Plot_missing_scanlines_' + dtstr + satellite + '.png'
+    ofile = os.path.join(outdir, fbase)
+
+    # save and show figure
+    plt.savefig(ofile)
+    if show_fig: 
+        plt.show()
+    logger.info("Done: {0}".format(ofile))
+    plt.close()
+
+    return
+

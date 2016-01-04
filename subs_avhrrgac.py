@@ -277,6 +277,34 @@ def dict_factory(cursor, row):
     return d
 
 
+def get_datagaps_records(satellite, db):
+    """
+    Read SQL from AVHRR GAC L1c processing and 
+    return missing scanlines information.
+    """
+    gaps = list()
+    dates = list()
+    counts = list()
+
+    cmd = "SELECT start_time_l1c, missing_scanlines, " \
+          "number_of_missing_scanlines " \
+          "FROM vw_std WHERE blacklist=0 AND " \
+          "start_time_l1c is not null AND " \
+          "number_of_missing_scanlines is not null AND " \
+          "satellite_name=\'{satellite}\' ORDER BY " \
+          "start_time_l1c".format(satellite=satellite)
+
+    rec = db.execute(cmd)
+
+    for r in rec:
+        if r['number_of_missing_scanlines'] is not None:
+            gaps.append(r['missing_scanlines'])
+            dates.append(r['start_time_l1c'])
+            counts.append(r['number_of_missing_scanlines'])
+
+    return dates, counts, gaps
+
+
 def get_ect_records(satellite, db):
     """
     plot_avhrr_ect_ltan.py:
