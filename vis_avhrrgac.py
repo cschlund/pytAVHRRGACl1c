@@ -76,6 +76,8 @@ if __name__ == '__main__':
     parser.add_argument('-tim', '--time', default='all', help=sellist + ', default is all')
     parser.add_argument('-off', '--overlap_off', action="store_true",
                         help='Overlap is not taken into account.')
+    parser.add_argument('-mid', '--midnight', action="store_true",
+                        help='Consider midnight as last scanline.')
     parser.add_argument('-qfl', '--qflag', action="store_true",
                         help='Plot qflag file.')
                         
