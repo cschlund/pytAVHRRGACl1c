@@ -1274,7 +1274,8 @@ def plot_miss_scls(dbfile, outdir, sdate, edate,
     xtitle = "\nDate"
     
     # get data records
-    dates, counts, gaps = subs.get_datagaps_records(satellite, dbfile)
+    (gaps, dates, counts, 
+     endline, alongtrack) = subs.get_datagaps_records(satellite, dbfile)
 
     if len(dates) == 0:
         logger.info("! No dates available for {0} !".format(satellite))
@@ -1288,6 +1289,13 @@ def plot_miss_scls(dbfile, outdir, sdate, edate,
     edstr = ed.strftime('%Y/%m/%d')
     ptitle = ptitle + ' (' + sdstr + ' - ' + edstr + ')\n'
 
+    a1 = min(alongtrack)
+    a2 = max(alongtrack)
+    astring = '; min='+str(a1)+' & max='+str(a2)
+    c1 = min(counts)
+    c2 = max(counts)
+    cstring = '; min='+str(c1)+' & max='+str(c2)
+
     # convert dates into seconds
     origin = datetime.datetime(1970, 1, 1, 0, 0, 0, 0)
     seconds = [(dt - origin).total_seconds() for dt in dates]
@@ -1297,7 +1305,10 @@ def plot_miss_scls(dbfile, outdir, sdate, edate,
     fig = base.add_subplot(111)
 
     # plot missing scanlines
-    fig.vlines(seconds, 0, counts, colors=satcol, linestyle='solid',lw=2)
+    fig.plot(seconds, alongtrack, 'o', color='yellow', 
+             lw=2, label='along_track' + astring, alpha=0.4, markersize=4)
+    fig.vlines(seconds, 0, counts, colors=satcol, 
+               label='missing scanlines'+cstring, linestyle='solid',lw=2)
 
     # modify x labels
     nyears = ed.year+1 - sd.year
@@ -1315,7 +1326,7 @@ def plot_miss_scls(dbfile, outdir, sdate, edate,
     fig.xaxis.set_ticks(fdoys_sec)
     fig.xaxis.set_ticklabels(fdoys_str)
     fig.xaxis.set_ticks(minor_sec, minor=True)
-    fig.set_ylim(min(counts) - max(counts)/10., max(counts) + max(counts)/10.)
+    fig.set_ylim(min(counts) - max(counts)/7., max(counts) + max(counts)/10.)
     fig.set_xlim(start_sec, end_sec)
     plt.gcf().autofmt_xdate()
 
@@ -1323,6 +1334,11 @@ def plot_miss_scls(dbfile, outdir, sdate, edate,
     fig.set_title(ptitle, fontsize=20)
     fig.set_xlabel(xtitle, fontsize=20)
     fig.set_ylabel(ytitle, fontsize=20)
+
+    # legend
+    leg = fig.legend(loc='lower left', fontsize=10, fancybox=True)
+    plt.tight_layout()
+    leg.get_frame().set_alpha(0.5)
 
     # set grid
     fig.grid(which='minor', alpha=0.3)

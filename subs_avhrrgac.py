@@ -285,8 +285,11 @@ def get_datagaps_records(satellite, db):
     gaps = list()
     dates = list()
     counts = list()
+    endline = list()
+    alongtrack = list()
 
     cmd = "SELECT start_time_l1c, missing_scanlines, " \
+          "along_track, end_scanline_endcut, " \
           "number_of_missing_scanlines " \
           "FROM vw_std WHERE blacklist=0 AND " \
           "start_time_l1c is not null AND " \
@@ -297,12 +300,14 @@ def get_datagaps_records(satellite, db):
     rec = db.execute(cmd)
 
     for r in rec:
-        if r['number_of_missing_scanlines'] is not None:
+        if r['start_time_l1c'] is not None:
             gaps.append(r['missing_scanlines'])
             dates.append(r['start_time_l1c'])
             counts.append(r['number_of_missing_scanlines'])
+            endline.append(r['end_scanline_endcut'])
+            alongtrack.append(r['along_track'])
 
-    return dates, counts, gaps
+    return gaps, dates, counts, endline, alongtrack
 
 
 def get_ect_records(satellite, db):
