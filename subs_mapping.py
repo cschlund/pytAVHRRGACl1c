@@ -1,6 +1,7 @@
 
 import os
 import h5py
+import datetime
 import warnings
 import logging
 import numpy as np
@@ -87,10 +88,22 @@ def get_background(mmap, args):
                         ocean_color='lightblue', lakes=True)
 
 
-def get_overlap_info(dbfile, date, satellite): 
-    db = AvhrrGacDatabase(dbfile=dbfile) 
-    records = db.get_scanlines(satellite=satellite, date=date)
-    return records
+def get_overlap_info(args, date, satellite): 
+    if args.midnight: 
+        records = db.get_scanlines(satellite=satellite, date=date)
+        return records
+    else:
+        dt1 = date
+        dt2 = date + datetime.timedelta(days=1)
+        db = AvhrrGacDatabase(dbfile=args.dbfile) 
+        query = "SELECT start_time_l1c, end_time_l1c, " \
+                "start_scanline_endcut, end_scanline_endcut, " \
+                "along_track, across_track FROM vw_std " \
+                "WHERE satellite_name=\'{sat}\' AND " \
+                "start_time_l1c BETWEEN \'{dt1}\' AND \'{dt2}\' ".format(
+                        dt1=dt1, dt2=dt2, sat=satellite)
+        records = db.execute(query)
+        return records
 
 
 def read_scanlines(ifile, records): 
@@ -104,14 +117,24 @@ def read_scanlines(ifile, records):
             return sl, el, xd, yd
 
 
-def get_plot_info(flist, args):
-    filename  = flist[0]
+def get_date_sat_from_filename(filename):
     splitstr  = subs.split_filename(filename)
-    platform  = subs.lite_satstring(splitstr[3])
-    date_str  = splitstr[5][0:8]
-    date_obj  = subs.str2date(date_str)
+    satellite = subs.lite_satstring(splitstr[3])
+    date_string = splitstr[5][0:8]
+    date_object = subs.str2date(date_string)
+    return satellite, date_object, date_string
+
+
+def get_records_from_dbfile(args, filename):
+    sat, dt_obj, dt_str = get_date_sat_from_filename(filename)
+    records = get_overlap_info(args, dt_obj, sat)
+    return records
+
+
+def get_plot_info(flist, args):
+    platform, date_obj, date_str = get_date_sat_from_filename(flist[0])
     avhrrstr  = "AVHRR GAC L1c / " + subs.full_sat_name(platform)[0]
-    basefile  = os.path.basename(filename)
+    basefile  = os.path.basename(flist[0])
 
     if len(flist) > 1: 
         cutfil = basefile.find(date_str+"T") 
@@ -130,9 +153,15 @@ def get_plot_info(flist, args):
     title  = avhrrstr + " - " + rl.REGIONS[args.region]["nam"] + \
              " (" + args.time + ") for " + date_str 
 
-    records = get_overlap_info(args.dbfile, date_obj, platform)
+    date_list = list()
+    if len(flist) > 1:
+        for f in flist: 
+            sdt, edt = subs.get_l1c_timestamps(f)
+            dates = sdt.strftime("%Y/%m/%d %H:%M:%S") + ' -- ' \
+                    + edt.strftime("%Y/%m/%d %H:%M:%S")
+            date_list.append(dates)
 
-    return outfil, title, records
+    return outfil, title, date_list
 
 
 def map_avhrrgac_l1c(flist, args):
@@ -141,7 +170,7 @@ def map_avhrrgac_l1c(flist, args):
     """
     # some required information
     logger.info("Get plotting information")
-    ofilen, outtit, recs = get_plot_info(flist, args)
+    ofilen, outtit, dates = get_plot_info(flist, args)
 
     # initialize figure
     fig = plt.figure(figsize=(17,10))
@@ -167,6 +196,9 @@ def map_avhrrgac_l1c(flist, args):
         # file counter
         cnt += 1
 
+        # get records
+        recs = get_records_from_dbfile(args, fil)
+
         # get scanlines and dimension of orbit
         sl, el, xdim, ydim = read_scanlines(fil, recs)
         logger.info("Start -- End Scanlines: {0}:{1}".format(sl,el))
@@ -176,6 +208,9 @@ def map_avhrrgac_l1c(flist, args):
         ## test
         #el = el - 1
         #el = el + 1
+
+        # halforbit if overlap option
+        cut = int(el / 2.)
 
         # read file
         afil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
@@ -255,6 +290,19 @@ def map_avhrrgac_l1c(flist, args):
     
     # add title:
     ax.set_title(outtit + "\n\n")
+
+    # annotate plot with dates used for plotting
+    left, right = ax.get_xlim()
+    low, high = ax.get_ylim()
+    #print left, right, low, high
+    # 0.0 5000000.0 0.0 4000000.0 [meter]
+    scale = 0.05
+    xi = (right - left) / 3.5
+    yi = right*scale
+    for dt in dates:
+        plt.text(xi, yi, dt, fontsize=16, 
+                 ha='center', va='center', color='black')
+        yi += right*scale
 
     # save to file:
     fig.savefig(ofilen, bbox_inches='tight')
