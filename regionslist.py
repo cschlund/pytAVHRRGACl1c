@@ -51,6 +51,13 @@ REGIONS = dict(
            "geo": {"llcrnrlat": 50, "urcrnrlat": 80, "llcrnrlon": -35, "urcrnrlon": 35,
                    "projection": 'cyl', "resolution": 'c'}},
 
+    over_pacific={
+          "nam": "GAC Overlap: Stereographic Proj.",
+          "par": [-90, 91, 10],
+          "mer": [-180, 181, 30],
+          "geo": {"lon_0": 180, "lat_0": 30, "height": 4000e3, "width": 5000e3,
+                  "projection": 'stere', "resolution": 'l'}},
+
     ger={"nam": "Germany",
          "par": [-90, 91, 2],
          "mer": [-180, 181, 2],
@@ -66,7 +73,8 @@ REGIONS = dict(
     glo_ortho={"nam": "Global_ortho",
                "par": [-90.,120.,30.],
                "mer": [0.,420.,60.],
-               "geo": {"lon_0": 0, "lat_0": 60, "projection": 'ortho', "resolution": 'l'}},
+               #"geo": {"lon_0": 0, "lat_0": 60, "projection": 'ortho', "resolution": 'l'}},
+               "geo": {"lon_0": 180, "lat_0": 40, "projection": 'ortho', "resolution": 'l'}},
 
     ame={"nam": "America",
          "par": [-90, 91, 30],
