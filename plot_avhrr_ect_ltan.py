@@ -37,7 +37,7 @@ if __name__ == '__main__':
                         default='1978-01-01', help='String, Start Date')
 
     parser.add_argument('-ed', '--edate', type=subs.datestring,
-                        default='2016-01-01', help='String, End Date')
+                        default='2017-01-01', help='String, End Date')
 
     parser.add_argument('-sats', '--satellites', type=subs.str2upper, nargs='*',
                         help='Satellite, available: ' + satlist)
