@@ -6,6 +6,31 @@ from subs_avhrrgac import get_satellite_list
 from subs_avhrrgac import post_blacklist_reasons
 
 
+def read_manually_selected_orbits( file_txt ):
+    """
+    The post_blacklist.txt read contains orbits, which show bad L1c quality,
+    most probably due to scan motor issues.
+    These orbits were identified manually by DWD based on 
+    pystat results and plotting each orbit (vis & ir channels: 1 & 5).
+    """
+    pdict = post_blacklist_reasons()
+    orbit_list = list()
+
+    obj = open( file_txt, mode="r" )
+    lines = obj.readlines()
+    obj.close()
+
+    for l in lines:
+        line = l.strip('\n')
+        if '#' in line:
+            continue
+        splt = line.split()
+        orbit_list.append( splt[0]+'.gz' )
+
+    # due to midnight orbits, make unique filename list
+    return pdict['post7'], set(orbit_list)
+
+
 def list_ch3a_zero_reflectance():
     """
     There are periods where channel 3a is active

@@ -22,6 +22,11 @@ logger = setup_root_logger(name='root', logdir=logdir,
                            append=True, logfile=True)
 
 
+def get_sat_name(sqlres): 
+    for r in sqlres:
+        return r['satellite_name']
+
+
 def print_verbose(sqlres): 
     for r in sqlres:
         logger.info("Satellite     : {0}".format(r['satellite_name']))
@@ -42,7 +47,7 @@ def print_changes(db, reason, satname=None):
     """
     postdict = post_blacklist_reasons()
     sqltxt = "SELECT COUNT(*) FROM vw_std WHERE "
-    logtxt = "{0:24s} -> {1:8d} orbits "
+    logtxt = "{0:26s} -> {1:8d} orbits "
 
     if reason is 'all_l1b':
         sqltxt = sqltxt + "filename is not null "
@@ -154,10 +159,50 @@ def blacklist_pygac_indexerror(db, ver):
     db.commit_changes()
 
 
+def blacklist_manually_selected_orbits(db, ver):
+    """
+    Manually selected orbits, which show bad L1c quality,
+    most probably due to scan motor issues, which occur temporarily.
+    Orbit list stored in: post_blacklist.txt
+    """
+    tfile = "post_blacklist.txt"
+    myset = set()
+    black_reason, olist = pb.read_manually_selected_orbits( tfile )
+
+    logger.info("Blacklist orbits based on \'{0}\'".format(tfile))
+    for fil in olist:
+        upd = "UPDATE orbits SET blacklist=1, " \
+              "blacklist_reason=\'{blr}\' WHERE filename=\'{fil}\' " \
+              "AND blacklist=0"
+        db.execute(upd.format(fil=fil, blr=black_reason))
+
+        cmd = "SELECT * FROM vw_std WHERE filename=\'{fil}\' "
+        res = db.execute(cmd.format(fil=fil))
+        sat = get_sat_name(res)
+        myset.add(sat)
+
+        if ver:
+            print_verbose(res) 
+
+    for sat in myset:
+        cmd = "SELECT COUNT(*) FROM vw_std WHERE " \
+              "satellite_name=\'{sat}\' AND " \
+              "blacklist=1 AND blacklist_reason=\'{blr}\' "
+        res = db.execute(cmd.format(sat=sat, blr=black_reason))
+        cnt = res[0]['COUNT(*)']
+        logger.info("{0} orbits of {1} are blacklisted due to {2}".
+                    format(cnt, sat, black_reason))
+
+    print_changes(db, black_reason)
+    logger.info("COMMIT CHANGES BASED ON \'{1}\' FOR \'{0}\'\n".
+                format(black_reason, tfile))
+    db.commit_changes()
+
+
 def blacklist_bad_l1c_quality(db, ver):
     """
     Blacklist all dates between sdate and edate for given satellite.
-    See post_blacklistings.py for details.
+    See post_blacklist.py for details.
     """
     black_reason, bdict = pb.list_bad_l1c_quality()
 
@@ -450,7 +495,12 @@ if __name__ == '__main__':
     parser.add_argument('-bad', '--bad_l1c_quality', action="store_true",
                         help='''Blacklist all days between specified sdate and 
                         edate for a specific satellite. 
-                        See post_blacklistings.py for details.''')
+                        See post_blacklist.py for details.''')
+
+    parser.add_argument('-temp', '--temporary_scan_motor_issue', action="store_true",
+                        help='''Blacklist manually selected orbits identified by pystat 
+                        and visualization of channel 1 & 5 of these orbits. 
+                        See post_blacklist.txt for details.''')
 
     parser.add_argument('-ydim', '--along_track_too_long', action="store_true",
                         help='''Diana found during CLARA-A2 processing orbits, 
@@ -501,6 +551,8 @@ if __name__ == '__main__':
         blacklist_pygac_indexerror(dbfile, args.verbose)
     if args.ch3a_zero_reflectance:
         blacklist_ch3a_zero_reflectance(dbfile, args.verbose)
+    if args.temporary_scan_motor_issue:
+        blacklist_manually_selected_orbits(dbfile, args.verbose)
 
 
     # -- show total listing
