@@ -1088,7 +1088,8 @@ def read_globstafile(fil, cha, sel, sdate, edate):
 
 
 def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
-                           sat_list, verbose, show_fig):
+                           sat_list, ignore_sats,
+                           verbose, show_fig, make_legend):
     """
     Plot AVHRR / NOAAs equator crossing time
     """
@@ -1111,9 +1112,9 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     f.close()
 
     plt_title = "Equatorial Crossing Time of AVHRR's " \
-                "on-board NOAA/MetOp Polar Satellites\n"
-    x_title = "\nDate"
-    y_title = "Local Time (hour)\n"
+                "on-board NOAA/MetOp Polar Satellites"
+    x_title = "Date"
+    y_title = "Local Time (hour)"
 
     # count for satellite color
     cnt = 0
@@ -1122,8 +1123,18 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     fig = plt.figure(figsize=(15, 10))
     ax = fig.add_subplot(111)
 
+    # collect first day for each satellite
+    tleg_inline = list()
+    xleg_inline = list()
+    yleg_inline = list()
+    cleg_inline = list()
+
     # loop over satellites
     for satellite in sat_list:
+
+        # check if satellite is in ignore_list
+        if satellite in ignore_sats:
+            continue
 
         # get color for satellite
         satcolor = subs.color_satstring(satellite)
@@ -1132,7 +1143,8 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
         date_list, ect_list = subs.get_ect_records(satellite, dbfile)
         if not date_list:
             continue
-        logger.info("{0}: {1} -- {2}".format(satellite, min(date_list), max(date_list)))
+        logger.info("{0}: {1} -- {2}".
+                format(satellite, min(date_list), max(date_list)))
 
         if len(date_list) != 0:
 
@@ -1158,6 +1170,12 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
             if satellite in am_sats:
                 logger.info("{0} is a morning satellite".format(satellite))
                 sec_arr -= 12 * 60 * 60
+
+            # collect x,y,text values for inline
+            tleg_inline.append(satellite)
+            xleg_inline.append(date_seconds[0])
+            yleg_inline.append(sec_arr[0])
+            cleg_inline.append(satcolor)
 
             # count number of days from unique dat_arr
             total_bins = len(set(dat_arr)) / 30
@@ -1203,8 +1221,8 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     ax.tick_params(axis='both', which='minor', labelsize=0)
 
     # modify y axis
-    hour_start = 4 * 3600
-    hour_end = 22 * 3600
+    hour_start = 3 * 3600
+    hour_end = 21 * 3600
     ax.set_ylim(hour_end, hour_start)
     major_seconds_label = range(hour_start + 3600, hour_end, 2 * 3600)
     minor_seconds_label = range(hour_start + 3600, hour_end, 3600)
@@ -1241,15 +1259,36 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     ax.grid(which='minor', alpha=0.3)
     ax.grid(which='major', alpha=0.7)
 
-    # make legend
-    if cnt < 13: 
-        num_of_sats = int(math.ceil(cnt / 2.))
-    else:
-        num_of_sats = int(math.ceil(cnt / 3.))
-    leg = ax.legend(ncol=num_of_sats, loc='lower left', fancybox=True, fontsize=18)
+    # satellite names inline
+    # print zip(tleg_inline, xleg_inline, yleg_inline)
+    larger_xshift = ['NOAA12','NOAA19']
+    larger_yshift = ['NOAA12','NOAA15','METOPA','METOPB']
+    for cnt, idx in enumerate(tleg_inline):
+        xoff = + 0.
+        yoff = - 60.*15.
+        if idx in larger_xshift:
+            xoff = + 3.* 31.*24.*3600.
+        if idx in larger_yshift:
+            yoff = - 60.*30.
+        if idx == 'NOAA18' or idx == 'NOAA19':
+            yoff = - 60.*40.
+        plt.text(xleg_inline[cnt] + xoff, 
+                 yleg_inline[cnt] + yoff, 
+                 tleg_inline[cnt], 
+                 color=cleg_inline[cnt], 
+                 fontsize=20)
+
+    if make_legend:
+        if cnt < 13: 
+            num_of_sats = int(math.ceil(cnt / 2.))
+        else:
+            num_of_sats = int(math.ceil(cnt / 3.))
+        leg = ax.legend(ncol=num_of_sats, loc='lower left', 
+                        fancybox=True, fontsize=18)
+        leg.get_frame().set_alpha(0.5)
+
     # plt.tight_layout(rect=(0.02, 0.02, 1.98, 0.98))
     plt.tight_layout()
-    leg.get_frame().set_alpha(0.5)
 
     # save and close plot
     # plt.savefig(outfile, bbox_inches='tight')

@@ -144,21 +144,21 @@ def full_sat_name(sat):
     m2_list = ["m02", "metopa", "metop02", "M2", "METOPA"]
 
     if sat in tn_list:
-        return "NOAA-5", "noaa5", "TIROSN", 'black'
+        return "NOAA-5", "noaa5", "TIROSN", 'Black'
     elif sat in na_list:
-        return "NOAA-6", "noaa6", "NOAA6", 'slategray'
+        return "NOAA-6", "noaa6", "NOAA6", 'DarkSlateGray'
     elif sat in nc_list:
-        return "NOAA-7", "noaa7", "NOAA7", 'Magenta'
+        return "NOAA-7", "noaa7", "NOAA7", 'DarkOrchid'
     elif sat in ne_list:
-        return "NOAA-8", "noaa8", "NOAA8", 'lightpink'
+        return "NOAA-8", "noaa8", "NOAA8", 'DeepPink'
     elif sat in nf_list:
         return "NOAA-9", "noaa9", "NOAA9", 'DodgerBlue'
     elif sat in ng_list:
-        return "NOAA-10", "noaa10", "NOAA10", 'MediumSlateBlue'
+        return "NOAA-10", "noaa10", "NOAA10", 'Blue'
     elif sat in nh_list:
         return "NOAA-11", "noaa11", "NOAA11", 'DarkOrange'
     elif sat in nd_list:
-        return "NOAA-12", "noaa12", "NOAA12", 'Lime'
+        return "NOAA-12", "noaa12", "NOAA12", 'LimeGreen'
     elif sat in nj_list:
         return "NOAA-14", "noaa14", "NOAA14", 'Sienna'
     elif sat in nk_list:
@@ -166,7 +166,7 @@ def full_sat_name(sat):
     elif sat in nl_list:
         return "NOAA-16", "noaa16", "NOAA16", 'DarkGreen'
     elif sat in nm_list:
-        return "NOAA-17", "noaa17", "NOAA17", 'Turquoise'
+        return "NOAA-17", "noaa17", "NOAA17", 'DarkCyan'
     elif sat in nn_list:
         return "NOAA-18", "noaa18", "NOAA18", 'DarkMagenta'
     elif sat in np_list:
@@ -174,7 +174,7 @@ def full_sat_name(sat):
     elif sat in m1_list:
         return "MetOp-B", "metopb", "METOPB", 'Olive'
     elif sat in m2_list:
-        return "MetOp-A", "metopa", "METOPA", 'Gold'
+        return "MetOp-A", "metopa", "METOPA", 'Coral'
     else:
         message = "\n * The satellite name you've chosen is not " \
                   "available in the current list!\n"

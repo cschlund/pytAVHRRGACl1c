@@ -9,7 +9,7 @@ import sys
 import argparse
 import sqlite3 as lite
 import matplotlib
-matplotlib.use('GTK3Agg')
+#matplotlib.use('GTK2Agg')
 import subs_avhrrgac as subs
 import subs_plot_sql as psql
 
@@ -42,11 +42,17 @@ if __name__ == '__main__':
     parser.add_argument('-sats', '--satellites', type=subs.str2upper, nargs='*',
                         help='Satellite, available: ' + satlist)
 
+    parser.add_argument('-ign', '--ignore', type=subs.str2upper, 
+                        nargs='*', help='Satellite, which are ignored ')
+
     parser.add_argument('-ver', '--verbose', action="store_true",
                         help='increase output verbosity')
 
     parser.add_argument('-show', '--show_figure', action="store_true",
                         help='Show figure instead of saving saving')
+
+    parser.add_argument('-leg', '--plot_legend', action="store_true",
+                        help='Plot legend instead of inline text.')
 
     args = parser.parse_args()
 
@@ -72,7 +78,9 @@ if __name__ == '__main__':
         logger.info("Start Date : %s" % start_date)
         logger.info("End Date   : %s" % end_date)
         logger.info("Satellite  : %s" % sat_list)
+        logger.info("Don't plot : %s" % args.ignore)
         logger.info("Show fig   : %s" % args.show_figure)
+        logger.info("Plot legend: %s" % args.plot_legend)
         logger.info("Verbose    : %s\n" % args.verbose)
 
     try:
@@ -85,8 +93,10 @@ if __name__ == '__main__':
 
         psql.plot_avhrr_ect_results(dbfile, args.outdir,
                                     start_date, end_date,
-                                    sat_list, args.verbose,
-                                    args.show_figure)
+                                    sat_list, args.ignore,
+                                    args.verbose,
+                                    args.show_figure,
+                                    args.plot_legend)
 
         dbfile.close()
 
