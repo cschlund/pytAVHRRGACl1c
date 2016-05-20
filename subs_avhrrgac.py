@@ -186,17 +186,17 @@ def full_cha_name(target):
     Decoding of channel abbreviations.
     """
     if target == 'rf1' or target == 'ch1':
-        return "Channel 1 reflectance"
+        return "Ch1 reflectance"
     elif target == 'rf2' or target == 'ch2':
-        return "Channel 2 reflectance"
+        return "Ch2 reflectance"
     elif target == 'rf3' or target == 'ch3a':
-        return "Channel 3a reflectance"
+        return "Ch3a reflectance"
     elif target == 'bt3' or target == 'ch3b':
-        return "Channel 3b brightness temperature [K]"
+        return "Ch3b brightness temperature"
     elif target == 'bt4' or target == 'ch4':
-        return "Channel 4 brightness temperature [K]"
+        return "Ch4 brightness temperature"
     elif target == 'bt5' or target == 'ch5':
-        return "Channel 5 brightness temperature [K]"
+        return "Ch5 brightness temperature"
     else:
         message = "\n * Wrong target name! see help message !\n"
         sys.exit(message)

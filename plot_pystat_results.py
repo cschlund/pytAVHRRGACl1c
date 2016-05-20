@@ -9,7 +9,7 @@ import sys
 import argparse
 import sqlite3 as lite
 import matplotlib
-matplotlib.use('GTK3Agg')
+#matplotlib.use('GTK3Agg')
 
 import subs_avhrrgac as mysub
 import subs_plot_sql as psql
@@ -70,10 +70,10 @@ if __name__ == '__main__':
                         help='Path, e.g. /path/to/plot.png')
 
     parser.add_argument('-sd', '--sdate', type=mysub.datestring,
-                        default='1978-01-01', help='Start Date, e.g. 2009-01-01')
+                        default='1979-01-01', help='Start Date, e.g. 2009-01-01')
 
     parser.add_argument('-ed', '--edate', type=mysub.datestring,
-                        default='2016-01-01', help='End Date, e.g. 2012-12-31')
+                        default='2017-01-01', help='End Date, e.g. 2012-12-31')
 
     parser.add_argument('-cha', '--channel', type=str,
                         help='Channel abbreviation, available: ' + chalist)

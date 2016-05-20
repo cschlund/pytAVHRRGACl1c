@@ -8,7 +8,7 @@
 #
 
 import matplotlib
-matplotlib.use('GTK3Agg')
+#matplotlib.use('GTK3Agg')
 import os
 import sys
 import argparse

@@ -9,7 +9,7 @@ import sys
 import argparse
 import sqlite3 as lite
 import matplotlib
-matplotlib.use('GTK3Agg')
+#matplotlib.use('GTK3Agg')
 import subs_avhrrgac as subs
 import subs_plot_sql as psql
 from pycmsaf.avhrr_gac.database import AvhrrGacDatabase

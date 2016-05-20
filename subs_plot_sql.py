@@ -248,17 +248,34 @@ def plot_time_series(sat_list, channel, select, start_date,
 
     isdata_cnt = 0
     chan_label = subs.full_cha_name(channel)
-    if channel == "ch1" or channel == "ch2" or channel == "ch3a":
-        cali_label = " (MODc6 calib.)"
-    else:
-        cali_label = ""
-    plot_label = "AVHRR GAC L1C Time Series" + cali_label + ": " + \
-                 chan_label + " (" + select + ")\n"
-    mean_label = "Daily Global Mean\n"
-    stdv_label = "Standard Deviation\n"
-    nobs_label = "# of Observations\n"
-    date_label = "\nDate"
 
+    if select == "day_90sza":
+        stime = "day"
+    elif select == "day":
+        stime = "day_80sza"
+        return
+    else:
+        stime = select
+
+    plot_label = "Daily global statistics for AVHRR " + \
+            chan_label + " (" + stime + ")\n"
+    nobs_label = "# of pixels"
+    date_label = "Date"
+    orbit_label = "orbits/day"
+
+    if channel == "ch1" or channel == "ch2" or channel == "ch3a":
+        mean_label = "mean"
+        stdv_label = "stddev"
+    else:
+        mean_label = "mean [K]"
+        stdv_label = "stddev [K]"
+
+    tick_labelsize = 16
+    plt.rcParams['xtick.labelsize'] = tick_labelsize
+    plt.rcParams['ytick.labelsize'] = tick_labelsize
+    title_fontsize=20
+    label_fontsize=20
+    legend_fontsize=18
     cnt = 0
     lwd = 2
 
@@ -381,7 +398,7 @@ def plot_time_series(sat_list, channel, select, start_date,
             colid = slist.index(sname)
             cnt = colid
             fbase = 'Plot_TimeSeries_' + sdate_str + '_' + edate_str + \
-                    '_' + channel + '_' + select + '_' + \
+                    '_' + channel + '_' + stime + '_' + \
                     sname + '.png'
         else:
             delta_days = (end_date - start_date).days
@@ -390,7 +407,7 @@ def plot_time_series(sat_list, channel, select, start_date,
             sdate_str = subs.date2str(start_date)
             edate_str = subs.date2str(end_date)
             fbase = 'Plot_TimeSeries_' + sdate_str + '_' + edate_str + \
-                    '_' + channel + '_' + select + '.png'
+                    '_' + channel + '_' + stime + '.png'
 
         ofile = os.path.join(outpath, fbase)
 
@@ -405,7 +422,8 @@ def plot_time_series(sat_list, channel, select, start_date,
             ax2.plot(datelst, orb_cnts_lst, '--o', 
                      color=satcol, linewidth=1.5, 
                      markersize=5, alpha=0.8)
-            ax2.set_ylabel('Orbits/day', color=satcol)
+            ax2.set_ylabel(orbit_label, color=satcol, 
+                           fontsize=label_fontsize)
             ax2.set_ylim(0, max_cnts + 10)
             ax_rec.set_ylim(0, max(nobslst)+max(nobslst)*0.1)
             ax2.grid(which='major', alpha=0.8, color=satcol)
@@ -464,11 +482,11 @@ def plot_time_series(sat_list, channel, select, start_date,
             major_fmt = yearsFormatter
 
         # label axes
-        ax_val.set_title(plot_label)
-        ax_val.set_ylabel(mean_label)
-        ax_std.set_ylabel(stdv_label)
-        ax_rec.set_ylabel(nobs_label)
-        ax_rec.set_xlabel(date_label)
+        ax_val.set_title(plot_label, fontsize=title_fontsize)
+        ax_val.set_ylabel(mean_label, fontsize=label_fontsize)
+        ax_std.set_ylabel(stdv_label, fontsize=label_fontsize)
+        ax_rec.set_ylabel(nobs_label, fontsize=label_fontsize)
+        ax_rec.set_xlabel(date_label, fontsize=label_fontsize)
 
         ax_val.xaxis.set_major_locator(major_loc)
         ax_std.xaxis.set_major_locator(major_loc)
@@ -1308,10 +1326,18 @@ def plot_miss_scls(dbfile, outdir, sdate, edate,
     # plot settings
     satcol = subs.color_satstring(satellite)
     satstr = subs.plot_satstring(satellite)
-    ptitle = satstr + " / AVHRR GAC L1C"
-    ytitle = "# of Missing Scanlines\n"
-    xtitle = "\nDate"
+    ptitle = satstr + " / AVHRR GAC L1c"
+    ytitle = "# of scan lines (dots)"
+    ytitle2 = "# of missing scan lines"
+    xtitle = "Date"
     
+    tick_labelsize = 16
+    plt.rcParams['xtick.labelsize'] = tick_labelsize
+    plt.rcParams['ytick.labelsize'] = tick_labelsize
+    title_fontsize=20
+    label_fontsize=20
+    legend_fontsize=14
+
     # get data records
     (gaps, dates, counts, 
      endline, alongtrack) = subs.get_datagaps_records(satellite, dbfile)
@@ -1326,14 +1352,14 @@ def plot_miss_scls(dbfile, outdir, sdate, edate,
     maxdt = ed.strftime('%Y-%m-%d')
     sdstr = sd.strftime('%Y/%m/%d')
     edstr = ed.strftime('%Y/%m/%d')
-    ptitle = ptitle + ' (' + sdstr + ' - ' + edstr + ')\n'
+    ptitle = ptitle + ' (' + sdstr + ' - ' + edstr + ')'
 
     a1 = min(alongtrack)
     a2 = max(alongtrack)
-    astring = '; min='+str(a1)+' & max='+str(a2)
+    astring = ': min='+str(a1)+'; max='+str(a2)
     c1 = min(counts)
     c2 = max(counts)
-    cstring = '; min='+str(c1)+' & max='+str(c2)
+    cstring = ': min='+str(c1)+'; max='+str(c2)
 
     # convert dates into seconds
     origin = datetime.datetime(1970, 1, 1, 0, 0, 0, 0)
@@ -1343,11 +1369,14 @@ def plot_miss_scls(dbfile, outdir, sdate, edate,
     base = plt.figure(figsize=(14,7))
     fig = base.add_subplot(111)
 
+    # plot along_track dimension
+    fig.plot(seconds, alongtrack, 'o', color='yellow', lw=2, alpha=0.4, markersize=4)
+
     # plot missing scanlines
-    fig.plot(seconds, alongtrack, 'o', color='yellow', 
-             lw=2, label='along_track' + astring, alpha=0.4, markersize=4)
-    fig.vlines(seconds, 0, counts, colors=satcol, 
-               label='missing scanlines'+cstring, linestyle='solid',lw=2)
+    fig2 = fig.twinx()
+    fig2.vlines(seconds, 0, counts, colors=satcol, linestyle='solid',lw=2)
+    for tl in fig2.get_yticklabels():
+        tl.set_color(satcol)
 
     # modify x labels
     nyears = ed.year+1 - sd.year
@@ -1365,19 +1394,16 @@ def plot_miss_scls(dbfile, outdir, sdate, edate,
     fig.xaxis.set_ticks(fdoys_sec)
     fig.xaxis.set_ticklabels(fdoys_str)
     fig.xaxis.set_ticks(minor_sec, minor=True)
-    fig.set_ylim(min(counts) - max(counts)/7., max(counts) + max(counts)/10.)
+    fig.set_ylim(0.0, 15000.0)
+    fig2.set_ylim(0.0, 15000.0)
     fig.set_xlim(start_sec, end_sec)
     plt.gcf().autofmt_xdate()
 
     # annotate plot
-    fig.set_title(ptitle, fontsize=20)
-    fig.set_xlabel(xtitle, fontsize=20)
-    fig.set_ylabel(ytitle, fontsize=20)
-
-    # legend
-    leg = fig.legend(loc='lower left', fontsize=10, fancybox=True)
-    plt.tight_layout()
-    leg.get_frame().set_alpha(0.5)
+    fig.set_title(ptitle, fontsize=title_fontsize)
+    fig.set_xlabel(xtitle, fontsize=label_fontsize)
+    fig.set_ylabel(ytitle, fontsize=label_fontsize)
+    fig2.set_ylabel(ytitle2, fontsize=label_fontsize, color=satcol)
 
     # set grid
     fig.grid(which='minor', alpha=0.3)

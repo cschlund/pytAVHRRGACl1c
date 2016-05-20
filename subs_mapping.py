@@ -1,5 +1,5 @@
 
-import os
+import os, sys
 import h5py
 import datetime
 import warnings
@@ -64,9 +64,7 @@ def isEven(number):
 
 
 def get_minmax_target(args):
-    if args.channel is 'ch1' or \
-            args.channel is 'ch2' or \
-            args.channel is 'ch3a':
+    if args.channel == 'ch1' or args.channel == 'ch2' or args.channel == 'ch3a':
         return 0., 1.
     else:
         return 185., 330.
@@ -115,6 +113,9 @@ def read_scanlines(ifile, records):
             yd = rec['along_track']
             xd = rec['across_track']
             return sl, el, xd, yd
+
+    logger.info("No match found for {0} - {1}".
+            format(sdt, edt))
 
 
 def get_date_sat_from_filename(filename):
@@ -291,18 +292,18 @@ def map_avhrrgac_l1c(flist, args):
     # add title:
     ax.set_title(outtit + "\n\n")
 
-    # annotate plot with dates used for plotting
-    left, right = ax.get_xlim()
-    low, high = ax.get_ylim()
-    #print left, right, low, high
-    # 0.0 5000000.0 0.0 4000000.0 [meter]
-    scale = 0.05
-    xi = (right - left) / 3.5
-    yi = right*scale
-    for dt in dates:
-        plt.text(xi, yi, dt, fontsize=16, 
-                 ha='center', va='center', color='black')
-        yi += right*scale
+    ## annotate plot with dates used for plotting
+    #left, right = ax.get_xlim()
+    #low, high = ax.get_ylim()
+    ##print left, right, low, high
+    ## 0.0 5000000.0 0.0 4000000.0 [meter]
+    #scale = 0.05
+    #xi = (right - left) / 3.5
+    #yi = right*scale
+    #for dt in dates:
+    #    plt.text(xi, yi, dt, fontsize=16, 
+    #             ha='center', va='center', color='black')
+    #    yi += right*scale
 
     # save to file:
     fig.savefig(ofilen, bbox_inches='tight')
