@@ -1444,20 +1444,26 @@ def blacklisting_histogram( x_cnts, x_axis, y_axis, colors, width, outfile,
     """
     Plot the statistics regarding blacklisting.
     """
-    if len(x_axis) > 4:
-        rotate = 90
-        fts = 16
-        tick_labelsize = 16
-        ymax = 2.
-        bar_format = '%.3f'
-        off_text = 0.15
-    else: 
+    if 'total' in outfile:
         rotate = 0
         fts = 22 
         tick_labelsize = 22
         ymax = int( math.ceil( max(y_axis) + 0.5 ) )
         bar_format = '%.2f'
         off_text = 0.5
+    else:
+        rotate = 90
+        fts = 16
+        tick_labelsize = 16
+        bar_format = '%.3f'
+        off_text = 0.15
+        ymax = 2.0
+        if 'pre' in outfile: 
+            ymax = 1.4
+            off_text = 0.1
+        if 'proc' in outfile: 
+            ymax = 0.5
+            off_text = 0.05
         
     plt.rcParams['ytick.labelsize'] = tick_labelsize
     fig = plt.figure(figsize=(12, 8))

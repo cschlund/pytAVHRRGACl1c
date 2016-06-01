@@ -272,10 +272,19 @@ if __name__ == '__main__':
             n2.append(x_cnts[i])
 
 
-    outfile = os.path.join(args.outputdir, "HISTO_all-gac-blacklisting_"+sats+".png")
-    blacklisting_histogram( n1, x1, y1, c1, 0.8, outfile, args.satellite )
+    if args.black_pre and args.black_proc and args.black_post: 
+        outfile = os.path.join(args.outputdir, "HISTO_total-gac-blacklisting_"+sats+".png") 
+        blacklisting_histogram( n1, x1, y1, c1, 0.8, outfile, args.satellite )
 
-    outfile = os.path.join(args.outputdir, "HISTO_gac-blacklisting_"+sats+".png")
+    if args.black_pre and not args.black_proc and not args.black_post: 
+        outfile = os.path.join(args.outputdir, "HISTO_gac-pre-blacklisting_"+sats+".png")
+    elif args.black_proc and not args.black_pre and not args.black_post: 
+        outfile = os.path.join(args.outputdir, "HISTO_gac-proc-blacklisting_"+sats+".png")
+    elif args.black_post and not args.black_pre and not args.black_proc: 
+        outfile = os.path.join(args.outputdir, "HISTO_gac-post-blacklisting_"+sats+".png")
+    else:
+        outfile = os.path.join(args.outputdir, "HISTO_gac-all-blacklisting_"+sats+".png")
+
     blacklisting_histogram( n2, x2, y2, c2, 0.8, outfile, args.satellite )
 
 
