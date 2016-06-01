@@ -26,7 +26,7 @@ work_out = os.path.join(work_dir, 'maps')
 avail = sorted(rl.REGIONS.keys())
 defin = ', '.join(map(str, avail))
 chalist = '|'.join(mysub.get_channel_list())
-sellist = '|'.join(mysub.get_select_list())
+sellist = '|'.join(mysub.get_pystat_select_list())
 
 
 def get_file_list(sargs):

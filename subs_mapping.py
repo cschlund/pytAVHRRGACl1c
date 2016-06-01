@@ -65,9 +65,9 @@ def isEven(number):
 
 def get_minmax_target(args):
     if args.channel == 'ch1' or args.channel == 'ch2' or args.channel == 'ch3a':
-        return 0., 1.
+        return 0.0, 1.0
     else:
-        return 185., 330.
+        return 180., 330.
 
 
 def get_background(mmap, args):
@@ -122,19 +122,23 @@ def get_date_sat_from_filename(filename):
     splitstr  = subs.split_filename(filename)
     satellite = subs.lite_satstring(splitstr[3])
     date_string = splitstr[5][0:8]
+    yy = splitstr[5][0:4]
+    mm = splitstr[5][4:6]
+    dd = splitstr[5][6:8]
+    date_string_title = yy+'-'+mm+'-'+dd
     date_object = subs.str2date(date_string)
-    return satellite, date_object, date_string
+    return satellite, date_object, date_string, date_string_title
 
 
 def get_records_from_dbfile(args, filename):
-    sat, dt_obj, dt_str = get_date_sat_from_filename(filename)
+    sat, dt_obj, dt_str, dt_tit = get_date_sat_from_filename(filename)
     records = get_overlap_info(args, dt_obj, sat)
     return records
 
 
 def get_plot_info(flist, args):
-    platform, date_obj, date_str = get_date_sat_from_filename(flist[0])
-    avhrrstr  = "AVHRR GAC L1c / " + subs.full_sat_name(platform)[0]
+    platform, date_obj, date_str, date_tit = get_date_sat_from_filename(flist[0])
+    avhrrstr  = "AVHRR GAC / " + subs.full_sat_name(platform)[0]
     basefile  = os.path.basename(flist[0])
 
     if len(flist) > 1: 
@@ -152,7 +156,8 @@ def get_plot_info(flist, args):
              args.region + '_' + args.time + over + '.png'
     outfil = os.path.join(args.outputdir, pngfil)
     title  = avhrrstr + " - " + rl.REGIONS[args.region]["nam"] + \
-             " (" + args.time + ") for " + date_str 
+             " (" + args.time + ") for " + date_tit
+    short_title = avhrrstr
 
     date_list = list()
     if len(flist) > 1:
@@ -162,7 +167,7 @@ def get_plot_info(flist, args):
                     + edt.strftime("%Y/%m/%d %H:%M:%S")
             date_list.append(dates)
 
-    return outfil, title, date_list
+    return outfil, title, date_list, short_title
 
 
 def map_avhrrgac_l1c(flist, args):
@@ -171,11 +176,20 @@ def map_avhrrgac_l1c(flist, args):
     """
     # some required information
     logger.info("Get plotting information")
-    ofilen, outtit, dates = get_plot_info(flist, args)
+    ofilen, outtit, dates, outtit_short = get_plot_info(flist, args)
+
+    tick_labelsize = 16
+    plt.rcParams['xtick.labelsize'] = tick_labelsize
+    plt.rcParams['ytick.labelsize'] = tick_labelsize
+    title_fontsize=18
+    label_fontsize=16
+    latlon_fontsize=16
 
     # initialize figure
     fig = plt.figure(figsize=(17,10))
     ax = fig.add_subplot(111)
+    # [left, bottom, width, height]
+    #ax = fig.add_axes([0.4,0.4,0.8,0.8]) 
     
     # create basemap
     logger.info("Draw basemap")
@@ -202,6 +216,10 @@ def map_avhrrgac_l1c(flist, args):
 
         # get scanlines and dimension of orbit
         sl, el, xdim, ydim = read_scanlines(fil, recs)
+        if sl is None:
+            sl = 0
+        if el is None:
+            el = ydim-1
         logger.info("Start -- End Scanlines: {0}:{1}".format(sl,el))
         logger.info("Across & Along Track  : {0}:{1}".format(xdim, ydim))
         logger.info("Overlapping scanlines : {0}".format(ydim-el))
@@ -277,8 +295,8 @@ def map_avhrrgac_l1c(flist, args):
     logger.info("Finalize and save map: {0}".format(outtit))
     lons = np.arange(*rl.REGIONS[args.region]["mer"])
     lats = np.arange(*rl.REGIONS[args.region]["par"])
-    m.drawparallels(lats, labels=[True, False, False, False])
-    m.drawmeridians(lons, labels=[False, False, True, True])
+    m.drawparallels(lats, labels=[True, False, False, False], fontsize=latlon_fontsize)
+    m.drawmeridians(lons, labels=[False, False, True, False], fontsize=latlon_fontsize)
 
     # Add Coastlines, States, and Country Boundaries
     m.drawcoastlines()
@@ -286,11 +304,17 @@ def map_avhrrgac_l1c(flist, args):
     m.drawcountries()
     
     # add colorbar with units:
-    cbar = m.colorbar(pcolor, pad="2%")
-    cbar.set_label(subs.full_cha_name(args.channel))
+    if args.channel == 'ch1' or args.channel == 'ch2' or args.channel == 'ch3a':
+        unit = ''
+    else:
+        unit = ' [K]'
+
+    cbar = m.colorbar(pcolor, pad="2%", location='bottom')
+    cbar.set_label(outtit_short + " " + subs.full_cha_name(args.channel) + unit, 
+                   fontsize=label_fontsize)
     
     # add title:
-    ax.set_title(outtit + "\n\n")
+    #ax.set_title(outtit+"\n\n", fontsize=title_fontsize)
 
     ## annotate plot with dates used for plotting
     #left, right = ax.get_xlim()
@@ -307,6 +331,8 @@ def map_avhrrgac_l1c(flist, args):
 
     # save to file:
     fig.savefig(ofilen, bbox_inches='tight')
+    #plt.tight_layout()
+    #fig.savefig(ofilen)
     plt.close()
     logger.info("Done: {0}".format(ofilen))
     

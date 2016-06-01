@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import subs_avhrrgac as subs
 from scipy import stats
 from matplotlib import gridspec
+from matplotlib.ticker import FormatStrFormatter
 from matplotlib.dates import MONDAY, DayLocator
 from matplotlib.dates import YearLocator, MonthLocator, WeekdayLocator, DateFormatter
 from mpl_toolkits.axes_grid1 import host_subplot
@@ -1419,6 +1420,74 @@ def plot_miss_scls(dbfile, outdir, sdate, edate,
     if show_fig: 
         plt.show()
     logger.info("Done: {0}".format(ofile))
+    plt.close()
+
+    return
+
+
+def autolabel(rects, ax, fts, fmt, offset=None, counts=None, colors=None):
+    for idx, rect in enumerate(rects):
+        height = rect.get_height() 
+        if counts:
+            ax.text(rect.get_x() + rect.get_width()/2., 
+                    height+offset, fmt % int(counts[idx]), 
+                    ha='center', va='bottom', fontsize=fts, 
+                    color=colors[idx])
+        else: 
+            ax.text(rect.get_x() + rect.get_width()/2., 
+                    offset*height, fmt % float(height), 
+                    ha='center', va='bottom', fontsize=fts)
+
+
+def blacklisting_histogram( x_cnts, x_axis, y_axis, colors, width, outfile, 
+                            satellite=None ):
+    """
+    Plot the statistics regarding blacklisting.
+    """
+    if len(x_axis) > 4:
+        rotate = 90
+        fts = 16
+        tick_labelsize = 16
+        ymax = 2.
+        bar_format = '%.3f'
+        off_text = 0.15
+    else: 
+        rotate = 0
+        fts = 22 
+        tick_labelsize = 22
+        ymax = int( math.ceil( max(y_axis) + 0.5 ) )
+        bar_format = '%.2f'
+        off_text = 0.5
+        
+    plt.rcParams['ytick.labelsize'] = tick_labelsize
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
+    ytitle = 'AVHRR GAC Blacklisting [%]'
+
+    pos = np.arange( len(x_axis) )
+    rects = ax.bar( pos, y_axis, width, color=colors )
+    autolabel(rects, ax, fts, bar_format, offset=1.01)
+    autolabel(rects, ax, fts, '%d', offset=off_text, 
+              counts=x_cnts, colors=colors)
+
+    if satellite: 
+        ax.text(0.1,0.9, satellite, ha='center', va='center', 
+                transform=ax.transAxes, fontsize=fts)
+
+    ax.set_xlim(-width/2, len(pos) + width/2)
+    ax.set_ylim(0.0, ymax )
+    ax.set_ylabel( ytitle, fontsize=fts)
+    ax.set_xticks( pos + (width / 2) )
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+
+    xtickNames = ax.set_xticklabels( x_axis )
+    plt.setp(xtickNames, rotation=rotate, fontsize=fts)
+    plt.tight_layout()
+
+    plt.savefig( outfile )
+    #plt.show()
+    logger.info("Shown: {0} ".format(os.path.basename(outfile)))
+    logger.info("Done {0}".format(outfile))
     plt.close()
 
     return
