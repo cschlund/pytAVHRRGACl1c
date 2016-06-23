@@ -295,6 +295,7 @@ def get_datagaps_records(satellite, db):
           "FROM vw_std WHERE blacklist=0 AND " \
           "start_time_l1c is not null AND " \
           "number_of_missing_scanlines is not null AND " \
+          "number_of_missing_scanlines < 15000 AND " \
           "satellite_name=\'{satellite}\' ORDER BY " \
           "start_time_l1c".format(satellite=satellite)
 

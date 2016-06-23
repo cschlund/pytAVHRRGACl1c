@@ -14,10 +14,28 @@ REGIONS = dict(
          "geo": {"lon_0": 20, "lat_0": 0, "height": 9000e3, "width": 8500e3,
                  "projection": 'stere', "resolution": 'l'}},
 
+    nafr={"nam": "North Africa",
+         "par": [-90, 91, 5],
+         "mer": [-180, 181, 10],
+         "geo": {"lon_0": 10, "lat_0": 10, "height": 4000e3, "width": 4500e3,
+                 "projection": 'stere', "resolution": 'l'}},
+
     aus={"nam": "Australia",
          "par": [-90, 91, 5],
          "mer": [-180, 181, 10],
          "geo": {"lon_0": 133, "lat_0": -26, "height": 5000e3, "width": 5500e3,
+                 "projection": 'stere', "resolution": 'l'}},
+
+    pac={"nam": "Pacific",
+         "par": [-90, 91, 5],
+         "mer": [-180, 181, 10],
+         "geo": {"lon_0": -140, "lat_0": -5, "height": 2000e3, "width": 4000e3,
+                 "projection": 'stere', "resolution": 'l'}},
+
+    sat={"nam": "South Atlantic",
+         "par": [-90, 91, 5],
+         "mer": [-180, 181, 10],
+         "geo": {"lon_0": -30, "lat_0": -45, "height": 7000e3, "width": 7000e3,
                  "projection": 'stere', "resolution": 'l'}},
 
     sam={"nam": "South America",
@@ -70,11 +88,13 @@ REGIONS = dict(
          "geo": {"llcrnrlat": -90, "urcrnrlat": 90, "llcrnrlon": -180, "urcrnrlon": 180,
                  "projection": 'cyl', "resolution": 'c'}},
 
-    glo_ortho={"nam": "Global_ortho",
-               "par": [-90.,120.,30.],
-               "mer": [0.,420.,60.],
-               #"geo": {"lon_0": 0, "lat_0": 60, "projection": 'ortho', "resolution": 'l'}},
-               "geo": {"lon_0": 180, "lat_0": 40, "projection": 'ortho', "resolution": 'l'}},
+    ort={"nam": "Ortho Proj.",
+         "par": [-90.,90.,30.],
+         "mer": [0.,360.,30.],
+         #"geo": {"lon_0": 0, "lat_0": 60, "projection": 'ortho', "resolution": 'l'}},
+         #"geo": {"lon_0": 180, "lat_0": 40, "projection": 'ortho', "resolution": 'l'}},
+         "geo": {"lon_0": -140, "lat_0": -5, "projection": 'ortho', "resolution": 'l'}},
+         #"geo": {"lon_0": 0, "lat_0": 30, "projection": 'ortho', "resolution": 'l'}},
 
     ame={"nam": "America",
          "par": [-90, 91, 30],

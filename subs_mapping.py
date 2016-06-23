@@ -218,8 +218,10 @@ def map_avhrrgac_l1c(flist, args):
         sl, el, xdim, ydim = read_scanlines(fil, recs)
         if sl is None:
             sl = 0
+            #sl = 1000
         if el is None:
             el = ydim-1
+            #el = 2000
         logger.info("Start -- End Scanlines: {0}:{1}".format(sl,el))
         logger.info("Across & Along Track  : {0}:{1}".format(xdim, ydim))
         logger.info("Overlapping scanlines : {0}".format(ydim-el))
@@ -257,6 +259,8 @@ def map_avhrrgac_l1c(flist, args):
             q = h5py.File(qfil, "r+")
             (row, col, total, last, data) = rh5.read_qualflags(q)
             q.close()
+            logger.info("Quality flag: row:{0}, col:{1}, total:{2}, last:{3}".
+                    format(row, col, total, last))
             logger.info("Map AVHRR GAC L1c qualflag file")
             plot_avhrrgac_qualflags(qfil, args.outputdir,row, col, total, last, data)
     
@@ -285,10 +289,9 @@ def map_avhrrgac_l1c(flist, args):
             # pcolor = m.pcolor(x, y, mtar, cmap='jet', vmin=0.0, vmax=1.0)
             from matplotlib import cm
             cmap = cm.get_cmap('jet')
-            cmap.set_bad('grey')
-            # pcolor = m.pcolor(x, y, mtar, cmap=cmap, vmin=np.min(tar), vmax=np.max(tar))
-            pcolor = m.scatter(x, y, c=mtar, s=1.0, edgecolor='none', alpha=0.5,
-                               cmap=cmap, vmin=tarmin, vmax=tarmax)
+            cmap.set_under('gray')
+            #pcolor = m.pcolor(x, y, mtar.filled(tarmin-1), cmap=cmap, vmin=np.min(tar), vmax=np.max(tar))
+            pcolor = m.scatter(x, y, c=mtar.filled(tarmin-1), s=1.0, edgecolor='none', alpha=0.5, cmap=cmap, vmin=tarmin, vmax=tarmax)
 
 
     # add grid lines
@@ -364,12 +367,16 @@ def plot_avhrrgac_qualflags(filename, outputdir,
     platname = subs.full_sat_name(platform)[0]
     strsdate = strlst[5][0:8]
     date_str = sdt.strftime(sft) + " - " + edt.strftime(sft)
-    outtit = "Orbit length: " + date_str + '\n'
+    outtit = "Orbit length: " + date_str
     basfil = os.path.basename(filename)
     bastxt = os.path.splitext(basfil)[0] + '.png'
     ofilen = os.path.join(outputdir, bastxt)
-    ytitle = 'Quality Flag\n'
-    xtitle = '\n' + label_list[0] + ' of AVHRR/' + platname
+    ytitle = 'Quality Flag'
+    xtitle = label_list[0] + ' of AVHRR/' + platname + ' (along_track: '+str(qrow)+')'
+
+    fts = 18
+    plt.rcParams['xtick.labelsize'] = fts
+    plt.rcParams['ytick.labelsize'] = fts
 
     # initialize figure
     fig = plt.figure(figsize=(17,10))
@@ -397,9 +404,16 @@ def plot_avhrrgac_qualflags(filename, outputdir,
         #        color=color_list[i], linewidth=0.8)
 
     # set limits
+    if lastline > 15000:
+        major_step =  5000
+        minor_step =  1000
+    else:
+        major_step =  1000
+        minor_step =  500
+
     x_range = range(0, x_max, 1)
-    major_xticks = range(x_min, x_max, 1000)
-    minor_xticks = range(x_min, x_max, 500)
+    major_xticks = range(x_min, x_max, major_step)
+    minor_xticks = range(x_min, x_max, minor_step)
     major_yticks = np.arange(0, y_max, y_step)
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(0, y_max)
@@ -408,24 +422,23 @@ def plot_avhrrgac_qualflags(filename, outputdir,
     ax.set_xticks(minor_xticks, minor=True)
 
     # legend
-    axleg = ax.legend(ncol=1, loc='center', 
-                      fancybox=True, fontsize=22, markerscale=5)
+    axleg = ax.legend(ncol=1, loc='center', fancybox=True, fontsize=22, markerscale=5)
     axleg.get_frame().set_alpha(0.5)
 
     # set labels
     ylabel_str = list()
     for i in major_yticks:
         if i == y_step:
-            ylabel_str.append('VALID\n')
+            ylabel_str.append('VALID')
         elif i == y_max - y_step:
-            ylabel_str.append('INVALID\n')
+            ylabel_str.append('INVALID')
         else:
             ylabel_str.append('')
 
-    ax.yaxis.set_ticklabels(ylabel_str, rotation=90)
-    ax.set_title(outtit)
-    ax.set_ylabel(ytitle)
-    ax.set_xlabel(xtitle)
+    ax.yaxis.set_ticklabels(ylabel_str, rotation=90, fontsize=fts)
+    ax.set_title(outtit, fontsize=fts)
+    #ax.set_ylabel(ytitle, fontsize=fts)
+    ax.set_xlabel(xtitle, fontsize=fts)
     ax.xaxis.grid(which='both', alpha=0.8)
 
     # color good and bad areas
