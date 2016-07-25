@@ -1152,7 +1152,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     for satellite in sat_list:
 
         # check if satellite is in ignore_list
-        if satellite in ignore_sats:
+        if ignore_sats and satellite in ignore_sats:
             continue
 
         # get color for satellite
