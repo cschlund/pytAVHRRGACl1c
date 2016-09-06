@@ -114,6 +114,26 @@ def read_scanlines(ifile, records):
             xd = rec['across_track']
             return sl, el, xd, yd
 
+    for rec in records:
+        sdiff = (sdt - rec['start_time_l1c']).seconds
+        ediff = (edt - rec['end_time_l1c']).seconds
+        if sdiff < 10 and ediff < 10:
+            sl = rec['start_scanline_endcut']
+            el = rec['end_scanline_endcut']
+            yd = rec['along_track']
+            xd = rec['across_track']
+            return sl, el, xd, yd
+
+    for rec in records:
+        sdiff = (sdt - rec['start_time_l1c']).seconds
+        ediff = (edt - rec['end_time_l1c']).seconds
+        if sdiff < 10 or ediff < 10:
+            sl = rec['start_scanline_endcut']
+            el = rec['end_scanline_endcut']
+            yd = rec['along_track']
+            xd = rec['across_track']
+            return sl, el, xd, yd
+
     logger.info("No match found for {0} - {1}".
             format(sdt, edt))
 
