@@ -1,4 +1,5 @@
 # Ignore following files
+*.sh
 *.pyc
 *~
 *.sta
