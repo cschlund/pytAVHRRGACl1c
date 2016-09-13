@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 
-file_list=$(ls /data/cschlund/avhrrgac_l1c/invalid_orbits/orbit_length_too_long/*avhrr_noaa7*h5)
+#inp="/data/cschlund/avhrrgac_l1c/orbit_length_too_long/test"
+#out="./figures/orbit_length_too_long/test"
+inp="/data/cschlund/avhrrgac_l1c/orbit_length_too_long/orig"
+out="./figures/orbit_length_too_long/orig"
+
+file_list=$(ls $inp/*avhrr_noaa15*h5 $inp/*avhrr_noaa16*h5 $inp/*avhrr_noaa17*h5)
 for i in $file_list; do 
-    ./vis_avhrrgac.py -dbf dbfiles/main_dbfile -out ./figures/orbit_length_too_long -bmb bluemarble -off -qfl -cha ch1 -fil $i 
-    ./vis_avhrrgac.py -dbf dbfiles/main_dbfile -out ./figures/orbit_length_too_long -bmb bluemarble -off -cha ch4 -fil $i 
+    ./vis_avhrrgac.py -dbf dbfiles/main_dbfile -out $out -bmb bluemarble -off -qfl -cha ch1 -fil $i 
+    ./vis_avhrrgac.py -dbf dbfiles/main_dbfile -out $out -bmb bluemarble -off -cha ch4 -fil $i 
 done
 
 #files=(
