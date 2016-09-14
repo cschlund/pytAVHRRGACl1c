@@ -11,8 +11,9 @@ import time
 import numpy as np
 import logging
 import calendar
-from dateutil.rrule import rrule, MONTHLY
+from dateutil.rrule import rrule, MONTHLY, DAILY
 from math import floor
+from datetime import timedelta
 
 logger = logging.getLogger('root')
 
@@ -66,6 +67,34 @@ def get_satellite_list():
             'NOAA9',  'NOAA10', 'NOAA11', 'NOAA12', 'NOAA14', 
             'NOAA15', 'NOAA16', 'NOAA17', 'NOAA18', 
             'NOAA19', 'METOPA', 'METOPB']
+
+
+def get_cci_satellite_list():
+    """
+    SATELLITE list: sqlite3 nomenclature
+    """
+    return ['ERS-2', 'ENVISAT', 'TERRA', 'AQUA',
+            'NOAA7',  'NOAA9',  'NOAA11', 'NOAA12', 'NOAA14', 
+            'NOAA15', 'NOAA16', 'NOAA17', 'NOAA18', 
+            'NOAA19', 'METOPA']
+
+
+def get_constant_ects(satellite):
+    """
+    Stable equator crossing times for TERRA, AQUA, ENVISAT, ERS-2
+    return tuple (ect_hour, ect_minute)
+    """
+    if satellite == "ENVISAT":
+        return (10, 00)
+    elif satellite == "TERRA":
+        return (10, 30)
+    elif satellite == "ERS-2":
+        return (10, 30)
+    elif satellite == "AQUA":
+        return (13, 30)
+    else:
+        logger.info("{0} not defined in \'get_constant_ects\'".format(satellite))
+        return (0, 0)
 
 
 def get_channel_list():
@@ -142,6 +171,11 @@ def full_sat_name(sat):
     np_list = ["n19", "noaa19", "NP", "NOAA19"]
     m1_list = ["m01", "metopb", "metop01", "M1", "METOPB"]
     m2_list = ["m02", "metopa", "metop02", "M2", "METOPA"]
+    # for cci_sensors
+    mod_list = ["mod", "MOD", "MODIS", "Terra", "TERRA"]
+    myd_list = ["myd", "MYD", "MODIS", "Aqua", "AQUA"]
+    env_list = ["env", "Envisat", "ENVISAT"]
+    ers_list = ["ers", "ERS-2", "ers-2"]
 
     if sat in tn_list:
         return "NOAA-5", "noaa5", "TIROSN", 'Black'
@@ -175,6 +209,18 @@ def full_sat_name(sat):
         return "MetOp-B", "metopb", "METOPB", 'Olive'
     elif sat in m2_list:
         return "MetOp-A", "metopa", "METOPA", 'Coral'
+
+    ## for cci_sensors
+    # return platform | sensor | sensor/platform | color
+    elif sat in mod_list:
+        return "TERRA", "MODIS", "MODIS/Terra", 'Firebrick'
+    elif sat in myd_list:
+        return "AQUA", "MODIS", "MODIS/Aqua", 'goldenrod'
+    elif sat in env_list:
+        return "ENVISAT", "AATSR", "AATSR/Envisat", 'SkyBlue'
+    elif sat in ers_list:
+        return "ERS-2", "ATSR", "ATSR/ERS-2", "Violet"
+
     else:
         message = "\n * The satellite name you've chosen is not " \
                   "available in the current list!\n"
@@ -312,7 +358,63 @@ def get_datagaps_records(satellite, db):
     return gaps, dates, counts, endline, alongtrack
 
 
-def get_ect_records(satellite, db):
+def get_cci_sensors_dict():
+    """
+    Cloud_cci dictionary containing start and end dates of 
+    archive (MODIS, AATSR, ATSR) and primes for AVHRR.
+    :rtype: dictionary
+    """
+    cci_dict = dict()
+    cci_list = get_cci_satellite_list()
+
+    # initialize dictionary
+    for sat in cci_list:
+        cci_dict[sat] = dict()
+        for dt in ("start_date", "end_date"):
+            cci_dict[sat][dt] = 0
+
+    # --------------------------------------------------------------------
+    cci_dict["NOAA7"]["start_date"]  = datetime.datetime(1982, 1, 1)
+    cci_dict["NOAA9"]["start_date"]  = datetime.datetime(1985, 2, 25)
+    cci_dict["NOAA11"]["start_date"] = datetime.datetime(1988, 11, 1)
+    cci_dict["NOAA12"]["start_date"] = datetime.datetime(1991, 9, 17)
+    cci_dict["NOAA14"]["start_date"] = datetime.datetime(1995, 1, 20)
+    cci_dict["NOAA15"]["start_date"] = datetime.datetime(1998, 12, 15)
+    cci_dict["NOAA16"]["start_date"] = datetime.datetime(2001, 4,  1) #(2001, 3, 20)
+    cci_dict["NOAA17"]["start_date"] = datetime.datetime(2002, 11, 1) #(2002, 10, 15)
+    cci_dict["NOAA18"]["start_date"] = datetime.datetime(2005, 9,  1) #(2005, 8, 30)
+    cci_dict["NOAA19"]["start_date"] = datetime.datetime(2009, 6,  1)
+    cci_dict["METOPA"]["start_date"] = datetime.datetime(2007, 7,  1) #(2007, 5, 21)
+    #cci_dict["METOPB"]["start_date"] = datetime.datetime(2020, 1,  1) #datetime.date(2013, 5,  1) #(2013, 4, 24)
+    # --------------------------------------------------------------------
+    cci_dict["NOAA7"]["end_date"]  = datetime.datetime(1985, 2, 1)
+    cci_dict["NOAA9"]["end_date"]  = datetime.datetime(1988, 10, 31)
+    cci_dict["NOAA11"]["end_date"] = datetime.datetime(1994, 10, 16)
+    cci_dict["NOAA12"]["end_date"] = cci_dict["NOAA15"]["start_date"]
+    cci_dict["NOAA14"]["end_date"] = cci_dict["NOAA16"]["start_date"]
+    cci_dict["NOAA15"]["end_date"] = cci_dict["NOAA17"]["start_date"]
+    cci_dict["NOAA16"]["end_date"] = cci_dict["NOAA18"]["start_date"]
+    cci_dict["NOAA17"]["end_date"] = cci_dict["METOPA"]["start_date"]
+    cci_dict["NOAA18"]["end_date"] = cci_dict["NOAA19"]["start_date"] - timedelta(days=1)
+    cci_dict["NOAA19"]["end_date"] = datetime.datetime(2014, 12, 31)
+    cci_dict["METOPA"]["end_date"] = datetime.datetime(2014, 12, 31) # cci_dict["METOPB"]["start_date"]
+    #cci_dict["METOPB"]["end_date"] = datetime.datetime(2020, 1,  2) #datetime.date(2014, 12, 31)
+    # --------------------------------------------------------------------
+    cci_dict["TERRA"]["start_date"] = datetime.datetime(2000, 2, 24)
+    cci_dict["TERRA"]["end_date"] = datetime.datetime(2014, 12, 31)
+    cci_dict["AQUA"]["start_date"] = datetime.datetime(2002, 7, 4)
+    cci_dict["AQUA"]["end_date"] = datetime.datetime(2014, 12, 31)
+    # --------------------------------------------------------------------
+    cci_dict["ERS-2"]["start_date"] = datetime.datetime(1995, 8, 1)
+    cci_dict["ERS-2"]["end_date"] = datetime.datetime(2002, 12, 31)
+    cci_dict["ENVISAT"]["start_date"] = datetime.datetime(2002, 7, 23)
+    cci_dict["ENVISAT"]["end_date"] = datetime.datetime(2012, 4, 8)
+    # --------------------------------------------------------------------
+
+    return cci_dict
+
+
+def get_ect_records(satellite, db, primes=None):
     """
     plot_avhrr_ect_ltan.py:
     get equator crossing time for given satellite
@@ -322,22 +424,48 @@ def get_ect_records(satellite, db):
     ect_list = []
     date_list = []
 
-    get_data = "SELECT start_time_l1c, equator_crossing_time " \
-               "FROM vw_std WHERE blacklist=0 AND " \
-               "equator_crossing_time is not null AND " \
-               "start_time_l1c is not null AND " \
-               "end_time_l1c is not null AND " \
-               "satellite_name=\'{satellite}\' ORDER BY " \
-               "start_time_l1c".format(satellite=satellite)
+    if satellite.startswith("NOAA") or satellite.startswith("METOP") or \
+            satellite.startswith("TIROS"): 
+        # avhrr 
+        get_data = "SELECT start_time_l1c, equator_crossing_time " \
+                   "FROM vw_std WHERE blacklist=0 AND " \
+                   "equator_crossing_time is not null AND " \
+                   "start_time_l1c is not null AND " \
+                   "end_time_l1c is not null AND " \
+                   "satellite_name=\'{satellite}\' ORDER BY " \
+                   "start_time_l1c".format(satellite=satellite)
+        results = db.execute(get_data)
+        for result in results:
+            if result['start_time_l1c'] is not None:
+                date_list.append(result['start_time_l1c'])
+                ect_list.append(result['equator_crossing_time'])
+        # if prime:
+            # cut date_list and ect_list accordingly
+        return date_list, ect_list
 
-    results = db.execute(get_data)
+    else:
+        # for: terra, aqua, envisat, ers-2
+        cci = get_cci_sensors_dict()
+        date_list, ect_list = create_date_ect_lists(satellite, 
+                                cci[satellite]["start_date"], 
+                                cci[satellite]["end_date"])
+        return date_list, ect_list
 
-    for result in results:
-        if result['start_time_l1c'] is not None:
-            date_list.append(result['start_time_l1c'])
-            ect_list.append(result['equator_crossing_time'])
 
-    return date_list, ect_list
+def create_date_ect_lists(sat, sdt, edt):
+    """
+    Create date and ect lists for plot_avhrr_ect_ltan.py:
+    terra, aqua, envisat, ers-2
+    """
+    dates = list()
+    ects = list()
+    # get hour and minute for satellite
+    e = get_constant_ects(sat)
+    # loop over days
+    for dt in rrule(DAILY, dtstart=sdt, until=edt):
+        dates.append(dt)
+        ects.append(datetime.datetime(dt.year, dt.month, dt.day, e[0], e[1], 0))
+    return dates, ects
 
 
 def create_statistics_table(db):

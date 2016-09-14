@@ -34,7 +34,7 @@ if __name__ == '__main__':
                         help='String, i.e. /path/to/plot_out/')
 
     parser.add_argument('-sd', '--sdate', type=subs.datestring,
-                        default='1978-01-01', help='String, Start Date')
+                        default='1979-01-01', help='String, Start Date')
 
     parser.add_argument('-ed', '--edate', type=subs.datestring,
                         default='2017-01-01', help='String, End Date')
@@ -44,6 +44,12 @@ if __name__ == '__main__':
 
     parser.add_argument('-ign', '--ignore', type=subs.str2upper, 
                         nargs='*', help='Satellite, which are ignored ')
+
+    parser.add_argument('-cci', '--cci_sensors', action="store_true", 
+                        help='Cloud_cci instruments')
+
+    parser.add_argument('-pri', '--primes', action="store_true", 
+                        help='Plot only prime time range')
 
     parser.add_argument('-ver', '--verbose', action="store_true",
                         help='increase output verbosity')
@@ -66,6 +72,10 @@ if __name__ == '__main__':
     else:
         sat_list = args.satellites
 
+    # -- cloud_cci settings
+    if args.cci_sensors:
+        sat_list = subs.get_cci_satellite_list()
+
     # -- make output directory if necessary
     if not os.path.exists(args.outdir):
         os.makedirs(args.outdir)
@@ -78,6 +88,8 @@ if __name__ == '__main__':
         logger.info("Start Date : %s" % start_date)
         logger.info("End Date   : %s" % end_date)
         logger.info("Satellite  : %s" % sat_list)
+        logger.info("Cloud_cci  : %s" % args.cci_sensors)
+        logger.info("CCI primes : %s" % args.primes)
         logger.info("Don't plot : %s" % args.ignore)
         logger.info("Show fig   : %s" % args.show_figure)
         logger.info("Plot legend: %s" % args.plot_legend)
@@ -94,6 +106,8 @@ if __name__ == '__main__':
         psql.plot_avhrr_ect_results(dbfile, args.outdir,
                                     start_date, end_date,
                                     sat_list, args.ignore,
+                                    args.cci_sensors,
+                                    args.primes,
                                     args.verbose,
                                     args.show_figure,
                                     args.plot_legend)

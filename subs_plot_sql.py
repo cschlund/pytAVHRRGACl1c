@@ -17,6 +17,7 @@ from matplotlib.dates import YearLocator, MonthLocator, WeekdayLocator, DateForm
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as aa
 from dateutil.rrule import rrule, DAILY
+from datetime import timedelta
 from numpy import array
 import warnings
 import logging
@@ -1107,7 +1108,8 @@ def read_globstafile(fil, cha, sel, sdate, edate):
 
 
 def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
-                           sat_list, ignore_sats,
+                           sat_list, ignore_sats, 
+                           cci_sensors, primes,
                            verbose, show_fig, make_legend):
     """
     Plot AVHRR / NOAAs equator crossing time
@@ -1120,18 +1122,27 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
                'NOAA12', 'NOAA15', 'NOAA17', 
                'METOPA', 'METOPB']
 
-    # output file
-    ofile = "Plot_AVHRR_equat_cross_time_" + subs.date2str(sdate) + \
-            "_" + subs.date2str(edate)
-    outfile = os.path.join(outdir, ofile + '.png')
-    txtfile = os.path.join(outdir, ofile + '.txt')
-    f = open(txtfile, mode="w")
-    f.write('# Equatorial Crossing Time of AVHRRs onboard NOAA and METOP satellites\n')
-    f.write("# 1.Satellite  2.YearMonth 3.Local Time Ascending Node (LTAN)\n")
-    f.close()
+    if cci_sensors:
+        file_prefix = "Plot_Cloudcci_"
+        plt_title = "Equatorial Crossing Time of Satellites used by ESA Cloud_cci"
+        if primes: 
+            file_prefix = "Plot_Cloudcci_primes_"
+            plt_title = "Equatorial Crossing Time of Prime Satellites used by ESA Cloud_cci"
+    else:
+        file_prefix = "Plot_AVHRR_"
+        plt_title = "Equatorial Crossing Time of AVHRR's on-board NOAA/MetOp Polar Satellites"
 
-    plt_title = "Equatorial Crossing Time of AVHRR's " \
-                "on-board NOAA/MetOp Polar Satellites"
+    # output file
+    ofile = file_prefix + "equat_cross_time_" + subs.date2str(sdate) + "_" + subs.date2str(edate)
+    outfile = os.path.join(outdir, ofile + '.png')
+
+    if not cci_sensors:
+        txtfile = os.path.join(outdir, ofile + '.txt')
+        f = open(txtfile, mode="w")
+        f.write('# Equatorial Crossing Time of AVHRRs onboard NOAA and METOP satellites\n')
+        f.write("# 1.Satellite  2.YearMonth 3.Local Time Ascending Node (LTAN)\n")
+        f.close()
+
     x_title = "Date"
     y_title = "Local Time (hour)"
 
@@ -1159,27 +1170,32 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
         satcolor = subs.color_satstring(satellite)
 
         # get records for satellite
-        date_list, ect_list = subs.get_ect_records(satellite, dbfile)
-        if not date_list:
+        date_list, ect_list = subs.get_ect_records(satellite, dbfile, primes) 
+        if not date_list: 
             continue
-        logger.info("{0}: {1} -- {2}".
-                format(satellite, min(date_list), max(date_list)))
+
+        if primes: 
+            cci = subs.get_cci_sensors_dict() 
+            zip_filtered = filter(lambda x: 
+                    x[0] >= cci[satellite]["start_date"] and 
+                    x[1] <= cci[satellite]["end_date"]+timedelta(days=1), 
+                    zip(date_list, ect_list))
+            date_list = map(lambda x: x[0], zip_filtered)
+            ect_list = map(lambda x: x[1], zip_filtered)
+
+        logger.info("{0}: {1} -- {2}".format(satellite, min(date_list), max(date_list)))
 
         if len(date_list) != 0:
 
             # midnights for ect_list
-            midnights = [datetime.datetime(ect.year, ect.month, ect.day, 0, 0)
-                         for ect in ect_list]
+            midnights = [datetime.datetime(ect.year, ect.month, ect.day, 0, 0) for ect in ect_list]
             # convert ect_list into seconds
-            seconds = [(ect - m).total_seconds()
-                       for ect, m in zip(ect_list, midnights)]
+            seconds = [(ect - m).total_seconds() for ect, m in zip(ect_list, midnights)]
 
             # get dates from date_list without time
-            dates = [datetime.datetime(dt.year, dt.month, dt.day, 0, 0)
-                     for dt in date_list]
+            dates = [datetime.datetime(dt.year, dt.month, dt.day, 0, 0) for dt in date_list]
             # convert dates into seconds
-            date_seconds = [(dt - datetime.datetime(1970, 1, 1, 0, 0)).total_seconds() 
-                             for dt in dates]
+            date_seconds = [(dt - datetime.datetime(1970, 1, 1, 0, 0)).total_seconds() for dt in dates]
 
             # convert to numpy arrays
             sec_arr = array(seconds)
@@ -1204,26 +1220,30 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
             running_mean = [np.median(sec_arr[idx == k])
                             for k in range(total_bins)]
 
+            linew = 4
             # plot x and y
+            if satellite == "ERS-2": 
+                linew = 6
             # ax.scatter(dat_arr, sec_arr, color=satcolor, alpha=.2, s=2)
             # ax.plot(bins - bin_delta / 2., running_mean,
             #         color=satcolor, lw=4, alpha=.9, label=satellite)
             ax.plot(bins - bin_delta / 2., running_mean,
-                    color=satcolor, lw=4, alpha=.9, label=satellite)
+                    color=satcolor, lw=linew, alpha=.9, label=satellite)
 
 
-            # write monthly ect averages into txt file
-            (ectmean, date_in_seconds, 
-             date_as_dtobject) = subs.get_monthly_ect_averages(satellite, date_list, ect_list)
-            yearmonth = [d.strftime('%Y%m') for d in date_as_dtobject]
-            ect_in_seconds = [e/3600. for e in ectmean]
+            if not cci_sensors:
+                # write monthly ect averages into txt file
+                (ectmean, date_in_seconds, 
+                 date_as_dtobject) = subs.get_monthly_ect_averages(satellite, date_list, ect_list)
+                yearmonth = [d.strftime('%Y%m') for d in date_as_dtobject]
+                ect_in_seconds = [e/3600. for e in ectmean]
 
-            f = open(txtfile, mode="a")
-            for idx,val in enumerate(ectmean):
-                line = '{0:8s}{1:8s}{2:10.4f}\n'.format(satellite, yearmonth[idx], 
-                                                        ect_in_seconds[idx])
-                f.write(line)
-            f.close()
+                f = open(txtfile, mode="a")
+                for idx,val in enumerate(ectmean):
+                    line = '{0:8s}{1:8s}{2:10.4f}\n'.format(satellite, yearmonth[idx], 
+                                                            ect_in_seconds[idx])
+                    f.write(line)
+                f.close()
 
             # plot shows bumps
             #ax.plot(date_in_seconds, ectmean, 
@@ -1240,8 +1260,8 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     ax.tick_params(axis='both', which='minor', labelsize=0)
 
     # modify y axis
-    hour_start = 3 * 3600
-    hour_end = 21 * 3600
+    hour_start = 4 * 3600
+    hour_end = 20 * 3600
     ax.set_ylim(hour_end, hour_start)
     major_seconds_label = range(hour_start + 3600, hour_end, 2 * 3600)
     minor_seconds_label = range(hour_start + 3600, hour_end, 3600)
@@ -1279,18 +1299,8 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     ax.grid(which='major', alpha=0.7)
 
     # satellite names inline
-    # print zip(tleg_inline, xleg_inline, yleg_inline)
-    larger_xshift = ['NOAA12','NOAA19']
-    larger_yshift = ['NOAA12','NOAA15','METOPA','METOPB']
-    for cnt, idx in enumerate(tleg_inline):
-        xoff = + 0.
-        yoff = - 60.*15.
-        if idx in larger_xshift:
-            xoff = + 3.* 31.*24.*3600.
-        if idx in larger_yshift:
-            yoff = - 60.*30.
-        if idx == 'NOAA18' or idx == 'NOAA19':
-            yoff = - 60.*40.
+    for cnt, satname in enumerate(tleg_inline):
+        xoff, yoff = get_offset_values(satname, cci_sensors)
         plt.text(xleg_inline[cnt] + xoff, 
                  yleg_inline[cnt] + yoff, 
                  tleg_inline[cnt], 
@@ -1498,3 +1508,56 @@ def blacklisting_histogram( x_cnts, x_axis, y_axis, colors, width, outfile,
 
     return
 
+
+def get_offset_values(satname, cci=None):
+    """
+    return x_offset, y_offset
+    """
+    year_fac = 12.*31.*24.*3600.
+    hour_fac = 60.*60.
+
+    # afternoon satellites
+    if satname == "NOAA7":
+        return -0.3*year_fac, -0.3*hour_fac
+    elif satname == "NOAA9":
+        return -0.3*year_fac, -0.3*hour_fac
+    elif satname == "NOAA11":
+        return -0.3*year_fac, -0.3*hour_fac
+    elif satname == "NOAA14":
+        return -0.3*year_fac, -0.3*hour_fac
+    elif satname == "NOAA16":
+        return -0.3*year_fac, 1.0*hour_fac
+    elif satname == "NOAA18":
+        return -0.3*year_fac, -0.7*hour_fac
+    elif satname == "NOAA19":
+        return 1.5*year_fac, -0.7*hour_fac
+    elif satname == "AQUA":
+        return -0.3*year_fac, -0.3*hour_fac
+    # morning satellites
+    elif satname == "ENVISAT":
+        return 10.0*year_fac, +0.2*hour_fac
+    elif satname == "ERS-2":
+        return 0.0*year_fac, +0.8*hour_fac
+    elif satname == "TERRA":
+        return 0.0*year_fac, +0.8*hour_fac
+    elif satname == "NOAA6":
+        return -0.5*year_fac, -0.3*hour_fac
+    elif satname == "NOAA8":
+        return -0.5*year_fac, -0.3*hour_fac
+    elif satname == "NOAA10":
+        return -0.1*year_fac, -0.3*hour_fac
+    elif satname == "NOAA12":
+        return +1.5*year_fac, -0.9*hour_fac
+    elif satname == "NOAA15":
+        return +0.0*year_fac, +0.8*hour_fac
+    elif satname == "NOAA17":
+        return -0.5*year_fac, -0.3*hour_fac
+    elif satname == "METOPA" and cci is False:
+        return 0.*year_fac, -0.6*hour_fac
+    elif satname == "METOPA" and cci is True:
+        return 4.3*year_fac, -0.3*hour_fac
+    elif satname == "METOPB":
+        return 0.*year_fac, -0.3*hour_fac
+    else:
+        return 0., 0.
+        
