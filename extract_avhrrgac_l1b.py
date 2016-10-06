@@ -27,11 +27,23 @@ def extract_files(args, filelist):
         tar = split_tarfile[-1:][0]
         sub = split_tarfile[-2:][0]
         target = os.path.join(sub,f['filename'])
-        source = os.path.join(args.input_path,f['satellite_name'],tar)
+
+        # copy source file because it is already extracted
+        avhrr_1_list = ['NOAA5', 'NOAA6', 'NOAA8', 'NOAA10']
+        if f['satellite_name'] in avhrr_1_list:
+            new_subdir = os.path.join(args.output_path,sub)
+            if not os.path.exists(new_subdir):
+                os.makedirs(new_subdir)
+            source = os.path.join(args.input_path,f['satellite_name'],f['filename'])
+            logger.info("Copy L1b: {0}".format(f['filename']))
+            c1 = ["cp", source, new_subdir]
 
         # extract L1b file to "-C inp", different location
-        logger.info("Get L1b from tarfile: {0}".format(f['filename']))
-        c1 = ["tar", "xf", source, "-C", args.output_path, target]
+        else:
+            source = os.path.join(args.input_path,f['satellite_name'],tar)
+            logger.info("Get L1b from tarfile: {0}".format(f['filename']))
+            c1 = ["tar", "xf", source, "-C", args.output_path, target]
+
         p1 = subprocess.Popen(c1, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p1.communicate()
         if stdout: 
@@ -70,6 +82,7 @@ def get_file_list_from_sql(args, db):
         else: 
             cmd = "SELECT satellite_name, filename, tarfile_name "\
                   "FROM vw_std WHERE blacklist=0 AND "\
+                  #"number_of_missing_scanlines>12000 AND "\
                   "start_time_l1c is not null order by start_time_l1b"
             res = db.execute(cmd) 
 
