@@ -35,7 +35,20 @@ REGIONS = dict(
     sat={"nam": "South Atlantic",
          "par": [-90, 91, 5],
          "mer": [-180, 181, 10],
-         "geo": {"lon_0": -30, "lat_0": -45, "height": 7000e3, "width": 7000e3,
+         "geo": {"lon_0": -20, "lat_0": -45, "height": 3000e3, "width": 3000e3,
+                 "projection": 'stere', "resolution": 'l'}},
+
+    sat_zoom={"nam": "South Atlantic",
+         "par": [-90, 91, 5],
+         "mer": [-180, 181, 10],
+         "geo": {"lon_0": -15, "lat_0": -40, "height": 4000e3, "width": 6000e3,
+                 "projection": 'stere', "resolution": 'l'}},
+
+    nat_zoom={"nam": "North Atlantic",
+         "par": [-90, 91, 5],
+         "mer": [-180, 181, 10],
+         "geo": {"lon_0": -30, "lat_0": 30, "height": 3000e3, "width": 6000e3,
+         #"geo": {"lon_0": -35, "lat_0": 22.5, "height": 800e3, "width": 2000e3,
                  "projection": 'stere', "resolution": 'l'}},
 
     sam={"nam": "South America",

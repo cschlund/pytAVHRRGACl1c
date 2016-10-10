@@ -13,6 +13,7 @@ from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
 from mpl_toolkits.basemap import Basemap
 from numpy import copy
 from matplotlib import colors
+from matplotlib import cm
 
 logger = logging.getLogger('root')
 warnings.filterwarnings("ignore")
@@ -79,11 +80,11 @@ def get_background(mmap, args):
         elif args.background.lower() == "etopo":
             mmap.etopo()
         else:
-            mmap.drawlsmask(land_color='coral', 
-                            ocean_color='lightblue', lakes=True)
+            logger.info("This background option does not exist!")
+            sys.exit(1)
     else: 
-        mmap.drawlsmask(land_color='coral', 
-                        ocean_color='lightblue', lakes=True)
+        mmap.drawmapboundary(fill_color='w')
+        mmap.fillcontinents(color='FloralWhite',lake_color='w',zorder=0)
 
 
 def get_overlap_info(args, date, satellite): 
@@ -156,7 +157,7 @@ def get_records_from_dbfile(args, filename):
     return records
 
 
-def get_plot_info(flist, args):
+def get_plot_info(flist, args, diff_plot):
     platform, date_obj, date_str, date_tit = get_date_sat_from_filename(flist[0])
     avhrrstr  = "AVHRR GAC / " + subs.full_sat_name(platform)[0]
     basefile  = os.path.basename(flist[0])
@@ -172,8 +173,27 @@ def get_plot_info(flist, args):
     else:
         over = ''
 
-    pngfil = bastxt + '_' + args.channel + '_' + \
-             args.region + '_' + args.time + over + '.png'
+    if diff_plot:
+        if args.delta_ch1_ch2:
+            cinfo = 'd12'
+        else:
+            cinfo = 'd45'
+    else:
+        cinfo = args.channel
+
+    if args.scan_motor_correction:
+        smc_text = '_tsm-corrected'
+    else:
+        smc_text = ''
+
+    if args.standard_deviation:
+        std_text = '_std-a'
+        #std_text = '_std-b'
+    else:
+        std_text = ''
+
+    pngfil = bastxt + '_' + cinfo + std_text + '_' + args.region + '_' + \
+             args.time + over + smc_text + '.png'
     outfil = os.path.join(args.outputdir, pngfil)
     title  = avhrrstr + " - " + rl.REGIONS[args.region]["nam"] + \
              " (" + args.time + ") for " + date_tit
@@ -194,16 +214,33 @@ def map_avhrrgac_l1c(flist, args):
     """
     Mapping subroutine for AVHRR GAC L1c derived from pygac.
     """
+    # if correction applied or not
+    if args.scan_motor_correction:
+        add_tsm = ' (TSM correction applied)'
+    else:
+        add_tsm = ''
+
+    if args.standard_deviation:
+        add_std = ' standard deviation '
+    else:
+        add_std = ''
+
+    # difference plot or normal radiance plot
+    if args.delta_ch1_ch2 or args.delta_ch4_ch5:
+        diff_plot = True
+    else:
+        diff_plot = False
+
     # some required information
     logger.info("Get plotting information")
-    ofilen, outtit, dates, outtit_short = get_plot_info(flist, args)
+    ofilen, outtit, dates, outtit_short = get_plot_info(flist, args, diff_plot)
 
-    tick_labelsize = 16
-    plt.rcParams['xtick.labelsize'] = tick_labelsize
-    plt.rcParams['ytick.labelsize'] = tick_labelsize
-    title_fontsize=18
-    label_fontsize=16
-    latlon_fontsize=16
+    # set fontsize
+    fts = 16
+    plt.rcParams['xtick.labelsize'] = fts
+    plt.rcParams['ytick.labelsize'] = fts
+    label_fontsize  = fts
+    latlon_fontsize = fts
 
     # initialize figure
     fig = plt.figure(figsize=(17,10))
@@ -212,12 +249,14 @@ def map_avhrrgac_l1c(flist, args):
     #ax = fig.add_axes([0.4,0.4,0.8,0.8]) 
     
     # create basemap
-    logger.info("Draw basemap")
     m = Basemap(**rl.REGIONS[args.region]["geo"])
-
     # basemap background
-    logger.info("Get basemap background")
     get_background(m, args)
+    # Add Coastlines, States, and Country Boundaries
+    m.drawcoastlines()
+    m.drawstates()
+    m.drawcountries()
+    
 
     # which channel
     tarmin, tarmax = get_minmax_target(args)
@@ -257,11 +296,41 @@ def map_avhrrgac_l1c(flist, args):
         afil = fil.replace("ECC_GAC_avhrr_", "ECC_GAC_sunsatangles_")
         f = h5py.File(fil, "r+")
         a = h5py.File(afil, "r+")
-        (la, lo, ta) = rh5.read_avhrrgac(f, a, args.time, args.channel, 
-                                         # args.verbose) 
-                                         False)
+        if diff_plot: 
+            if args.delta_ch1_ch2: 
+                #ctable = 'hot_r', 'gist_rainbow'
+                ctable = 'Paired'
+                (la, lo, ch1) = rh5.read_avhrrgac(f, a, args.time, 'ch1', args.scan_motor_correction)
+                (la, lo, ch2) = rh5.read_avhrrgac(f, a, args.time, 'ch2', args.scan_motor_correction)
+                # absolute difference because ch1 is very similar to ch2
+                ta = abs(ch1 - ch2)
+            elif args.delta_ch4_ch5:
+                ctable = 'bwr'
+                (la, lo, ch4) = rh5.read_avhrrgac(f, a, args.time, 'ch4', args.scan_motor_correction)
+                (la, lo, ch5) = rh5.read_avhrrgac(f, a, args.time, 'ch5', args.scan_motor_correction)
+                # relative difference because ch4 and ch5 differ
+                ta = 100.0*(ch4 - ch5)/ch5
+                tarmin = -20.0
+                tarmax = 20.0
+        else: 
+            ctable = 'jet'
+            (la, lo, ta) = rh5.read_avhrrgac(f, a, args.time, args.channel, args.scan_motor_correction)
         a.close()
         f.close()
+
+        if args.standard_deviation: 
+            # standard deviation = get_stddev(array, size)
+            std = rh5.get_stddev(ta, 3) 
+            ta = std
+            ctable = 'Paired'
+            if args.delta_ch4_ch5:
+                tarmin = 0.0 
+                tarmax = 10.0 #std-a
+                #tarmax = 50.0 #std-b
+            else:
+                tarmin = 0.0 
+                tarmax = 1.0 #std-a
+                #tarmax = 15000.0 #std-b
 
         # slice data
         lon, lat, tar = slice_data(lo, la, ta, xdim, ydim, 
@@ -307,12 +376,16 @@ def map_avhrrgac_l1c(flist, args):
             # scaling. Here, vmin & vmax are set to the global minimum and maximum of
             # the data, respectively.
             # pcolor = m.pcolor(x, y, mtar, cmap='jet', vmin=0.0, vmax=1.0)
-            from matplotlib import cm
-            cmap = cm.get_cmap('jet')
-            cmap.set_under('gray')
-            #pcolor = m.pcolor(x, y, mtar.filled(tarmin-1), cmap=cmap, vmin=np.min(tar), vmax=np.max(tar))
-            pcolor = m.scatter(x, y, c=mtar.filled(tarmin-1), s=1.0, edgecolor='none', alpha=0.5, cmap=cmap, vmin=tarmin, vmax=tarmax)
-
+            # pcolor = m.pcolor(x, y, mtar.filled(tarmin-1), cmap=cmap, vmin=np.min(tar), vmax=np.max(tar))
+            cmap = cm.get_cmap(ctable)
+            cmap.set_under('Gray')
+            cmap.set_bad('DimGrey')
+            if args.region == 'glo': 
+                symsize = 1.0
+            else: 
+                symsize = 4.0
+            pcolor = m.scatter(x, y, c=mtar.filled(tarmin-1), s=symsize, edgecolor='none', 
+                               alpha=0.5, cmap=cmap, vmin=tarmin, vmax=tarmax)
 
     # add grid lines
     logger.info("Finalize and save map: {0}".format(outtit))
@@ -321,41 +394,23 @@ def map_avhrrgac_l1c(flist, args):
     m.drawparallels(lats, labels=[True, False, False, False], fontsize=latlon_fontsize)
     m.drawmeridians(lons, labels=[False, False, True, False], fontsize=latlon_fontsize)
 
-    # Add Coastlines, States, and Country Boundaries
-    m.drawcoastlines()
-    m.drawstates()
-    m.drawcountries()
-    
     # add colorbar with units:
-    if args.channel == 'ch1' or args.channel == 'ch2' or args.channel == 'ch3a':
-        unit = ''
+    if diff_plot:
+        if args.delta_ch1_ch2: 
+            label_text = 'ABS(Ch1 - Ch2)' + add_std + add_tsm
+        else:
+            label_text = '100*(Ch4 - Ch5)/Ch5' + add_std + add_tsm
+    elif args.channel == 'ch1' or args.channel == 'ch2' or args.channel == 'ch3a':
+        label_text = subs.full_cha_name(args.channel) + add_std + add_tsm
     else:
-        unit = ' [K]'
+        label_text = subs.full_cha_name(args.channel) + add_std + ' [K]' + add_tsm
 
     cbar = m.colorbar(pcolor, pad="2%", location='bottom')
-    cbar.set_label(outtit_short + " " + subs.full_cha_name(args.channel) + unit, 
-                   fontsize=label_fontsize)
+    cbar.set_label(outtit_short + " " + label_text, fontsize=label_fontsize)
     
-    # add title:
-    #ax.set_title(outtit+"\n\n", fontsize=title_fontsize)
-
-    ## annotate plot with dates used for plotting
-    #left, right = ax.get_xlim()
-    #low, high = ax.get_ylim()
-    ##print left, right, low, high
-    ## 0.0 5000000.0 0.0 4000000.0 [meter]
-    #scale = 0.05
-    #xi = (right - left) / 3.5
-    #yi = right*scale
-    #for dt in dates:
-    #    plt.text(xi, yi, dt, fontsize=16, 
-    #             ha='center', va='center', color='black')
-    #    yi += right*scale
-
     # save to file:
-    fig.savefig(ofilen, bbox_inches='tight')
-    #plt.tight_layout()
-    #fig.savefig(ofilen)
+    #fig.savefig(ofilen, bbox_inches='tight')
+    fig.savefig(ofilen)
     plt.close()
     logger.info("Done: {0}".format(ofilen))
     
@@ -394,9 +449,10 @@ def plot_avhrrgac_qualflags(filename, outputdir,
     ytitle = 'Quality Flag'
     xtitle = label_list[0] + ' of AVHRR/' + platname + ' (along_track: '+str(qrow)+')'
 
+    # set fontsize
     fts = 18
-    plt.rcParams['xtick.labelsize'] = fts
-    plt.rcParams['ytick.labelsize'] = fts
+    #plt.rcParams['xtick.labelsize'] = fts
+    #plt.rcParams['ytick.labelsize'] = fts
 
     # initialize figure
     fig = plt.figure(figsize=(17,10))

@@ -78,8 +78,16 @@ if __name__ == '__main__':
                         help='Overlap is not taken into account.')
     parser.add_argument('-mid', '--midnight', action="store_true",
                         help='Consider midnight as last scanline.')
-    parser.add_argument('-qfl', '--qflag', action="store_true",
-                        help='Plot qflag file.')
+    parser.add_argument('-qfl', '--qflag', action="store_true", help='Plot qflag file.')
+    # for investigating temporary_scan_motor_issue
+    parser.add_argument('-d12', '--delta_ch1_ch2', action="store_true", 
+                        help='Channel difference: ch1-ch2.')
+    parser.add_argument('-d45', '--delta_ch4_ch5', action="store_true", 
+                        help='Channel difference: ch4-ch5.')
+    parser.add_argument('-smc', '--scan_motor_correction', action="store_true", 
+                        help='Apply temporary scan motor correction.')
+    parser.add_argument('-std', '--standard_deviation', action="store_true", 
+                        help='Plot standard deviation of data.')
                         
     # Parse arguments
     args = parser.parse_args()

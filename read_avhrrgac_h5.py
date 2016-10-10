@@ -7,6 +7,15 @@
 
 import numpy as np
 import numpy.ma as ma
+from scipy.ndimage.filters import uniform_filter
+
+
+def get_stddev(data, size): 
+    mean_squared = np.square(uniform_filter(data, size=size, mode='reflect'))
+    squared_mean = uniform_filter(np.square(data), size=size, mode='reflect')
+    #std = np.sqrt(np.ma.masked_equal(squared_mean - mean_squared, 0))
+    std = np.sqrt(squared_mean - mean_squared)
+    return std
 
 
 def read_qualflags(fil):
@@ -208,7 +217,7 @@ def read_latlon(f, ver):
     return lat, lon
 
 
-def read_avhrrgac(f, a, tim, cha, ver):
+def read_avhrrgac(f, a, tim, cha, tsm_corr=None, ver=None):
 
     if ver:
         print ("   -------------------------------------------")
@@ -221,21 +230,70 @@ def read_avhrrgac(f, a, tim, cha, ver):
     lon, lonnam = read_var(f, 'lon', ver)
 
     # get measurement
+    # channel 1
+    tardat1, tarname1 = read_var(f, 'image1', ver)
+    tar1 = tardat1 / 100.
+    # channel 2
+    tardat2, tarname2 = read_var(f, 'image2', ver)
+    tar2 = tardat2 / 100.
+    # channel 3b
+    tar3, tarname3 = read_var(f, 'image3', ver)
+    # channel 4
+    tar4, tarname4 = read_var(f, 'image4', ver)
+    # channel 5
+    tar5, tarname5 = read_var(f, 'image5', ver)
+    # channel 3a
+    tardat6, tarname6 = read_var(f, 'image6', ver)
+    tar6 = tardat6 / 100.
+
+
+    # TSM correction
+    if tsm_corr:
+        # absolute difference because ch1 is very similar to ch2
+        abs_d12 = abs(tar1 - tar2)
+        # relative difference because ch4 and ch5 differ
+        rel_d45 = 100.0*(tar4 - tar5)/tar5
+        # standard deviation of abs_d12 and rel_d45
+        std_d12 = get_stddev(abs_d12, 3) 
+        std_d45 = get_stddev(rel_d45, 3) 
+        # get VIS index
+        ind1 = np.where( (std_d12 > 0.1) & ((std_d12 < 14000.0) | (abs_d12 > 0.09)) )
+        # get NIR index
+        ind2 = np.where( (std_d45 > 8.0) & ((rel_d45 < -8.) | (rel_d45 > 8.)) )
+        # apply indices
+        tar1[ind1] = -999.0
+        tar2[ind1] = -999.0
+        tar3[ind1] = -999.0
+        tar4[ind1] = -999.0
+        tar5[ind1] = -999.0
+        tar6[ind1] = -999.0
+        # apply indices
+        tar1[ind2] = -999.0
+        tar2[ind2] = -999.0
+        tar3[ind2] = -999.0
+        tar4[ind2] = -999.0
+        tar5[ind2] = -999.0
+        tar6[ind2] = -999.0
+
+
     if cha == 'ch1':
-        tardat, tarname = read_var(f, 'image1', ver)
-        tar = tardat / 100.
-    if cha == 'ch2':
-        tardat, tarname = read_var(f, 'image2', ver)
-        tar = tardat / 100.
-    if cha == 'ch3b':
-        tar, tarname = read_var(f, 'image3', ver)
-    if cha == 'ch4':
-        tar, tarname = read_var(f, 'image4', ver)
-    if cha == 'ch5':
-        tar, tarname = read_var(f, 'image5', ver)
-    if cha == 'ch3a':
-        tardat, tarname = read_var(f, 'image6', ver)
-        tar = tardat / 100.
+        tar = tar1
+        tarname = tarname1 
+    elif cha == 'ch2':
+        tar = tar2
+        tarname = tarname2
+    elif cha == 'ch3b':
+        tar = tar3
+        tarname = tarname3
+    elif cha == 'ch4':
+        tar = tar4
+        tarname = tarname4
+    elif cha == 'ch5':
+        tar = tar5
+        tarname = tarname5
+    elif cha == 'ch3a':
+        tar = tar6
+        tarname = tarname6
 
     # some lat/lon fields are not fill_value although they should be
     # lat/lon min/max outside realistic values
@@ -246,7 +304,6 @@ def read_avhrrgac(f, a, tim, cha, ver):
     total_mask = reduce(np.logical_or, all_masks)
     lat = ma.masked_where(total_mask, lat)
     lon = ma.masked_where(total_mask, lon)
-    # noinspection PyUnboundLocalVariable
     tar = ma.masked_where(total_mask, tar)
     sza = ma.masked_where(total_mask, sza)
 

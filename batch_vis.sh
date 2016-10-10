@@ -1,36 +1,35 @@
 #!/usr/bin/env bash
 
-#inp="/data/cschlund/avhrrgac_l1c/orbit_length_too_long/test"
-#out="./figures/orbit_length_too_long/test"
-inp="/data/cschlund/avhrrgac_l1c/orbit_length_too_long/orig"
-out="./figures/orbit_length_too_long/orig"
+inp="/data/cschlund/avhrrgac_l1c/test/temporary_scan_motor_issue"
+out="/data/cschlund/temporary_scan_motor_issue_plots"
+reg="-reg nat_zoom "
+reg="-reg glo "
+cmd="./vis_avhrrgac.py -dbf ./dbfiles/main_dbfile -out ${out} ${reg} "
 
-file_list=$(ls $inp/*avhrr_noaa15*h5 $inp/*avhrr_noaa16*h5 $inp/*avhrr_noaa17*h5)
+file_list=$(ls $inp/*avhrr*h5)
+file_list=$(ls $inp/ECC_GAC_avhrr_noaa14_99999_20011024T1743063Z_20011024T1919343Z.h5)
+file_list=$(ls $inp/*avhrr*h5)
 for i in $file_list; do 
-    ./vis_avhrrgac.py -dbf dbfiles/main_dbfile -out $out -bmb bluemarble -off -qfl -cha ch1 -fil $i 
-    ./vis_avhrrgac.py -dbf dbfiles/main_dbfile -out $out -bmb bluemarble -off -cha ch4 -fil $i 
-done
 
-#files=(
-#/data/cschlund/avhrrgac_l1c/noaa18/ECC_GAC_avhrr_noaa18_99999_20080615T1016530Z_20080615T1204050Z.h5
-#/data/cschlund/avhrrgac_l1c/noaa18/ECC_GAC_avhrr_noaa18_99999_20080615T1158380Z_20080615T1353225Z.h5
-#/data/cschlund/avhrrgac_l1c/noaa18/ECC_GAC_avhrr_noaa18_99999_20080615T1347530Z_20080615T1535275Z.h5
-#)
-#
-#files=(
-#/data/cschlund/avhrrgac_l1c/noaa14/ECC_GAC_avhrr_noaa14_99999_20011020T0111123Z_20011020T0257548Z.h5
-#)
-#
-##for channel in ch1 ch4; do 
-#for channel in ch4; do 
-#
-#    ./vis_avhrrgac.py  \
-#        -dbf dbfiles/main_dbfile \
-#        -out ./figures/vis \
-#        -bmb bluemarble \
-#        -cha $channel \
-#        -reg ort \
-#        -fil ${files[*]}
-#
-#done
+    # -- standard deviation plots
+    ${cmd} -std -d12 -fil $i 
+    ${cmd} -std -d45 -fil $i 
+
+    # -- channel difference plots
+    ${cmd} -d12 -fil $i
+    ${cmd} -d45 -fil $i 
+
+    # -- corrected channel plots
+    for c in ch1 ch2 ch3b ch4 ch5; do 
+    #for c in ch1 ch4; do 
+        ${cmd} -smc -bmb shaderelief -cha $c -fil $i 
+    done
+
+    # -- uncorrected channel plots
+    for c in ch1 ch2 ch3b ch4 ch5; do 
+    #for c in ch1 ch4; do 
+        ${cmd} -bmb shaderelief -cha $c -fil $i 
+    done
+
+done
 
