@@ -1122,15 +1122,22 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
                'NOAA12', 'NOAA15', 'NOAA17', 
                'METOPA', 'METOPB']
 
+    # settings for CCI, primes
+    base_title = "Equatorial Crossing Time of "
     if cci_sensors:
+        sdate = datetime.datetime(1981, 1, 1)
         file_prefix = "Plot_Cloudcci_"
-        plt_title = "Equatorial Crossing Time of Satellites used by ESA Cloud_cci"
+        plt_title = base_title+"Satellites used by ESA Cloud_cci"
         if primes: 
             file_prefix = "Plot_Cloudcci_primes_"
-            plt_title = "Equatorial Crossing Time of Prime Satellites used by ESA Cloud_cci"
+            plt_title = base_title+"Prime Satellites used by ESA Cloud_cci"
     else:
         file_prefix = "Plot_AVHRR_"
-        plt_title = "Equatorial Crossing Time of AVHRR's on-board NOAA/MetOp Polar Satellites"
+        plt_title = base_title+"AVHRR's on-board NOAA/MetOp Polar Satellites"
+
+    # initialize plot
+    fig = plt.figure(figsize=(15,7))
+    ax = fig.add_subplot(111)
 
     # output file
     ofile = file_prefix + "equat_cross_time_" + subs.date2str(sdate) + "_" + subs.date2str(edate)
@@ -1148,10 +1155,6 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
 
     # count for satellite color
     cnt = 0
-
-    # initialize plot
-    fig = plt.figure(figsize=(15, 10))
-    ax = fig.add_subplot(111)
 
     # collect first day for each satellite
     tleg_inline = list()
@@ -1220,15 +1223,19 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
             running_mean = [np.median(sec_arr[idx == k])
                             for k in range(total_bins)]
 
+            # linewidth
             linew = 4
-            # plot x and y
+            lines = 'solid'
             if satellite == "ERS-2": 
-                linew = 6
+                linew = 8
+            if satellite == "TERRA":
+                linew = 3
+            # plot x and y
             # ax.scatter(dat_arr, sec_arr, color=satcolor, alpha=.2, s=2)
             # ax.plot(bins - bin_delta / 2., running_mean,
             #         color=satcolor, lw=4, alpha=.9, label=satellite)
-            ax.plot(bins - bin_delta / 2., running_mean,
-                    color=satcolor, lw=linew, alpha=.9, label=satellite)
+            ax.plot(bins - bin_delta / 2., running_mean, color=satcolor, 
+                    ls=lines, lw=linew, alpha=.9, label=satellite)
 
 
             if not cci_sensors:
@@ -1260,8 +1267,12 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
     ax.tick_params(axis='both', which='minor', labelsize=0)
 
     # modify y axis
-    hour_start = 4 * 3600
-    hour_end = 20 * 3600
+    if primes:
+        hour_start = 5 * 3600
+        hour_end = 18 * 3600
+    else:
+        hour_start = 4 * 3600
+        hour_end = 20 * 3600
     ax.set_ylim(hour_end, hour_start)
     major_seconds_label = range(hour_start + 3600, hour_end, 2 * 3600)
     minor_seconds_label = range(hour_start + 3600, hour_end, 3600)
@@ -1535,11 +1546,11 @@ def get_offset_values(satname, cci=None):
         return -0.3*year_fac, -0.3*hour_fac
     # morning satellites
     elif satname == "ENVISAT":
-        return 10.0*year_fac, +0.2*hour_fac
+        return 10.0*year_fac, +0.3*hour_fac
     elif satname == "ERS-2":
-        return 0.0*year_fac, +0.8*hour_fac
+        return 0.0*year_fac, +1.0*hour_fac
     elif satname == "TERRA":
-        return 0.0*year_fac, +0.8*hour_fac
+        return 0.0*year_fac, +1.0*hour_fac
     elif satname == "NOAA6":
         return -0.5*year_fac, -0.3*hour_fac
     elif satname == "NOAA8":
@@ -1549,7 +1560,7 @@ def get_offset_values(satname, cci=None):
     elif satname == "NOAA12":
         return +1.5*year_fac, -0.9*hour_fac
     elif satname == "NOAA15":
-        return +0.0*year_fac, +0.8*hour_fac
+        return +0.0*year_fac, +1.0*hour_fac
     elif satname == "NOAA17":
         return -0.5*year_fac, -0.3*hour_fac
     elif satname == "METOPA" and cci is False:
