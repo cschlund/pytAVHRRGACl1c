@@ -7,10 +7,108 @@
 
 import numpy as np
 import numpy.ma as ma
+import scipy.weave as weave
 from scipy.ndimage.filters import uniform_filter
 
 
+def gridbox_mean(data, fill_value, box_size):
+    """
+    For each element in C{data}, calculate the mean value of all valid elements
+    in the C{box_size} x C{box_size} box around it.
+
+    Masked values are not taken into account.
+
+    @param data: 2D masked array
+    @param fill_value: Value to be used to fill masked elements
+    @param box_size: Box size
+    @return: Gridbox mean
+    @rtype: numpy.ma.core.MaskedArray
+    """
+    if not box_size % 2 == 1:
+        raise ValueError('Box size must be odd.')
+
+    # Fill masked elements
+    fdata = data.astype('f8').filled(fill_value)
+
+    # Allocate filtered image
+    filtered = np.zeros(data.shape, dtype='f8')
+    nrows, ncols = data.shape
+
+    c_code = """
+    int row, col, rowbox, colbox, nbox;
+    double fill_value_d = (double) fill_value;
+    int radius = (box_size-1)/2;
+
+
+    for(row=0; row<nrows; row++)
+    {
+        for(col=0; col<ncols; col++)
+        {
+            filtered(row,col) = 0;
+            nbox = 0;
+            for(rowbox=row-radius; rowbox<=row+radius; rowbox++)
+            {
+                for(colbox=col-radius; colbox<=col+radius; colbox++)
+                {
+                    if(rowbox >= 0 && rowbox < nrows && colbox >= 0 and colbox < ncols)
+                    {
+                        if(fdata(rowbox,colbox) != fill_value_d)
+                        {
+                            filtered(row,col) += fdata(rowbox,colbox);
+                            nbox += 1;
+                        }
+                    }
+                }
+            }
+            if(nbox > 0)
+            {
+                filtered(row,col) /= (double) nbox;
+            }
+        }
+    }
+    return_val=0;
+    """
+
+    # Execute inline C code
+    err = weave.inline(
+        c_code,
+        ['fdata', 'filtered', 'fill_value', 'box_size', 'nrows', 'ncols'],
+        type_converters=weave.converters.blitz,
+        compiler="gcc"
+    )
+    if err != 0:
+        raise RuntimeError('Blitz failed with returncode {0}'.format(err))
+
+    # Re-mask fill values
+    return np.ma.masked_equal(filtered, fill_value)
+
+
+def gridbox_std(data, box_size, fill_value):
+    """
+    For each element in C{data}, calculate the standard deviation of all valid
+    elements in the C{box_size} x C{box_size} box around it.
+
+    Masked values are not taken into account. Since
+
+        std = sqrt( mean(data^2) - mean(data)^2 )
+
+    we can use L{gridbox_mean} to compute the standard deviation.
+
+    @param data: 2D masked array
+    @param fill_value: Value to be used to fill masked elements
+    @param box_size: Box size
+    @return: Gridbox standard deviation
+    @rtype: numpy.ma.core.MaskedArray
+    """
+    mean_squared = np.square(gridbox_mean(data, box_size=box_size, fill_value=fill_value))
+    squared_mean = gridbox_mean(np.square(data), box_size=box_size, fill_value=fill_value)
+    return np.ma.sqrt(squared_mean - mean_squared)
+
+
 def get_stddev(data, size): 
+    """
+    Old: do not use because it does not work out at boundaries and masked values!
+    """
     mean_squared = np.square(uniform_filter(data, size=size, mode='reflect'))
     squared_mean = uniform_filter(np.square(data), size=size, mode='reflect')
     #std = np.sqrt(np.ma.masked_equal(squared_mean - mean_squared, 0))
@@ -103,10 +201,10 @@ def show_properties(fil):
     print (" --- FILE: %s" % fil)
 
 
-# noinspection PyUnusedLocal,PyUnusedLocal,PyUnusedLocal,PyUnusedLocal
 def read_var(fil, varstr, ver):
     flg = False
 
+    apply_minmax = False #True
     # CC4CL limits: ./trunk/src/ECPConstants.F90
     ref_min = 0.
     ref_max = 1.5 * 100.
@@ -142,28 +240,27 @@ def read_var(fil, varstr, ver):
                     name = add.attrs["dataset_name"]
 
                     # missing and nodata masking
-                    miss_mask = ma.masked_values(var, miss)
-                    noda_mask = ma.masked_values(miss_mask, noda)
-                    temp_var = (noda_mask * gain) + offs
+                    #miss_mask = ma.masked_values(var, miss)
+                    #noda_mask = ma.masked_values(miss_mask, noda)
+                    #temp_var = (noda_mask * gain) + offs
+                    mask = np.ma.logical_or(var == miss, var == noda)
+                    temp_var = gain*np.ma.masked_where(mask, var) + offs
 
-                    # boundary masking
-                    if desc_attr.lower() == "solar zenith angle":
-                        lim_mask = ma.mask_or(temp_var < sza_min,
-                                              temp_var > sza_max)
+                    if apply_minmax:
+                        # boundary masking
+                        if desc_attr.lower() == "solar zenith angle":
+                            lim_mask = ma.mask_or(temp_var < sza_min, temp_var > sza_max)
 
-                    elif desc_attr.lower().startswith("avhrr"):
-                        if chan_attr == "1" or chan_attr == "2" \
-                                or chan_attr.lower() == "3a":
-                            lim_mask = ma.mask_or(temp_var < ref_min,
-                                                  temp_var > ref_max)
+                        elif desc_attr.lower().startswith("avhrr"):
+                            if chan_attr == "1" or chan_attr == "2" or chan_attr.lower() == "3a": 
+                                lim_mask = ma.mask_or(temp_var < ref_min, temp_var > ref_max)
 
-                        elif chan_attr == "4" or chan_attr == "5" \
-                                or chan_attr.lower() == "3b":
-                            lim_mask = ma.mask_or(temp_var < bt_min,
-                                                  temp_var > bt_max)
+                            elif chan_attr == "4" or chan_attr == "5" or chan_attr.lower() == "3b": 
+                                lim_mask = ma.mask_or(temp_var < bt_min, temp_var > bt_max)
 
-                    # noinspection PyUnboundLocalVariable
-                    fin_var = ma.masked_where(lim_mask, temp_var)
+                        fin_var = ma.masked_where(lim_mask, temp_var)
+                    else:
+                        fin_var = temp_var
 
                     break
 
@@ -179,9 +276,11 @@ def read_var(fil, varstr, ver):
                     name = add.attrs["dataset_name"]
 
                     # missing and nodata masking
-                    miss_mask = ma.masked_values(var, miss)
-                    noda_mask = ma.masked_values(miss_mask, noda)
-                    fin_var = (noda_mask * gain) + offs
+                    #miss_mask = ma.masked_values(var, miss)
+                    #noda_mask = ma.masked_values(miss_mask, noda)
+                    #fin_var = (noda_mask * gain) + offs
+                    mask = np.ma.logical_or(var == miss, var == noda)
+                    fin_var = gain*np.ma.masked_where(mask, var) + offs
 
                     break
 
@@ -190,15 +289,10 @@ def read_var(fil, varstr, ver):
                 print (" *** Cannot find %s variable in file ***" % varstr)
             else:
                 if ver:
-                    # noinspection PyUnboundLocalVariable
                     print ("   + %s" % name)
-                    # noinspection PyUnboundLocalVariable
                     print ("     shape: %s, size: %s, type: %s , min: %s, max: %s"
-                           % (fin_var.shape, fin_var.size, fin_var.dtype,
-                              fin_var.min(), fin_var.max()))
-                    # noinspection PyUnboundLocalVariable,PyUnboundLocalVariable,PyUnboundLocalVariable,PyUnboundLocalVariable
-                    print ("     missingdata: %s, nodata: %s, gain: %s, offs: %s"
-                           % (miss, noda, gain, offs))
+                           % (fin_var.shape, fin_var.size, fin_var.dtype, fin_var.min(), fin_var.max()))
+                    print ("     missingdata: %s, nodata: %s, gain: %s, offs: %s" % (miss, noda, gain, offs))
                     print ("     non-masked elements: %s" % ma.count(fin_var))
                     print ("     masked elements    : %s" % ma.count_masked(fin_var))
                 return fin_var, name
@@ -247,33 +341,30 @@ def read_avhrrgac(f, a, tim, cha, tsm_corr=None, ver=None):
     tar6 = tardat6 / 100.
 
 
-    # TSM correction
+    # --- START temporary scan motor issue correction
     if tsm_corr:
         # absolute difference because ch1 is very similar to ch2
         abs_d12 = abs(tar1 - tar2)
         # relative difference because ch4 and ch5 differ
         rel_d45 = 100.0*(tar4 - tar5)/tar5
+
         # standard deviation of abs_d12 and rel_d45
-        std_d12 = get_stddev(abs_d12, 3) 
-        std_d45 = get_stddev(rel_d45, 3) 
-        # get VIS index
-        ind1 = np.where( (std_d12 > 0.1) & ((std_d12 < 14000.0) | (abs_d12 > 0.09)) )
-        # get NIR index
-        ind2 = np.where( (std_d45 > 8.0) & ((rel_d45 < -8.) | (rel_d45 > 8.)) )
-        # apply indices
+        box_size = 3
+        fill_value = -9999.0
+        std_d12 = gridbox_std(abs_d12, box_size, fill_value)
+        std_d45 = gridbox_std(rel_d45, box_size, fill_value)
+
+        # using ch1, ch2, ch4, ch5 in combination
+        # all channels seems to be affected throughout the whole orbit,
+        # independent of VIS and NIR or day and night
+        ind1 = np.where( (std_d12 > 0.02) & (std_d45 > 2.00) )
         tar1[ind1] = -999.0
         tar2[ind1] = -999.0
         tar3[ind1] = -999.0
         tar4[ind1] = -999.0
         tar5[ind1] = -999.0
         tar6[ind1] = -999.0
-        # apply indices
-        tar1[ind2] = -999.0
-        tar2[ind2] = -999.0
-        tar3[ind2] = -999.0
-        tar4[ind2] = -999.0
-        tar5[ind2] = -999.0
-        tar6[ind2] = -999.0
+    # --- END temporary scan motor issue correction
 
 
     if cha == 'ch1':
@@ -334,7 +425,6 @@ def read_avhrrgac(f, a, tim, cha, tsm_corr=None, ver=None):
         lat = ma.masked_where(sza < 90., lat)
         tar = ma.masked_where(sza < 90., tar)
 
-    # noinspection PyUnboundLocalVariable
     parlst = [latnam, lonnam, tarname]
     datlst = [lat, lon, tar]
 

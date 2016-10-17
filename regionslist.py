@@ -51,6 +51,12 @@ REGIONS = dict(
          #"geo": {"lon_0": -35, "lat_0": 22.5, "height": 800e3, "width": 2000e3,
                  "projection": 'stere', "resolution": 'l'}},
 
+    nzl_zoom={"nam": "New Zealand",
+         "par": [-90, 91, 5],
+         "mer": [-180, 181, 10],
+         "geo": {"lon_0": 150, "lat_0": -45, "height": 4000e3, "width": 5500e3,
+                 "projection": 'stere', "resolution": 'l'}},
+
     sam={"nam": "South America",
          "par": [-90, 91, 5],
          "mer": [-180, 181, 10],

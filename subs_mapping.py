@@ -49,9 +49,9 @@ def slice_data(longitude, latitude, target, xdim, ydim, filecount,
             else:
                 end_y = halforbit
 
-    logger.info("FileCount = {0}".format(filecount))
-    logger.info("Slice data along x-axis {0}:{1}".format(start_x, end_x))
-    logger.info("Slice data along y-axis {0}:{1}".format(start_y, end_y))
+    #logger.info("FileCount = {0}".format(filecount))
+    #logger.info("Slice data along x-axis {0}:{1}".format(start_x, end_x))
+    #logger.info("Slice data along y-axis {0}:{1}".format(start_y, end_y))
 
     lon = longitude[start_y:end_y, start_x:end_x]
     lat = latitude[start_y:end_y, start_x:end_x]
@@ -135,8 +135,7 @@ def read_scanlines(ifile, records):
             xd = rec['across_track']
             return sl, el, xd, yd
 
-    logger.info("No match found for {0} - {1}".
-            format(sdt, edt))
+    logger.info("No match found for {0} - {1}".format(sdt, edt))
 
 
 def get_date_sat_from_filename(filename):
@@ -187,8 +186,7 @@ def get_plot_info(flist, args, diff_plot):
         smc_text = ''
 
     if args.standard_deviation:
-        std_text = '_std-a'
-        #std_text = '_std-b'
+        std_text = '_std'
     else:
         std_text = ''
 
@@ -232,7 +230,8 @@ def map_avhrrgac_l1c(flist, args):
         diff_plot = False
 
     # some required information
-    logger.info("Get plotting information")
+    if args.verbose: 
+        logger.info("Get plotting information")
     ofilen, outtit, dates, outtit_short = get_plot_info(flist, args, diff_plot)
 
     # set fontsize
@@ -281,9 +280,10 @@ def map_avhrrgac_l1c(flist, args):
         if el is None:
             el = ydim-1
             #el = 2000
-        logger.info("Start -- End Scanlines: {0}:{1}".format(sl,el))
-        logger.info("Across & Along Track  : {0}:{1}".format(xdim, ydim))
-        logger.info("Overlapping scanlines : {0}".format(ydim-el))
+        if args.verbose:
+            logger.info("Start -- End Scanlines: {0}:{1}".format(sl,el))
+            logger.info("Across & Along Track  : {0}:{1}".format(xdim, ydim))
+            logger.info("Overlapping scanlines : {0}".format(ydim-el))
 
         ## test
         #el = el - 1
@@ -304,6 +304,8 @@ def map_avhrrgac_l1c(flist, args):
                 (la, lo, ch2) = rh5.read_avhrrgac(f, a, args.time, 'ch2', args.scan_motor_correction)
                 # absolute difference because ch1 is very similar to ch2
                 ta = abs(ch1 - ch2)
+                tarmin = 0.0 
+                tarmax = 0.5
             elif args.delta_ch4_ch5:
                 ctable = 'bwr'
                 (la, lo, ch4) = rh5.read_avhrrgac(f, a, args.time, 'ch4', args.scan_motor_correction)
@@ -319,18 +321,22 @@ def map_avhrrgac_l1c(flist, args):
         f.close()
 
         if args.standard_deviation: 
-            # standard deviation = get_stddev(array, size)
-            std = rh5.get_stddev(ta, 3) 
+            box_size = 3
+            fill_value = -9999.0
+            #std = rh5.get_stddev(ta, box_size) # OLD
+            std = rh5.gridbox_std(ta, box_size, fill_value)
             ta = std
             ctable = 'Paired'
             if args.delta_ch4_ch5:
                 tarmin = 0.0 
-                tarmax = 10.0 #std-a
-                #tarmax = 50.0 #std-b
+                tarmax = 2.5 
+                #tarmax = 25.0
+                #tarmax = 50.0 # d45: relative difference
             else:
                 tarmin = 0.0 
-                tarmax = 1.0 #std-a
-                #tarmax = 15000.0 #std-b
+                tarmax = 0.05
+                #tarmax = 0.5
+                #tarmax = 1.0 # d12: absolute difference
 
         # slice data
         lon, lat, tar = slice_data(lo, la, ta, xdim, ydim, 
@@ -338,8 +344,9 @@ def map_avhrrgac_l1c(flist, args):
                                    args.region, args.overlap_off) 
 
 
-        logger.info("Original target shape : {0}".format(ta.shape))
-        logger.info("Truncated target shape: {0}".format(tar.shape))
+        if args.verbose:
+            logger.info("Original target shape : {0}".format(ta.shape))
+            logger.info("Truncated target shape: {0}".format(tar.shape))
 
 
         # plot qflag file as additional information
@@ -348,13 +355,14 @@ def map_avhrrgac_l1c(flist, args):
             q = h5py.File(qfil, "r+")
             (row, col, total, last, data) = rh5.read_qualflags(q)
             q.close()
-            logger.info("Quality flag: row:{0}, col:{1}, total:{2}, last:{3}".
-                    format(row, col, total, last))
-            logger.info("Map AVHRR GAC L1c qualflag file")
+            if args.verbose:
+                logger.info("Quality flag: row:{0}, col:{1}, total:{2}, last:{3}".format(row, col, total, last))
+                logger.info("Map AVHRR GAC L1c qualflag file")
             plot_avhrrgac_qualflags(qfil, args.outputdir,row, col, total, last, data)
     
 
-        logger.info("Plot {0} data onto map".format(fil))
+        if args.verbose: 
+            logger.info("Plot {0} data onto map".format(fil))
         # Split dataset west-east at the prime meridian in order to avoid misplaced
         # polygons produced by pcolor when lon crosses the dateline (i.e. jumps from
         # 180 to -180 or vice versa). Use 5 degrees of overlap to avoid polygon gaps
@@ -388,7 +396,8 @@ def map_avhrrgac_l1c(flist, args):
                                alpha=0.5, cmap=cmap, vmin=tarmin, vmax=tarmax)
 
     # add grid lines
-    logger.info("Finalize and save map: {0}".format(outtit))
+    if args.verbose: 
+        logger.info("Finalize and save map: {0}".format(outtit))
     lons = np.arange(*rl.REGIONS[args.region]["mer"])
     lats = np.arange(*rl.REGIONS[args.region]["par"])
     m.drawparallels(lats, labels=[True, False, False, False], fontsize=latlon_fontsize)
