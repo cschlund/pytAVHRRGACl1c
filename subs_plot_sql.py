@@ -19,6 +19,7 @@ import mpl_toolkits.axisartist as aa
 from dateutil.rrule import rrule, DAILY
 from datetime import timedelta
 from numpy import array
+import matplotlib.transforms as mtransforms
 import warnings
 import logging
 
@@ -1170,7 +1171,10 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
             continue
 
         # get color for satellite
-        satcolor = subs.color_satstring(satellite)
+        if primes: 
+            satcolor = subs.color_satstring_cci(satellite)
+        else: 
+            satcolor = subs.color_satstring(satellite)
 
         # get records for satellite
         date_list, ect_list = subs.get_ect_records(satellite, dbfile, primes) 
@@ -1227,15 +1231,18 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
             linew = 4
             lines = 'solid'
             if satellite == "ERS-2": 
-                linew = 8
+                linew = 6
             if satellite == "TERRA":
                 linew = 3
+
             # plot x and y
-            # ax.scatter(dat_arr, sec_arr, color=satcolor, alpha=.2, s=2)
-            # ax.plot(bins - bin_delta / 2., running_mean,
-            #         color=satcolor, lw=4, alpha=.9, label=satellite)
             ax.plot(bins - bin_delta / 2., running_mean, color=satcolor, 
                     ls=lines, lw=linew, alpha=.9, label=satellite)
+
+            # ENVISAT: once for CC4CL and once for FAME-C
+            if primes and satellite == "ENVISAT": 
+                ax.plot(bins - bin_delta / 2., running_mean, color='DarkViolet', 
+                        ls='dashed', lw=linew, alpha=.9 )
 
 
             if not cci_sensors:
@@ -1260,7 +1267,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
         cnt += 1
 
     # annotate plot
-    ax.set_title(plt_title, fontsize=20)
+    #ax.set_title(plt_title, fontsize=20)
     ax.set_xlabel(x_title, fontsize=20)
     ax.set_ylabel(y_title, fontsize=20)
     ax.tick_params(axis='both', which='major', labelsize=16)
@@ -1318,6 +1325,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
                  color=cleg_inline[cnt], 
                  fontsize=20)
 
+    # legend
     if make_legend:
         if cnt < 13: 
             num_of_sats = int(math.ceil(cnt / 2.))
@@ -1326,6 +1334,21 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate,
         leg = ax.legend(ncol=num_of_sats, loc='lower left', 
                         fancybox=True, fontsize=18)
         leg.get_frame().set_alpha(0.5)
+
+    # special legend box for CCI
+    if primes:
+        xmin = 0.02
+        ymax = 0.95
+        strings = [ "AVHRR-PM", "AVHRR-AM", "MODIS-Terra", "MODIS-Aqua", "ATSR2-AATSR", "MERIS+AATSR" ]
+        scolors = [ 'Navy', 'DodgerBlue', 'DarkGreen', 'LimeGreen', 'DarkOrange', 'DarkViolet' ]
+        # not so fancy box
+        props = dict(boxstyle='round,pad=0.5', facecolor='white', alpha=1) 
+        ax.text(xmin, ymax, 'Cloud_cci datasets:\n\n\n\n\n\n\n\n', fontweight='bold',
+                transform=ax.transAxes, fontsize=18, verticalalignment='top', bbox=props) 
+        # add text
+        for c, i in enumerate(strings): 
+            ax.text(xmin, ymax-(c+1)*0.07, strings[c], transform=ax.transAxes, fontsize=18,
+                    fontweight='bold', verticalalignment='top', color=scolors[c]) 
 
     # plt.tight_layout(rect=(0.02, 0.02, 1.98, 0.98))
     plt.tight_layout()
@@ -1450,7 +1473,7 @@ def autolabel(rects, ax, fts, fmt, offset=None, counts=None, colors=None):
     for idx, rect in enumerate(rects):
         height = rect.get_height() 
         if counts:
-            ax.text(rect.get_x() + rect.get_width()/2., 
+            axhour_start.text(rect.get_x() + rect.get_width()/2., 
                     height+offset, fmt % int(counts[idx]), 
                     ha='center', va='bottom', fontsize=fts, 
                     color=colors[idx])

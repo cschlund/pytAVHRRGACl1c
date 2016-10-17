@@ -146,6 +146,10 @@ def color_satstring(sstr):
     return full_sat_name(sstr)[3]
 
 
+def color_satstring_cci(sstr):
+    return full_sat_name(sstr)[4]
+
+
 def full_sat_name(sat):
     """
     List of satellite names occurring in L1b and L1c filenames,
@@ -154,6 +158,8 @@ def full_sat_name(sat):
     1. = pygac nomenclature
     2. = sqlite3 nomenclature
     3. = color for plotting
+    4. = color for Cloud_cci datasets: 
+         AVHRR-AM/PM, MODIS-Terra/Aqua, ATSR-2+AATSR, AATSR+MERIS
     """
     tn_list = ["n05", "noaa5", "noaa05", "TN", "NOAA5", "TIROSN"]
     na_list = ["n06", "noaa6", "noaa06", "NA", "NOAA6"]
@@ -178,48 +184,48 @@ def full_sat_name(sat):
     ers_list = ["ers", "ERS-2", "ers-2"]
 
     if sat in tn_list:
-        return "NOAA-5", "noaa5", "TIROSN", 'Black'
+        return "NOAA-5", "noaa5", "TIROSN", 'Black', 'Navy'
     elif sat in na_list:
-        return "NOAA-6", "noaa6", "NOAA6", 'DarkSlateGray'
+        return "NOAA-6", "noaa6", "NOAA6", 'DarkSlateGray', 'DodgerBlue'
     elif sat in nc_list:
-        return "NOAA-7", "noaa7", "NOAA7", 'DarkOrchid'
+        return "NOAA-7", "noaa7", "NOAA7", 'DarkOrchid', 'Navy'
     elif sat in ne_list:
-        return "NOAA-8", "noaa8", "NOAA8", 'DeepPink'
+        return "NOAA-8", "noaa8", "NOAA8", 'DeepPink', 'DodgerBlue'
     elif sat in nf_list:
-        return "NOAA-9", "noaa9", "NOAA9", 'DodgerBlue'
+        return "NOAA-9", "noaa9", "NOAA9", 'DodgerBlue', 'Navy'
     elif sat in ng_list:
-        return "NOAA-10", "noaa10", "NOAA10", 'Blue'
+        return "NOAA-10", "noaa10", "NOAA10", 'Blue', 'DodgerBlue'
     elif sat in nh_list:
-        return "NOAA-11", "noaa11", "NOAA11", 'DarkOrange'
+        return "NOAA-11", "noaa11", "NOAA11", 'DarkOrange', 'Navy'
     elif sat in nd_list:
-        return "NOAA-12", "noaa12", "NOAA12", 'LimeGreen'
+        return "NOAA-12", "noaa12", "NOAA12", 'LimeGreen', 'DodgerBlue'
     elif sat in nj_list:
-        return "NOAA-14", "noaa14", "NOAA14", 'Sienna'
+        return "NOAA-14", "noaa14", "NOAA14", 'Sienna', 'Navy'
     elif sat in nk_list:
-        return "NOAA-15", "noaa15", "NOAA15", 'Red'
+        return "NOAA-15", "noaa15", "NOAA15", 'Red', 'DodgerBlue'
     elif sat in nl_list:
-        return "NOAA-16", "noaa16", "NOAA16", 'DarkGreen'
+        return "NOAA-16", "noaa16", "NOAA16", 'DarkGreen', 'Navy'
     elif sat in nm_list:
-        return "NOAA-17", "noaa17", "NOAA17", 'DarkCyan'
+        return "NOAA-17", "noaa17", "NOAA17", 'DarkCyan', 'DodgerBlue'
     elif sat in nn_list:
-        return "NOAA-18", "noaa18", "NOAA18", 'DarkMagenta'
+        return "NOAA-18", "noaa18", "NOAA18", 'DarkMagenta', 'Navy'
     elif sat in np_list:
-        return "NOAA-19", "noaa19", "NOAA19", 'Navy'
+        return "NOAA-19", "noaa19", "NOAA19", 'Navy', 'Navy'
     elif sat in m1_list:
-        return "MetOp-B", "metopb", "METOPB", 'Olive'
+        return "MetOp-B", "metopb", "METOPB", 'Olive', 'DodgerBlue'
     elif sat in m2_list:
-        return "MetOp-A", "metopa", "METOPA", 'Coral'
+        return "MetOp-A", "metopa", "METOPA", 'Coral', 'DodgerBlue'
 
     ## for cci_sensors
     # return platform | sensor | sensor/platform | color
     elif sat in mod_list:
-        return "TERRA", "MODIS", "MODIS/Terra", 'Firebrick'
+        return "TERRA", "MODIS", "MODIS/Terra", 'Firebrick', 'DarkGreen'
     elif sat in myd_list:
-        return "AQUA", "MODIS", "MODIS/Aqua", 'goldenrod'
+        return "AQUA", "MODIS", "MODIS/Aqua", 'goldenrod', 'LimeGreen'
     elif sat in env_list:
-        return "ENVISAT", "AATSR", "AATSR/Envisat", 'SkyBlue'
+        return "ENVISAT", "AATSR", "AATSR/Envisat", 'SkyBlue', 'DarkOrange'
     elif sat in ers_list:
-        return "ERS-2", "ATSR", "ATSR/ERS-2", "Violet"
+        return "ERS-2", "ATSR", "ATSR/ERS-2", "Violet", 'DarkOrange'
 
     else:
         message = "\n * The satellite name you've chosen is not " \
