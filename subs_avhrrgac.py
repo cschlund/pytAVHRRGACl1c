@@ -104,6 +104,13 @@ def get_channel_list():
     return ['ch1', 'ch2', 'ch3b', 'ch4', 'ch5', 'ch3a']
 
 
+def get_avhrr_h5image_list():
+    """
+    List of AVHRR GAC channels defined in h5 file.
+    """
+    return ['image1', 'image2', 'image3', 'image4', 'image5', 'image6']
+
+
 def get_select_list():
     """
     List of selected times in pystat calculation and
