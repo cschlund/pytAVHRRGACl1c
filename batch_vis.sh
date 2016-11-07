@@ -4,10 +4,12 @@
 # Default settings
 # ----------------------------------------------------------------------------
 
+TARGET="temporary_scan_motor_issue"
+#TARGET="whitelisted_orbits"
 SQL="/cmsaf/cmsaf-cld7/AVHRR_GAC_L1c/20160329_AVHRR_GAC_L1c_aux_inf_v2/SQLs/SQLs_v2_201602_proc_2015/AVHRR_GAC_archive_v2_201603_post_overlap.sqlite3"
-OUTPUT="/data/cschlund/temporary_scan_motor_issue_plots"
-INPUT="/data/cschlund/avhrrgac_l1c/test/temporary_scan_motor_issue"
-TTT="ECC_GAC_avhrr_noaa14_99999_20011024T1743063Z_20011024T1919343Z.h5"
+OUTPUT="/data/cschlund/${TARGET}_plots"
+INPUT="/data/cschlund/avhrrgac_l1c/test/${TARGET}"
+TTT="/data/cschlund/avhrrgac_l1c/test/temporary_scan_motor_issue/ECC_GAC_avhrr_noaa14_99999_20011024T1743063Z_20011024T1919343Z.h5"
 REGION=(glo)
 BAND=(ch1 ch2 ch3b ch4 ch5)
 
@@ -27,7 +29,7 @@ cat << EOF
   -o     Output path (default: $OUTPUT)
   -r     Regions to be plotted, e.g. -r eur,afr (default: glo)
   -b     Bands to be plotted, e.g. -b ch1,ch4 (default: all)
-  -t     Testfile: $INPUT/$TTT
+  -t     Testfile: $TTT
   -d     Plot channel differences: abs_d12=ABS(ch1-ch2), rel_d45=100*(ch4-ch5)/ch5
   -s     Plot standard deviations of abs_d12 and rel_d45
   -m     Plot measurements (default: all)
@@ -82,7 +84,7 @@ done
 # file_list
 if [[ $TEST -eq 1 ]]
 then
-    file_list=$(ls $INPUT/$TTT)
+    file_list=$(ls $TTT)
 else
     file_list=$(ls $INPUT/*avhrr*h5)
 fi
