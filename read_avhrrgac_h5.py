@@ -1,14 +1,18 @@
 #
 # reading avhrrgac level 1c H5 files
-# C. Schlundt, July 2014
-# H. Hoeschen, Oct. 2014, added get_data_size
-# C. Schlundt, Nov. 2014, added read_qualflags
 # 
 
 import numpy as np
 import numpy.ma as ma
 import scipy.weave as weave
 from scipy.ndimage.filters import uniform_filter
+from pycmsaf.logger import setup_root_logger
+
+logger = setup_root_logger(name='root')
+
+
+class VariableError(Exception):
+    pass
 
 
 def gridbox_mean(data, fill_value, box_size):
@@ -111,7 +115,6 @@ def get_stddev(data, size):
     """
     mean_squared = np.square(uniform_filter(data, size=size, mode='reflect'))
     squared_mean = uniform_filter(np.square(data), size=size, mode='reflect')
-    #std = np.sqrt(np.ma.masked_equal(squared_mean - mean_squared, 0))
     std = np.sqrt(squared_mean - mean_squared)
     return std
 
@@ -125,22 +128,11 @@ def read_qualflags(fil):
             data = fil[g.name + '/data'].value
             dcol = data.shape[1]
             drow = data.shape[0]
-            # dsiz = data.size
-            # dtyp = data.dtype
-            # gain = g.attrs["gain"]
-            # offs = g.attrs["offset"]
-            # noda = g.attrs["nodata"]
-            # miss = g.attrs["missingdata"]
-            # name = g.attrs["dataset_name"]
-            # sdat = g.attrs["startdate"]
-            # edat = g.attrs["enddate"]
-            # stim = g.attrs["starttime"]
-            # etim = g.attrs["endtime"]
             total_records = g.attrs["total_number_of_data_records"]
             last_scanline = g.attrs["last_scan_line_number"]
 
     except IOError as e:
-        print "I/O error({0}): {1}".format(e.errno, e.strerror)
+        logger.info("I/O error({0}): {1}".format(e.errno, e.strerror))
 
     finally:
         return drow, dcol, int(total_records), int(last_scanline), data
@@ -171,57 +163,26 @@ def get_data_size(fil):
                 return x, y
 
 
-def show_properties(fil):
-    print ("   + Available KEYS: ")
-
-    groups = fil.keys()
-
-    for item in groups:
-
-        print ("   - %s" % item)
-        g = fil['/' + item + '/']
-
-        for key in g:
-            print ("     * KEY=%s ---> %s" % (key, g[key]))
-
-            if key == 'data':
-                print ("       + shape=%s, size=%s, dype=%s" %
-                       (g[key].shape, g[key].size, g[key].dtype))
-
-            if key == 'what' or key == 'how':
-                for att in g[key].attrs.keys():
-                    print ("       + ATT=%s ---> %s" %
-                           (att, g[key].attrs[att]))
-
-        for att in g.attrs.keys():
-            print ("     * ATT=%s ---> %s" % (att, g.attrs[att]))
-
-        print
-
-    print (" --- FILE: %s" % fil)
-
-
-def read_var(fil, varstr, ver):
+def read_var(fil, var_str, unscaled=None):
+    """
+    Read h5 file provided by PyGAC.
+    :param fil: avhrr/sunsatangles h5 file
+    :param var_str: variable string, e.g. 'image1'
+    :param unscaled: returns also the unscaled data along with missing_data attribute
+    :return: scaled_var, var_name, [unscaled_var, attr_missing_data]
+    """
     flg = False
 
-    apply_minmax = False #True
-    # CC4CL limits: ./trunk/src/ECPConstants.F90
-    ref_min = 0.
-    ref_max = 1.5 * 100.
-    bt_min = 140.0
-    bt_max = 350.0
-    lat_min = -90.0
-    lat_max = 90.0
-    lon_min = -180.0
-    lon_max = 180.0
-    sza_min = 0.
-    sza_max = 180.0
+    unscaled_var = None
+    scaled_var = None
+    var_name = None
+    attr_missing_data = None
 
     while not flg:
         try:
             for key in fil.keys():
                 g = fil['/' + key + '/']
-                if key == varstr:
+                if key == var_str:
                     flg = True
 
                     for att in g.attrs.keys():
@@ -232,75 +193,46 @@ def read_var(fil, varstr, ver):
 
                     add = fil[g.name + '/what']
                     # how = fil[g.name+'/how'] #not in sunsatangles h5
-                    var = fil[g.name + '/data'].value
+                    unscaled_var = fil[g.name + '/data'].value
                     gain = add.attrs["gain"]
                     offs = add.attrs["offset"]
                     noda = add.attrs["nodata"]
-                    miss = add.attrs["missingdata"]
-                    name = add.attrs["dataset_name"]
-
-                    # missing and nodata masking
-                    #miss_mask = ma.masked_values(var, miss)
-                    #noda_mask = ma.masked_values(miss_mask, noda)
-                    #temp_var = (noda_mask * gain) + offs
-                    mask = np.ma.logical_or(var == miss, var == noda)
-                    temp_var = gain*np.ma.masked_where(mask, var) + offs
-
-                    if apply_minmax:
-                        # boundary masking
-                        if desc_attr.lower() == "solar zenith angle":
-                            lim_mask = ma.mask_or(temp_var < sza_min, temp_var > sza_max)
-
-                        elif desc_attr.lower().startswith("avhrr"):
-                            if chan_attr == "1" or chan_attr == "2" or chan_attr.lower() == "3a": 
-                                lim_mask = ma.mask_or(temp_var < ref_min, temp_var > ref_max)
-
-                            elif chan_attr == "4" or chan_attr == "5" or chan_attr.lower() == "3b": 
-                                lim_mask = ma.mask_or(temp_var < bt_min, temp_var > bt_max)
-
-                        fin_var = ma.masked_where(lim_mask, temp_var)
-                    else:
-                        fin_var = temp_var
-
+                    attr_missing_data = add.attrs["missingdata"]
+                    var_name = add.attrs["dataset_name"]
+                    mask = np.ma.logical_or(unscaled_var == attr_missing_data,
+                                            unscaled_var == noda)
+                    scaled_var = gain*np.ma.masked_where(mask, unscaled_var) + offs
                     break
 
             for key2 in g.keys():
-                if key2 == varstr:
+                if key2 == var_str:
                     flg = True
                     add = fil[g[key2].name + '/what']
-                    var = fil[g[key2].name + '/data'].value
+                    unscaled_var = fil[g[key2].name + '/data'].value
                     gain = add.attrs["gain"]
                     offs = add.attrs["offset"]
                     noda = add.attrs["nodata"]
-                    miss = add.attrs["missingdata"]
-                    name = add.attrs["dataset_name"]
-
-                    # missing and nodata masking
-                    #miss_mask = ma.masked_values(var, miss)
-                    #noda_mask = ma.masked_values(miss_mask, noda)
-                    #fin_var = (noda_mask * gain) + offs
-                    mask = np.ma.logical_or(var == miss, var == noda)
-                    fin_var = gain*np.ma.masked_where(mask, var) + offs
-
+                    attr_missing_data = add.attrs["missingdata"]
+                    var_name = add.attrs["dataset_name"]
+                    mask = np.ma.logical_or(unscaled_var == attr_missing_data,
+                                            unscaled_var == noda)
+                    scaled_var = gain*np.ma.masked_where(mask, unscaled_var) + offs
                     break
 
         finally:
             if not flg:
-                print (" *** Cannot find %s variable in file ***" % varstr)
+                raise VariableError(
+                    logger.info(" Variable {0} is not defined in {1} ".format(var_str, fil)))
             else:
-                if ver:
-                    print ("   + %s" % name)
-                    print ("     shape: %s, size: %s, type: %s , min: %s, max: %s"
-                           % (fin_var.shape, fin_var.size, fin_var.dtype, fin_var.min(), fin_var.max()))
-                    print ("     missingdata: %s, nodata: %s, gain: %s, offs: %s" % (miss, noda, gain, offs))
-                    print ("     non-masked elements: %s" % ma.count(fin_var))
-                    print ("     masked elements    : %s" % ma.count_masked(fin_var))
-                return fin_var, name
+                if unscaled:
+                    return scaled_var, var_name, unscaled_var, attr_missing_data
+                else:
+                    return scaled_var, var_name
 
 
-def read_latlon(f, ver):
-    lat, latnam = read_var(f, 'lat', ver)
-    lon, lonnam = read_var(f, 'lon', ver)
+def read_latlon(f):
+    lat, latnam = read_var(f, 'lat')
+    lon, lonnam = read_var(f, 'lon')
 
     all_masks = [lat < -90., lat > 90., lon < -180., lon > 180.]
     total_mask = reduce(np.logical_or, all_masks)
@@ -311,35 +243,29 @@ def read_latlon(f, ver):
     return lat, lon
 
 
-def read_avhrrgac(f, a, tim, cha, tsm_corr=None, ver=None):
-
-    if ver:
-        print ("   -------------------------------------------")
-        print ("   * Original data for %s and %s" % (cha, tim))
-        print ("   -------------------------------------------")
+def read_avhrrgac(f, a, tim, cha, tsm_corr=None):
 
     # get angle and geolocation
-    sza, szanam = read_var(a, 'image1', ver)
-    lat, latnam = read_var(f, 'lat', ver)
-    lon, lonnam = read_var(f, 'lon', ver)
+    sza, szanam = read_var(a, 'image1')
+    lat, latnam = read_var(f, 'lat')
+    lon, lonnam = read_var(f, 'lon')
 
     # get measurement
     # channel 1
-    tardat1, tarname1 = read_var(f, 'image1', ver)
-    tar1 = tardat1 / 100.
+    tar1, tarname1 = read_var(f, 'image1')
+    tar1[:] = tar1 / 100.
     # channel 2
-    tardat2, tarname2 = read_var(f, 'image2', ver)
-    tar2 = tardat2 / 100.
+    tar2, tarname2 = read_var(f, 'image2')
+    tar2[:] = tar2 / 100.
     # channel 3b
-    tar3, tarname3 = read_var(f, 'image3', ver)
+    tar3, tarname3 = read_var(f, 'image3')
     # channel 4
-    tar4, tarname4 = read_var(f, 'image4', ver)
+    tar4, tarname4 = read_var(f, 'image4')
     # channel 5
-    tar5, tarname5 = read_var(f, 'image5', ver)
+    tar5, tarname5 = read_var(f, 'image5')
     # channel 3a
-    tardat6, tarname6 = read_var(f, 'image6', ver)
-    tar6 = tardat6 / 100.
-
+    tar6, tarname6 = read_var(f, 'image6')
+    tar6[:] = tar6 / 100.
 
     # --- START temporary scan motor issue correction
     if tsm_corr:
@@ -365,7 +291,6 @@ def read_avhrrgac(f, a, tim, cha, tsm_corr=None, ver=None):
         tar5[ind1] = -999.0
         tar6[ind1] = -999.0
     # --- END temporary scan motor issue correction
-
 
     if cha == 'ch1':
         tar = tar1
@@ -424,23 +349,5 @@ def read_avhrrgac(f, a, tim, cha, tsm_corr=None, ver=None):
         lon = ma.masked_where(sza < 90., lon)
         lat = ma.masked_where(sza < 90., lat)
         tar = ma.masked_where(sza < 90., tar)
-
-    parlst = [latnam, lonnam, tarname]
-    datlst = [lat, lon, tar]
-
-    if ver:
-        cnt = 0
-        print
-        print ("   -------------------------------------------")
-        print ("   * Masked Arrays: %s" % tim)
-        print ("   -------------------------------------------")
-        for item2 in datlst:
-            print ("   + \'%s\', shape: %s, size: %s, type: %s , min: %s, max: %s" %
-                   (parlst[cnt], item2.shape, item2.size,
-                    item2.dtype, item2.min(), item2.max()))
-            print ("     non-masked elements: %s" % ma.count(item2))
-            print ("     masked elements    : %s" % ma.count_masked(item2))
-            cnt += 1
-        print
 
     return lat, lon, tar
