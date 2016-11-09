@@ -9,6 +9,7 @@
 *.sqlite3
 *.idea
 *.cmd
+config_run_pygac.py
 test*
 *test
 figures
