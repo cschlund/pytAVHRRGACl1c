@@ -1,0 +1,23 @@
+#!/usr/bin/env python2.7
+
+import os
+
+# -- define pygac version used for processing
+pygac_commit = "20161107_nan-tsm-bugfixed"
+
+# -- define paths
+inp_path = "/data/cschlund/avhrrgac_l1b/whitelisted_orbits"
+out_path = "/data/cschlund/avhrrgac_l1c/run_pygac"
+sql_path = "/home/cschlund/Programme/python/pytAVHRRGACl1c/dbfiles"
+
+# -- sqlite database for quick L1c analysis
+sql_quick_output = os.path.join(sql_path, "AVHRR_GAC_L1c_quick_analysis.sqlite3")
+
+# -- pygac stuff
+pygac_version = "pygac-v0.1.0-py2.7.egg"
+pygac_tle_dir = "/home/cschlund/Programme/python/ECFlow_AvhrrGacL1c_proc/tle"
+pygac_tle_txt = "TLE_%(satname)s.txt"
+pygac_prefix = "ECC_GAC"
+pygac_runtool = os.path.join("/home/cschlund/.local/lib/python2.7/site-packages",
+                             pygac_version, "pygac", "gac_run.py")
+

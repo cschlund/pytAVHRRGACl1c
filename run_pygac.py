@@ -3,27 +3,16 @@
 #
 # testing pygac on local machine
 #
-import os
-import argparse
+
 import subprocess
 import subs_avhrrgac as subs
 import quick_l1c_analysis as quick
 
+from config_run_pygac import *
+
 from pycmsaf.logger import setup_root_logger
 logdir = os.path.join(os.getcwd(), 'log')
 logger = setup_root_logger(name='root', logdir=logdir, append=False, logfile=True)
-
-# -- sqlite database
-work_dir = os.getcwd()
-sql_quick_output = os.path.join(work_dir, "dbfiles", "AVHRR_GAC_L1c_quick_analysis.sqlite3")
-
-# -- pygac stuff
-pygac_version = "pygac-v0.1.0-py2.7.egg"
-pygac_tle_dir = "/home/cschlund/Programme/python/ECFlow_AvhrrGacL1c_proc/tle"
-pygac_tle_txt = "TLE_%(satname)s.txt"
-pygac_prefix = "ECC_GAC"
-pygac_runtool = os.path.join("/home/cschlund/.local/lib/python2.7/site-packages",
-                             pygac_version, "pygac", "gac_run.py")
 
 
 def def_pygac_cfg(fil, out):
@@ -47,20 +36,19 @@ def def_pygac_cfg(fil, out):
         logger.info("FAILED: {0}".format(e))
 
 
-def call_pygac(file_list, args):
+def call_pygac(file_list):
     """
     Run PyGAC over each file in list.
     Collect information about logfile and L1c File content for later analysis.
     :param file_list: L1b file list
-    :param args: input_dir, output_dir, pygac_version
     :return:
     """
     # -- collect failed L1b orbits
     failed_l1b_orbits = list()
 
     # -- create pygac config file
-    cfg_file = os.path.join(args.output_dir, "run_pygac.cfg")
-    def_pygac_cfg(cfg_file, args.output_dir)
+    cfg_file = os.path.join(out_path, "run_pygac.cfg")
+    def_pygac_cfg(cfg_file, out_path)
     os.putenv('PYGAC_CONFIG_FILE', cfg_file)
 
     logger.info("call {0}".format(os.path.basename(pygac_runtool)))
@@ -92,7 +80,7 @@ def call_pygac(file_list, args):
             elif "Filename: "+pygac_prefix+"_avhrr" in line:
                 line_list = line.split()
                 ret = filter(lambda x: '.h5' in x, line_list)[0]
-                ifile_l1c = os.path.join(args.output_dir, ret)
+                ifile_l1c = os.path.join(out_path, ret)
             elif "pygac took" in line.lower():
                 ll = line.split()
                 from datetime import datetime, timedelta
@@ -109,8 +97,11 @@ def call_pygac(file_list, args):
 
         logger.info("Collect records for quick L1c analysis\n")
         quick.collect_records(l1b_file=ifile+'.gz', l1c_file=ifile_l1c,
-                              sql_file=sql_quick_output, pygac_version=args.pygac_version,
+                              sql_file=sql_quick_output, pygac_version=pygac_commit,
                               pygac_took=pygac_took, pygac_errors=p_errors, pygac_warnings=p_warnings)
+
+        if ifile_l1c is None:
+            failed_l1b_orbits.append(ifile)
 
     if len(failed_l1b_orbits) > 0:
         logger.info("PYGAC FAILED {0} time(s):".format(len(failed_l1b_orbits)))
@@ -120,36 +111,20 @@ def call_pygac(file_list, args):
 
 if __name__ == '__main__':
 
-    # -- parser arguments
-    parser = argparse.ArgumentParser(
-        description='''{0:s} is executing PyGAC on local machine '''
-                    '''operating on already zipped L1b files (testing purposes).\n'''.
-                    format(os.path.basename(__file__)))
-
-    parser.add_argument('--pygac_version', type=str, default='20161103_nan-tsm-bugfixed',
-                        help='PyGAC version regarding latest commit, e.g. \'20151130_orig\'')
-
-    parser.add_argument('--input_dir', type=str, help='/data/cschlund/avhrrgac_l1b',
-                        default='/data/cschlund/avhrrgac_l1b')
-
-    parser.add_argument('--output_dir', type=str, help='/data/cschlund/avhrrgac_l1c/run_pygac',
-                        default='/data/cschlund/avhrrgac_l1c/run_pygac')
-
-    args = parser.parse_args()
-
-    # -- Call function associated with the selected subcommand
     logger.info("{0} started for ".format(os.path.basename(__file__)))
-    for arg in vars(args):
-        logger.info(" -- {0:15s}: {1}".format(arg, getattr(args, arg)))
+
+    logger.info("PyGAC Version: {0}".format(pygac_commit))
+    logger.info("PyGAC Input  : {0}".format(inp_path))
+    logger.info("PyGAC Output : {0}".format(out_path))
+    logger.info("SQL database : {0}".format(sql_quick_output))
 
     # -- Get AVHRR GAC l1b file list
-    file_list = subs.find("NSS*", args.input_dir)
+    file_list = subs.find("NSS*", inp_path)
     logger.info("{0} files found".format(len(file_list)))
 
     # -- Call PyGAC and make quick analysis of each orbit
-    # call_pygac([file_list[0]], args)
-    call_pygac(file_list, args)
+    call_pygac(file_list)
 
-    logger.info("{0} succesfully finished\n\n".format(os.path.basename(__file__)))
+    logger.info("{0} successfully finished\n\n".format(os.path.basename(__file__)))
 
 
