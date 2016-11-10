@@ -8,60 +8,54 @@ import os
 import sys
 import argparse
 import sqlite3 as lite
-import matplotlib
-#matplotlib.use('GTK3Agg')
-
 import subs_avhrrgac as mysub
 import subs_plot_sql as psql
 
 from pycmsaf.logger import setup_root_logger
 
-logdir = os.path.join(os.getcwd(),'log')
-logger = setup_root_logger(name='root', logdir=logdir, 
-                           append=True, logfile=True)
-
-chalist = '|'.join(mysub.get_channel_list())
-sellist = '|'.join(mysub.get_pystat_select_list())
-satlist = '|'.join(mysub.get_satellite_list())
+logdir = os.path.join(os.getcwd(), 'log')
+logger = setup_root_logger(name='root', logdir=logdir, append=True, logfile=True)
 
 
-def plot_results():
-    for channel in cha_list:
-        for select in sel_list:
-            if args.target == 'global':
-
-                try: 
-                    check = cur.execute("SELECT OrbitCount FROM statistics")
-                except Exception as e: 
-                    if select == 'day_90sza':
-                        continue
-
-                psql.plot_time_series(sat_list, channel, select,
-                                      start_date, end_date, args.outdir,
-                                      cur, args.verbose, args.asciifiles,
-                                      args.show_figure, args.linestyle)
-
-                if args.linfit:
-                    psql.plot_time_series_linfit(sat_list, channel, select,
-                                                 start_date, end_date, args.outdir,
-                                                 cur, args.verbose, args.show_figure)
-
+def plot_results(dbcursor, params, start_date, end_date):
+    """
+    Plot PySTAT results.
+    :param dbcursor: sqlite cursor
+    :param params: passed arguments
+    :param start_date: first date to be considered
+    :param end_date: last date to be considered
+    :return:
+    """
+    for channel in params.channels:
+        for select in params.times:
+            if params.target == 'global':
+                if params.linfit:
+                    psql.plot_time_series_linfit(sat_list=params.satellites,
+                                                 channel=channel, select=select,
+                                                 start_date=start_date, end_date=end_date,
+                                                 outpath=params.outdir, cursor=dbcursor,
+                                                 show_fig=params.show_figure)
+                else:
+                    psql.plot_time_series(sat_list=params.satellites,
+                                          channel=channel, select=select,
+                                          start_date=start_date, end_date=end_date,
+                                          outpath=params.outdir, cursor=dbcursor,
+                                          verbose=params.verbose,
+                                          show_fig=params.show_figure,
+                                          linesty=params.linestyle)
             else:
-
-                psql.plot_zonal_results(sat_list, channel, select,
-                                        start_date, end_date, args.outdir,
-                                        cur, args.target, args.verbose,
-                                        args.show_figure)
-
+                psql.plot_zonal_results(sat_list=params.satellites,
+                                        channel=channel, select=select,
+                                        start_date=start_date, end_date=end_date,
+                                        outpath=params.outdir, cur=dbcursor, target=params.target,
+                                        verbose=params.verbose, show_fig=params.show_figure)
     return
 
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='''%s 
-    displays pystat results, i.e. daily global and
-    zonal means and standard deviations stored in a sqlite
-    database.''' % os.path.basename(__file__))
+    parser = argparse.ArgumentParser(description='''%s displays pystat results, i.e. daily global and
+    zonal means and standard deviations stored in a sqlite database.''' % os.path.basename(__file__))
 
     parser.add_argument('-db', '--dbfile', type=str, required=True,
                         help='String, e.g. /path/to/db.sqlite3')
@@ -69,20 +63,21 @@ if __name__ == '__main__':
     parser.add_argument('-out', '--outdir', type=str, required=True,
                         help='Path, e.g. /path/to/plot.png')
 
-    parser.add_argument('-sd', '--sdate', type=mysub.datestring,
-                        default='1979-01-01', help='Start Date, e.g. 2009-01-01')
+    parser.add_argument('-sd', '--start_date', type=mysub.datestring, default='1979-01-01',
+                        help='Start Date, e.g. 2009-01-01')
 
-    parser.add_argument('-ed', '--edate', type=mysub.datestring,
-                        default='2017-01-01', help='End Date, e.g. 2012-12-31')
+    parser.add_argument('-ed', '--end_date', type=mysub.datestring, default='2017-01-01',
+                        help='End Date, e.g. 2012-12-31')
 
-    parser.add_argument('-cha', '--channel', type=str,
-                        help='Channel abbreviation, available: ' + chalist)
+    parser.add_argument('-cha', '--channels', type=str, nargs='*', default=mysub.get_channel_list(),
+                        help='Channel abbreviation, available: ' + '|'.join(mysub.get_channel_list()))
 
-    parser.add_argument('-tim', '--time', type=str,
-                        help='Time abbreviation, available: ' + sellist)
+    parser.add_argument('-tim', '--times', type=str, nargs='*', default=mysub.get_pystat_select_list(),
+                        help='Time abbreviation, available: ' + '|'.join(mysub.get_pystat_select_list()))
 
-    parser.add_argument('-sats', '--satellites', type=mysub.str2upper, nargs='*',
-                        help='Satellite, available: ' + satlist)
+    parser.add_argument('-sat', '--satellites', type=mysub.str2upper, nargs='*',
+                        default=mysub.get_satellite_list(),
+                        help='Satellite, available: ' + '|'.join(mysub.get_satellite_list()))
 
     parser.add_argument('-tar', '--target', type=str, default='global',
                         help='''Latitudinal (zonal, zonalall) 
@@ -98,46 +93,17 @@ if __name__ == '__main__':
                         help='''If you want to plot a time series including a
                         linear regression (plot per satellite/channel/time).''')
 
-    parser.add_argument('-ver', '--verbose',
-                        help='increase output verbosity', action="store_true")
+    parser.add_argument('-ver', '--verbose', action="store_true", help='increase output verbosity')
 
-    parser.add_argument('-show', '--show_figure', action="store_true",
-                        help='Show figure.')
-
-    parser.add_argument('-asc', '--asciifiles', type=str,
-                        help='read old pystat results stored in ascii files')
+    parser.add_argument('-show', '--show_figure', action="store_true", help='Show figure.')
 
     parser.add_argument('--linestyle', default='-', help='Default is \'-\' ')
 
     args = parser.parse_args()
 
     # -- some settings
-    start_date = mysub.str2date(args.sdate)
-    end_date = mysub.str2date(args.edate)
-
-    # -- channel selection
-    if args.channel is None:
-        cha_list = mysub.get_channel_list()
-    else:
-        cha_list = [args.channel]
-
-    # -- time selection
-    if args.time is None:
-        sel_list = mysub.get_pystat_select_list()
-    else:
-        sel_list = [args.time]
-
-    # -- satellite selection
-    if args.satellites is None:
-        sat_list = mysub.get_satellite_list()
-    else:
-        sat_list = args.satellites
-
-    # -- target selection
-    if args.target == 'global':
-        target_plt_name = "Time Series Plot"
-    else:
-        target_plt_name = "Latitudinal Plot"
+    sdate = mysub.str2date(args.start_date)
+    edate = mysub.str2date(args.end_date)
 
     # -- make output directory if necessary
     if not os.path.exists(args.outdir):
@@ -147,35 +113,16 @@ if __name__ == '__main__':
     if len(sys.argv[1:]) > 0: 
         logger.info("{0}\n".format(sys.argv[1:]))
 
-    # -- summary of settings if verbose mode
-    if args.verbose:
-        logger.info("Parameter passed")
-        logger.info("Input Path : %s" % args.dbfile)
-        logger.info("Output Path: %s" % args.outdir)
-        logger.info("Start Date : %s" % start_date)
-        logger.info("End Date   : %s" % end_date)
-        logger.info("Channel    : %s" % cha_list)
-        logger.info("Time       : %s" % sel_list)
-        logger.info("Satellite  : %s" % sat_list)
-        logger.info("Target plot: %s" % target_plt_name)
-        logger.info("TimeS.LinF : %s" % args.linfit)
-        logger.info("Old asciiF : %s" % args.asciifiles)
-        logger.info("Show fig   : %s" % args.show_figure)
-        logger.info("Linestyle  : %s" % args.linestyle)
-        logger.info("Verbose    : %s\n" % args.verbose)
-
+    # -- open SQL file and plot data
     try:
-        dbfile = lite.connect(args.dbfile,
-                              detect_types=lite.PARSE_DECLTYPES | lite.PARSE_COLNAMES)
+        dbfile = lite.connect(args.dbfile, detect_types=lite.PARSE_DECLTYPES | lite.PARSE_COLNAMES)
         dbfile.row_factory = mysub.dict_factory
         cur = dbfile.cursor()
 
-        plot_results()
+        plot_results(dbcursor=cur, params=args, start_date=sdate, end_date=edate)
 
         dbfile.close()
-
-        if args.verbose:
-            logger.info("{0} finished\n\n".format(sys.argv[0]))
+        logger.info("{0} successfully finished\n\n".format(sys.argv[0]))
 
     except lite.Error, e:
         logger.info("ERROR {0} \n\n".format(e.args[0]))
