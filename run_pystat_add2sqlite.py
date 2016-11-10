@@ -72,8 +72,8 @@ def readfiles(tup):
                 check_availability = global_mean[channel][select]
 
                 try:
-                    # (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, args.verbose)
-                    (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel, False)
+                    # (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel)
+                    (lat, lon, tar) = rh5.read_avhrrgac(f, a, select, channel)
 
                     # check is channel is filled with measurements
                     if np.ma.count(tar) == 0:

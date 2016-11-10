@@ -128,7 +128,7 @@ try:
 
     # -- get equator crossing time
     f = h5py.File(fil_name, "r+")
-    lat, lon = rh5.read_latlon(f, False)
+    lat, lon = rh5.read_latlon(f)
     f.close()
     ect = subs.get_ect_local_hour(lat, lon, start_time_l1c, args.verbose)
 

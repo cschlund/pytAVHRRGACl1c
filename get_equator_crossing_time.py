@@ -95,7 +95,7 @@ for dt in rrule(DAILY, dtstart=args.start_date, until=args.end_date):
 
         # read file
         f = h5py.File(fil, "r+")
-        lat, lon = rh5.read_latlon(f, False)
+        lat, lon = rh5.read_latlon(f)
         f.close()
 
         ect = subs.get_ect_local_hour(lat, lon, start_time_l1c, args.verbose)
