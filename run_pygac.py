@@ -60,19 +60,25 @@ def call_pygac(file_list):
         c3 = ["python", pygac_runtool, ifile, "0", "0"]
         p3 = subprocess.Popen(c3, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p3.communicate()
+        stdout_lines = stdout.split("\n")
         stderr_lines = stderr.split("\n")
+        std_lines = stdout_lines + stderr_lines
 
-        logger.info("STDOUT:{0}".format(stdout.strip()))
-        logger.info("STDERR:")
+        logger.info("PyGAC STDOUT")
+        for line in stdout_lines:
+            print line
+
+        logger.info("PyGAC STDERR:")
         for line in stderr_lines:
             print line
 
-        logger.info("collect information out of STDERR")
         ifile_l1c = None
         pygac_took = None
         p_warnings = list()
         p_errors = list()
-        for line in stderr_lines:
+
+        logger.info("collect information from STDOUT & STDERR")
+        for line in std_lines:
             if "warning" in line.lower():
                 p_warnings.append(line)
             elif "error" in line.lower():
