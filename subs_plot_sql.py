@@ -199,6 +199,7 @@ def pystat_channel_difference(cha_list, sat_list, sza_time, cursor,
     :return:
     """
     isdata_cnt = 0
+    sat_cnt = 0
 
     if sza_time == "day_90sza":
         stime = "day"
@@ -233,34 +234,58 @@ def pystat_channel_difference(cha_list, sat_list, sza_time, cursor,
          nobslst_2, orb_cnts_lst_2) = read_global_newstats(satellite, cha_list[1],
                                                            sza_time, sdate, edate, cursor)
 
+        collocate = False
         if len(datelst_1) != len(datelst_2):
-            logger.info("Both date lists do not have the same length for calculating the channel difference.")
-            return
+            logger.info(" --- Both date lists do not have the same length.")
+            logger.info(" ====> collocate both data sets!")
+            collocate = True
+        else:
+            for cnt, idx in enumerate(datelst_1):
+                if datelst_1[cnt] != datelst_2[cnt]:
+                    logger.info(" --- Both date lists have the same length but do not match.")
+                    logger.info("     Date List 1: {0}".format(datelst_1[cnt]))
+                    logger.info("     Date List 2: {0}".format(datelst_2[cnt]))
+                    logger.info(" ====> collocate both data sets!")
+                    collocate = True
+                    break
 
-        for cnt, idx in enumerate(datelst_1):
-            if datelst_1[cnt] != datelst_2[cnt]:
-                logger.info("Both date lists have the same length but do not match.")
-                logger.info("Date List 1: {0}".format(datelst_1[cnt]))
-                logger.info("Date List 2: {0}".format(datelst_2[cnt]))
-                return
+        if collocate:
+            (dates, mean1, mean2, stdv1, stdv2,
+             nobs1, nobs2) = collocte_pystat_lists(datelst_1, meanlst_1, stdvlst_1, nobslst_1,
+                                                   datelst_2, meanlst_2, stdvlst_2, nobslst_2)
+        else:
+            dates = datelst_1
+            nobs1 = nobslst_1
+            nobs2 = nobslst_2
+            mean1 = meanlst_1
+            mean2 = meanlst_2
+            stdv1 = stdvlst_1
+            stdv2 = stdvlst_2
 
-        if len(datelst_1) > 1:
+        if len(dates) > 1:
             isdata_cnt += 1
-            dat = np.asarray(datelst_1)
-            obs = np.asarray(nobslst_1)
-            ave = np.asarray(meanlst_1) - np.asarray(meanlst_2)
-            std = np.asarray(stdvlst_1) - np.asarray(stdvlst_2)
+            sat_cnt += 1
+            dat = np.asarray(dates)
+            ob1 = np.asarray(nobs1)
+            ob2 = np.asarray(nobs2)
+            ave = np.asarray(mean1) - np.asarray(mean2)
+            std = np.asarray(stdv1) - np.asarray(stdv2)
             ax_val.plot(dat, ave, linesty, label=satellite, color=satcolor, alpha=0.8, markersize=5)
             ax_std.plot(dat, std, linesty, label=satellite, color=satcolor, alpha=0.8, markersize=5)
-            ax_rec.plot(dat, obs, '--o', label=satellite, markersize=5, alpha=0.8, color=satcolor)
+            if sat_cnt <= 1:
+                ax_rec.plot(dat, ob1, '--o', label=c1_name, markersize=5, alpha=0.5, color='orange')
+                ax_rec.plot(dat, ob2, '--o', label=c2_name, markersize=5, alpha=0.5, color='gray')
+            else:
+                ax_rec.plot(dat, ob1, '--o', markersize=5, alpha=0.5, color='orange')
+                ax_rec.plot(dat, ob2, '--o', markersize=5, alpha=0.5, color='gray')
         else:
             continue
     # -- end ofloop over satellites
 
     if isdata_cnt > 0:
         if len(sat_list) == 1:
-            min_x_date = min(datelst_1)
-            max_x_date = max(datelst_1)
+            min_x_date = min(dates)
+            max_x_date = max(dates)
             delta_days = (max_x_date - min_x_date).days
             sdate_str = subs.date2str(min_x_date)
             edate_str = subs.date2str(max_x_date)
@@ -278,14 +303,10 @@ def pystat_channel_difference(cha_list, sat_list, sza_time, cursor,
 
         ofile = os.path.join(out_path, fbase)
 
-        # get number of valid orbits per day
-        if len(sat_list) == 1:
-            plot_orbits_per_day(ax_rec, sat_list[0], orb_cnts_lst_1, datelst_1, orbit_label)
-
         # annotate plot
         label_pystat_plot(ave=ax_val, std=ax_std, obs=ax_rec,
                           min_x_date=min_x_date, max_x_date=max_x_date,
-                          delta_days=delta_days, nobs=nobslst_1,
+                          delta_days=delta_days,
                           plt_label=plot_label, dat_label=date_label,
                           ave_label=mean_label, std_label=stdv_label, obs_label=nobs_label)
 
@@ -296,6 +317,7 @@ def pystat_channel_difference(cha_list, sat_list, sza_time, cursor,
             num_of_sats = len(sat_list)
 
         leg = ax_std.legend(ncol=num_of_sats, loc='best', fancybox=True)
+        leg2 = ax_rec.legend(loc='best', fancybox=True)
         plt.tight_layout(rect=(0.02, 0.02, 0.98, 0.98))
         leg.get_frame().set_alpha(0.5)
 
@@ -379,7 +401,7 @@ def plot_time_series(sat_list, channel, select, start_date, end_date, outpath,
         # annotate plot
         label_pystat_plot(ave=ax_val, std=ax_std, obs=ax_rec,
                           min_x_date=min_x_date, max_x_date=max_x_date,
-                          delta_days=delta_days, nobs=nobslst,
+                          delta_days=delta_days,
                           plt_label=plot_label, dat_label=date_label,
                           ave_label=mean_label, std_label=stdv_label, obs_label=nobs_label)
 
@@ -481,7 +503,7 @@ def plot_time_series_linfit(sat_list, channel, select, start_date, end_date,
             # annotate plot
             label_pystat_plot(ave=ax_val, std=ax_std, obs=ax_rec,
                               min_x_date=min_x_date, max_x_date=max_x_date,
-                              delta_days=delta_days, nobs=nobslst,
+                              delta_days=delta_days,
                               plt_label=plot_label, dat_label=date_label,
                               ave_label=mean_label, std_label=stdv_label, obs_label=nobs_label)
 
@@ -1472,7 +1494,7 @@ def init_pystat_zonal_figure():
     return plt.figure(figsize=(12, 8))
 
 
-def label_pystat_plot(ave, std, obs, min_x_date, max_x_date, delta_days, nobs,
+def label_pystat_plot(ave, std, obs, min_x_date, max_x_date, delta_days,
                       plt_label, dat_label, ave_label, std_label, obs_label):
 
     # x axis range
@@ -1482,7 +1504,8 @@ def label_pystat_plot(ave, std, obs, min_x_date, max_x_date, delta_days, nobs,
 
     # y axis range
     obs.yaxis.get_major_formatter().set_powerlimits((0, 1))
-    obs.set_ylim(0, max(nobs) + max(nobs) * 0.1)
+    ymin, ymax = obs.get_ylim()
+    obs.set_ylim(0, ymax + ymax * 0.05)
 
     # modify x axis
     (minor_loc, major_loc, major_fmt, date_label) = calc_date_formatter(delta_days, dat_label)
@@ -1548,7 +1571,7 @@ def get_channel_difference_plot_title(label1, label2, selected_time, channel_lis
     ch_list = label1.split(" ") + label2.split(" ")
     if len(set(ch_list)) > 4:
         check = ' - '.join(channel_list)
-        logger.info("Check your --channels arguments! Are you sure about this: {0}".format(check))
+        logger.info(" --- Check your --channels arguments! Are you sure about this: {0}".format(check))
         return
 
     ch1_name = label1.split(" ")[0]
@@ -1558,3 +1581,55 @@ def get_channel_difference_plot_title(label1, label2, selected_time, channel_lis
               "(" + ch1_name + "," + ch2_name + ") " + c_suffix + " (" + selected_time + ")\n"
 
     return p_title, ch1_name, ch2_name
+
+
+def collocte_pystat_lists(d1, m1, s1, n1,
+                          d2, m2, s2, n2):
+    """
+    Returns collocated lists (1 and 2) for calculating pystat channel differences.
+    d = list of date
+    m = list of mean values
+    s = list of standard deviation values
+    n = list of number of observations
+    :return:
+    """
+    dates = list()
+    nobs1 = list()
+    nobs2 = list()
+    mean1 = list()
+    mean2 = list()
+    stdv1 = list()
+    stdv2 = list()
+
+    if len(d1) > len(d2):
+
+        for i1, date1 in enumerate(d1):
+            for i2, date2 in enumerate(d2):
+                if date1 == date2:
+                    dates.append(date1)
+                    # list 1
+                    nobs1.append(n1[i1])
+                    mean1.append(m1[i1])
+                    stdv1.append(s1[i1])
+                    # list 2
+                    nobs2.append(n2[i2])
+                    mean2.append(m2[i2])
+                    stdv2.append(s2[i2])
+
+        return dates, mean1, mean2, stdv1, stdv2, nobs1, nobs2
+
+    else:
+        for i2, date2 in enumerate(d2):
+            for i1, date1 in enumerate(d1):
+                if date1 == date2:
+                    dates.append(date1)
+                    # list 1
+                    nobs1.append(n1[i1])
+                    mean1.append(m1[i1])
+                    stdv1.append(s1[i1])
+                    # list 2
+                    nobs2.append(n2[i2])
+                    mean2.append(m2[i2])
+                    stdv2.append(s2[i2])
+
+        return dates, mean1, mean2, stdv1, stdv2, nobs1, nobs2
