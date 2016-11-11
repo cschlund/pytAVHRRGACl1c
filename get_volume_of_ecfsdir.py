@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import sys
 import math
 import subprocess
 import datetime
@@ -10,9 +9,8 @@ import argparse
 import numpy as np
 from pycmsaf.logger import setup_root_logger
 
-logdir = os.path.join(os.getcwd(),'log')
-logger = setup_root_logger(name='root', logdir=logdir, 
-                           append=True, logfile=True)
+logdir = os.path.join(os.getcwd(), 'log')
+logger = setup_root_logger(name='root', logdir=logdir, append=True, logfile=True)
 
 
 def convertSize(size): 
@@ -20,10 +18,11 @@ def convertSize(size):
     i = int(math.floor(math.log(size,1024)))
     p = math.pow(1024,i)
     s = round(size/p,2)
-    if (s > 0): 
+    if s > 0:
         return '%s %s' % (s,size_name[i])
     else: 
         return '0B'
+
 
 def collect_info(pwd, pattern):
     # define lists
@@ -80,33 +79,35 @@ def write2file(output_list):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='''{0} calculates the data
-            volume of specified ECFS directory.'''.
-            format(os.path.basename(__file__)))
-    parser.add_argument('-e', '--ecfs_basepath', type=str, required=True, 
-                        help="/user/path/to/data")
-    parser.add_argument('-p', '--pattern', type=str, required=True,
-                        help='''Search pattern, i.e. --pattern=tar''')
+    parser = argparse.ArgumentParser(description='''{0}
+    calculates the data volume of specified ECFS directory.'''.format( os.path.basename(__file__)))
+
+    parser.add_argument('-e', '--ecfs_basepath', type=str,
+                        required=True, help="/user/path/to/data")
+
+    parser.add_argument('-p', '--pattern', type=str,
+                        required=True, help='''Search pattern, i.e. --pattern=tar''')
+
     args = parser.parse_args()
 
-# output file summarizing results
-outf = 'ECFS' + args.ecfs_basepath.replace("/", "_") + '.txt'
+    # output file summarizing results
+    outf = 'ECFS' + args.ecfs_basepath.replace("/", "_") + '.txt'
 
-# some output for logfile 
-logger.info("*** PARAMETER passed:")
-logger.info("ECFS_BASEPATH: {0}".format(args.ecfs_basepath))
-logger.info("SEARCH_PATTERN: {0}".format(args.pattern))
-logger.info("OUTPUT_FILENAME: {0}".format(outf))
+    # some output for logfile
+    logger.info("*** PARAMETER passed:")
+    logger.info("ECFS_BASEPATH: {0}".format(args.ecfs_basepath))
+    logger.info("SEARCH_PATTERN: {0}".format(args.pattern))
+    logger.info("OUTPUT_FILENAME: {0}".format(outf))
 
-# collect information
-(dirs, balls, sizes) = collect_info(args.ecfs_basepath, args.pattern)
+    # collect information
+    (dirs, balls, sizes) = collect_info(args.ecfs_basepath, args.pattern)
 
-# convert sizes
-(totalsize, sizelist_converted) = convert_tarball_sizes(sizes)
-logger.info("Total size of data: {0}".format(totalsize))
+    # convert sizes
+    (totalsize, sizelist_converted) = convert_tarball_sizes(sizes)
+    logger.info("Total size of data: {0}".format(totalsize))
 
-# write information to file
-logger.info("WRITE2FILE: {0}".format(outf))
-write2file(zip(dirs, balls, sizes, sizelist_converted))
+    # write information to file
+    logger.info("WRITE2FILE: {0}".format(outf))
+    write2file(zip(dirs, balls, sizes, sizelist_converted))
 
-logger.info("*** {0} finished\n".format(os.path.basename(__file__)))
+    logger.info("*** {0} finished\n".format(os.path.basename(__file__)))

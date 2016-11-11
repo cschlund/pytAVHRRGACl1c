@@ -3,19 +3,12 @@
 #
 
 import os
-import argparse
 import random
 import subprocess
-from subs_avhrrgac import pre_blacklist_reasons
-from subs_avhrrgac import proc_blacklist_reasons
-from subs_avhrrgac import post_blacklist_reasons
-from subs_avhrrgac import str2upper
-from pycmsaf.avhrr_gac.database import AvhrrGacDatabase
 from pycmsaf.logger import setup_root_logger
 
-logdir = os.path.join(os.getcwd(),'log')
-logger = setup_root_logger(name='root', logdir=logdir, 
-                           append=True, logfile=True)
+logdir = os.path.join(os.getcwd(), 'log')
+logger = setup_root_logger(name='root', logdir=logdir, append=True, logfile=True)
 
 
 def extract_files(args, filelist):
@@ -117,28 +110,20 @@ if __name__ == '__main__':
     blacklisting = ' | '.join(blr_list)
 
     parser = argparse.ArgumentParser(
-        description=('{0} reads the AVHRR GAC L1 SQL database '
-                     'and extracts L1b files to $SCRATCH.'
-                     'See Usage for more information.').
-                     format(os.path.basename(__file__)))
+        description=('{0} reads the AVHRR GAC L1 SQL database and extracts L1b files to $SCRATCH. '
+                     'See Usage for more information.').format( os.path.basename(__file__)))
 
-    parser.add_argument('-dbf', '--dbfile', default=sqlfile,
-            help='Default is: {0}'.format(sqlfile))
+    parser.add_argument('-dbf', '--dbfile', default=sqlfile, help='Default is: {0}'.format(sqlfile))
 
-    parser.add_argument('-blr', '--blacklist_reason', 
-            help='Select specific blacklist reason: '+blacklisting)
+    parser.add_argument('-blr', '--blacklist_reason', help='Select specific blacklist reason: '+blacklisting)
 
-    parser.add_argument('-num', '--number_of_files', type=int,
-            default=5, help='Number of files to be extracted.')
+    parser.add_argument('-num', '--number_of_files', type=int, default=5, help='Number of files to be extracted.')
 
-    parser.add_argument('-inp', '--input_path', default=inppath, 
-            help='Default is: {0}'.format(inppath))
+    parser.add_argument('-inp', '--input_path', default=inppath, help='Default is: {0}'.format(inppath))
 
-    parser.add_argument('-out', '--output_path', default=outpath, 
-            help='Default is: {0}'.format(outpath))
+    parser.add_argument('-out', '--output_path', default=outpath, help='Default is: {0}'.format(outpath))
 
-    parser.add_argument('-sat', '--satellite', type=str2upper, 
-            help='Select a specific satellite.')
+    parser.add_argument('-sat', '--satellite', type=str2upper, help='Select a specific satellite.')
 
     args = parser.parse_args()
 
