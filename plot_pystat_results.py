@@ -26,30 +26,48 @@ def plot_results(dbcursor, params, start_date, end_date):
     :param end_date: last date to be considered
     :return:
     """
-    for channel in params.channels:
-        for select in params.times:
-            if params.target == 'global':
-                if params.linfit:
-                    psql.plot_time_series_linfit(sat_list=params.satellites,
-                                                 channel=channel, select=select,
-                                                 start_date=start_date, end_date=end_date,
-                                                 outpath=params.outdir, cursor=dbcursor,
-                                                 show_fig=params.show_figure)
+    if params.channel_difference:
+        if len(params.channels) == 2:
+            for select in params.times:
+                logger.info("PySTAT channel difference between "
+                            "{c1} and {c2} for {sat_list} and {sza_time}".format(c1=params.channels[0],
+                                                                                 c2=params.channels[1],
+                                                                                 sat_list=params.satellites,
+                                                                                 sza_time=select))
+
+                psql.pystat_channel_difference(cha_list=params.channels, sat_list=params.satellites,
+                                               sza_time=select, cursor=dbcursor, out_path=params.outdir,
+                                               sdate=start_date, edate=end_date,
+                                               linesty=params.linestyle)
+            return
+        else:
+            logger.info("Provide two channels using --channels argument")
+            return
+    else:
+        for channel in params.channels:
+            for select in params.times:
+                if params.target == 'global':
+                    if params.linfit:
+                        psql.plot_time_series_linfit(sat_list=params.satellites,
+                                                     channel=channel, select=select,
+                                                     start_date=start_date, end_date=end_date,
+                                                     outpath=params.outdir, cursor=dbcursor,
+                                                     show_fig=params.show_figure)
+                    else:
+                        psql.plot_time_series(sat_list=params.satellites,
+                                              channel=channel, select=select,
+                                              start_date=start_date, end_date=end_date,
+                                              outpath=params.outdir, cursor=dbcursor,
+                                              verbose=params.verbose,
+                                              show_fig=params.show_figure,
+                                              linesty=params.linestyle)
                 else:
-                    psql.plot_time_series(sat_list=params.satellites,
-                                          channel=channel, select=select,
-                                          start_date=start_date, end_date=end_date,
-                                          outpath=params.outdir, cursor=dbcursor,
-                                          verbose=params.verbose,
-                                          show_fig=params.show_figure,
-                                          linesty=params.linestyle)
-            else:
-                psql.plot_zonal_results(sat_list=params.satellites,
-                                        channel=channel, select=select,
-                                        start_date=start_date, end_date=end_date,
-                                        outpath=params.outdir, cur=dbcursor, target=params.target,
-                                        verbose=params.verbose, show_fig=params.show_figure)
-    return
+                    psql.plot_zonal_results(sat_list=params.satellites,
+                                            channel=channel, select=select,
+                                            start_date=start_date, end_date=end_date,
+                                            outpath=params.outdir, cur=dbcursor, target=params.target,
+                                            verbose=params.verbose, show_fig=params.show_figure)
+        return
 
 
 if __name__ == '__main__':
@@ -80,14 +98,9 @@ if __name__ == '__main__':
                         help='Satellite, available: ' + '|'.join(mysub.get_satellite_list()))
 
     parser.add_argument('-tar', '--target', type=str, default='global',
-                        help='''Latitudinal (zonal, zonalall) 
-                        or time series plot (default).
-                        NOTE: if you select \'zonal\' choose
-                        one day or a very small range because you will get
-                        additionally one plot per day/satellite/channel/time.
-                        If you select \'zonalall\' then you will get one
-                        plot per day/channel/time including all available
-                        satellites.''')
+                        help='''-tar global (default) plots global daily statistics (time series).
+                        -tar zonal plots zonal daily statistics per date/channel/satellite/time selection.
+                        -tar zonalall plots all available satellite zonal statistics per date/channel/time.''')
 
     parser.add_argument('-fit', '--linfit', action="store_true",
                         help='''If you want to plot a time series including a
@@ -96,6 +109,9 @@ if __name__ == '__main__':
     parser.add_argument('-ver', '--verbose', action="store_true", help='increase output verbosity')
 
     parser.add_argument('-show', '--show_figure', action="store_true", help='Show figure.')
+
+    parser.add_argument('-cdiff', '--channel_difference', action="store_true",
+                        help='e.g. -cdiff -cha ch4 ch5 [only for -tar global].')
 
     parser.add_argument('--linestyle', default='-', help='Default is \'-\' ')
 

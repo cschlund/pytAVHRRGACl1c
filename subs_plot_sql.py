@@ -184,8 +184,134 @@ def get_number_of_orbits_per_day(satellite, date_list, db):
     return orbit_cnt_list
 
 
-def plot_time_series(sat_list, channel, select, start_date, end_date, outpath, cursor,
-                     verbose=None, show_fig=None, linesty=None):
+def pystat_channel_difference(cha_list, sat_list, sza_time, cursor,
+                              out_path, sdate, edate, linesty):
+    """
+    Plot the difference of two channels based on PySTAT results.
+    :param cha_list: list of channels to be used for difference calculation ([0] - [1])
+    :param sat_list: list of satellites plotted into figure
+    :param sza_time: day/night/twilight
+    :param cursor: SQL cursor
+    :param out_path: output directory for png file
+    :param sdate: start date
+    :param edate: end date
+    :param linesty: defines the line style used in the plot
+    :return:
+    """
+    isdata_cnt = 0
+
+    if sza_time == "day_90sza":
+        stime = "day"
+    elif sza_time == "day":
+        # stime = "day_80sza"
+        return
+    else:
+        stime = sza_time
+
+    (cha1_label, nobs_label, date_label, orbit_label, mean_label, stdv_label) = get_pystat_labels(cha_list[0])
+    (cha2_label, nobs_label, date_label, orbit_label, mean_label, stdv_label) = get_pystat_labels(cha_list[1])
+
+    mean_label = r'$\Delta$' + mean_label
+    stdv_label = r'$\Delta$' + stdv_label
+
+    (plot_label, c1_name, c2_name) = get_channel_difference_plot_title(label1=cha1_label, label2=cha2_label,
+                                                                       selected_time=stime, channel_list=cha_list)
+
+    (ax_val, ax_std, ax_rec) = init_pystat_plot()
+
+    # -- loop over satellites
+    for satellite in sat_list:
+
+        # get color for satellite
+        satcolor = subs.color_satstring(satellite)
+
+        # read pystat results
+        (datelst_1, meanlst_1, stdvlst_1,
+         nobslst_1, orb_cnts_lst_1) = read_global_newstats(satellite, cha_list[0],
+                                                           sza_time, sdate, edate, cursor)
+        (datelst_2, meanlst_2, stdvlst_2,
+         nobslst_2, orb_cnts_lst_2) = read_global_newstats(satellite, cha_list[1],
+                                                           sza_time, sdate, edate, cursor)
+
+        if len(datelst_1) != len(datelst_2):
+            logger.info("Both date lists do not have the same length for calculating the channel difference.")
+            return
+
+        for cnt, idx in enumerate(datelst_1):
+            if datelst_1[cnt] != datelst_2[cnt]:
+                logger.info("Both date lists have the same length but do not match.")
+                logger.info("Date List 1: {0}".format(datelst_1[cnt]))
+                logger.info("Date List 2: {0}".format(datelst_2[cnt]))
+                return
+
+        if len(datelst_1) > 1:
+            isdata_cnt += 1
+            dat = np.asarray(datelst_1)
+            obs = np.asarray(nobslst_1)
+            ave = np.asarray(meanlst_1) - np.asarray(meanlst_2)
+            std = np.asarray(stdvlst_1) - np.asarray(stdvlst_2)
+            ax_val.plot(dat, ave, linesty, label=satellite, color=satcolor, alpha=0.8, markersize=5)
+            ax_std.plot(dat, std, linesty, label=satellite, color=satcolor, alpha=0.8, markersize=5)
+            ax_rec.plot(dat, obs, '--o', label=satellite, markersize=5, alpha=0.8, color=satcolor)
+        else:
+            continue
+    # -- end ofloop over satellites
+
+    if isdata_cnt > 0:
+        if len(sat_list) == 1:
+            min_x_date = min(datelst_1)
+            max_x_date = max(datelst_1)
+            delta_days = (max_x_date - min_x_date).days
+            sdate_str = subs.date2str(min_x_date)
+            edate_str = subs.date2str(max_x_date)
+            sname = subs.full_sat_name(sat_list[0])[2]
+            fbase = 'Plot_TimeSeries_' + sdate_str + '_' + edate_str + \
+                    '_' + c1_name + '-' + c2_name + '_' + stime + '_' + sname + '.png'
+        else:
+            delta_days = (edate - sdate).days
+            min_x_date = sdate
+            max_x_date = edate
+            sdate_str = subs.date2str(sdate)
+            edate_str = subs.date2str(edate)
+            fbase = 'Plot_TimeSeries_' + sdate_str + '_' + edate_str + \
+                    '_' + c1_name + '-' + c2_name + '_' + stime + '.png'
+
+        ofile = os.path.join(out_path, fbase)
+
+        # get number of valid orbits per day
+        if len(sat_list) == 1:
+            plot_orbits_per_day(ax_rec, sat_list[0], orb_cnts_lst_1, datelst_1, orbit_label)
+
+        # annotate plot
+        label_pystat_plot(ave=ax_val, std=ax_std, obs=ax_rec,
+                          min_x_date=min_x_date, max_x_date=max_x_date,
+                          delta_days=delta_days, nobs=nobslst_1,
+                          plt_label=plot_label, dat_label=date_label,
+                          ave_label=mean_label, std_label=stdv_label, obs_label=nobs_label)
+
+        # make legend
+        if len(sat_list) > 8:
+            num_of_sats = int(math.ceil(len(sat_list) / 2.))
+        else:
+            num_of_sats = len(sat_list)
+
+        leg = ax_std.legend(ncol=num_of_sats, loc='best', fancybox=True)
+        plt.tight_layout(rect=(0.02, 0.02, 0.98, 0.98))
+        leg.get_frame().set_alpha(0.5)
+
+        # save and close plot
+        plt.savefig(ofile)
+        logger.info("Done {0}".format(ofile))
+        plt.close()
+
+    else:
+        plt.close()
+
+    return
+
+
+def plot_time_series(sat_list, channel, select, start_date, end_date, outpath,
+                     cursor, verbose, show_fig, linesty):
     """
     Plot time series based on pystat results.
     """
@@ -281,8 +407,8 @@ def plot_time_series(sat_list, channel, select, start_date, end_date, outpath, c
     return
 
 
-def plot_time_series_linfit(sat_list, channel, select, start_date,
-                            end_date, outpath, cursor, show_fig=None):
+def plot_time_series_linfit(sat_list, channel, select, start_date, end_date,
+                            outpath, cursor, show_fig):
     """
     Plot Time Series based on pystat results for each satellite
     including linear regression.
@@ -1408,3 +1534,27 @@ def plot_orbits_per_day(sub_obs, satellite, orb_cnts_lst, datelst, orbit_label):
         tl.set_color(satcol)
 
     return
+
+
+def get_channel_difference_plot_title(label1, label2, selected_time, channel_list):
+    """
+    Create plot title.
+    :param label1: full channel 1 name
+    :param label2: full channel 2 name
+    :param selected_time: time w.r.t. sza
+    :param channel_list: list of channels passed via arguments
+    :return:
+    """
+    ch_list = label1.split(" ") + label2.split(" ")
+    if len(set(ch_list)) > 4:
+        check = ' - '.join(channel_list)
+        logger.info("Check your --channels arguments! Are you sure about this: {0}".format(check))
+        return
+
+    ch1_name = label1.split(" ")[0]
+    ch2_name = label2.split(" ")[0]
+    c_suffix = ' '.join(label1.split(" ")[1:])
+    p_title = "AVHRR GAC daily global statistics: " + r'$\Delta$' + \
+              "(" + ch1_name + "," + ch2_name + ") " + c_suffix + " (" + selected_time + ")\n"
+
+    return p_title, ch1_name, ch2_name
