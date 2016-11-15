@@ -143,8 +143,8 @@ class QuickDatabase(DatabaseMod):
         :param records: record name
         :return:
         """
-        self.execute('INSERT OR IGNORE INTO {table} (name) VALUES (?)'.format(table=table), params=records)
-        self.commit_changes()
+        self.execute('INSERT OR IGNORE INTO {table} (name) VALUES (?)'.
+                     format(table=table), params=records)
 
     def insert_procs(self, table, orbit, l1c_file, pyg_ver, prun, perr, pwarn):
         """
@@ -180,10 +180,9 @@ class QuickDatabase(DatabaseMod):
         col_lst = [orb_id, sat_id, pyg_id, sta, end, prun, err, warn]
         records = [tuple(col_lst)]
         holders = ','.join('?' * len(col_lst))
-        sql_query = "INSERT OR REPLACE INTO {table} ({cols}) VALUES({holders})".format(table=table, cols=cols,
-                                                                                       holders=holders)
+        sql_query = "INSERT OR REPLACE INTO {table} ({cols}) " \
+                    "VALUES({holders})".format(table=table, cols=cols, holders=holders)
         self.execute(sql_query, params=records)
-        self.commit_changes()
 
         return sat_id, orb_id, pyg_id
 
@@ -204,10 +203,9 @@ class QuickDatabase(DatabaseMod):
         col_lst = [orb_id, sat_id, pyg_id, cha_id] + stat_list
         records = [tuple(col_lst)]
         holders = ','.join('?' * len(col_lst))
-        sql_query = "INSERT OR REPLACE INTO {table} ({cols}) VALUES({holders})".format(table=table, cols=cols,
-                                                                                       holders=holders)
+        sql_query = "INSERT OR REPLACE INTO {table} ({cols}) " \
+                    "VALUES({holders})".format(table=table, cols=cols, holders=holders)
         self.execute(sql_query, params=records)
-        self.commit_changes()
 
 
 def get_platform_name(l1b_filename):
@@ -304,7 +302,7 @@ def collect_records(l1b_file, l1c_file, sql_file, pygac_version,
     :return:
     """
     # -- open SQLite database
-    db = QuickDatabase(dbfile=sql_file, timeout=3600, create=True)
+    db = QuickDatabase(dbfile=sql_file, timeout=36000, create=True)
 
     # -- prepare satellite and channel records
     satellites = subs.get_satellite_list()
@@ -335,6 +333,5 @@ def collect_records(l1b_file, l1c_file, sql_file, pygac_version,
             db.insert_stats(table='stats', sat_id=sat_id, orb_id=orb_id, pyg_id=pyg_id,
                             channel=channel, stat_list=stat_list)
 
-    # db.print_schema()
-    # db.printout(table='vw_procs')
-    # db.printout(table='vw_stats')
+    db.commit_changes()
+    db.close()
