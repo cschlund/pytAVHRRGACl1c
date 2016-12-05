@@ -945,7 +945,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate, sat_list, ignore_sats, 
         txtfile = os.path.join(outdir, ofile + '.txt')
         f = open(txtfile, mode="w")
         f.write('# Equatorial Crossing Time of AVHRRs onboard NOAA and METOP satellites\n')
-        f.write("# 1.Satellite  2.YearMonth 3.Local Time Ascending Node (LTAN)\n")
+        f.write("# 1.Satellite  2.YearMonth  3.Local Time Ascending Node (LTAN) \n")
         f.close()
 
     x_title = "Date"
@@ -1050,8 +1050,7 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate, sat_list, ignore_sats, 
 
                 f = open(txtfile, mode="a")
                 for idx, val in enumerate(ectmean):
-                    line = '{0:8s}{1:8s}{2:10.4f}\n'.format(satellite, yearmonth[idx],
-                                                            ect_in_seconds[idx])
+                    line = '{0:8s}{1:8s}{2:10.4f}\n'.format(satellite, yearmonth[idx], ect_in_seconds[idx])
                     f.write(line)
                 f.close()
 

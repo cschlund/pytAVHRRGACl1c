@@ -709,8 +709,18 @@ def get_monthly_ect_averages(satellite, datlst, ectlst):
                 tmplst.append(seconds[idx])
 
         if len(tmplst) > 0:
+            # filter outliers before averaging
+            all_mean = np.mean(tmplst)
+            all_stdv = np.std(tmplst)
+            filtered_tmplst = filter(lambda x: abs(x - all_mean) <= all_stdv, tmplst)
+
+            # date in seconds
             date_in_sec = (mindt - datetime.datetime(1970, 1, 1, 0, 0)).total_seconds()
-            monave = sum(tmplst) / float(len(tmplst))
+
+            # monthly ECT value
+            monave = sum(filtered_tmplst) / float(len(filtered_tmplst))
+
+            # append to list
             ects.append(monave)
             datsec.append(date_in_sec)
             datobj.append(mindt)
