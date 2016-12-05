@@ -3,20 +3,24 @@
 import os
 
 sql_path = "/data/cschlund/201611_PyGAC_bugfix_testing/" \
-           "feature-clock_c8a7b2c_20151130/feature-clock_c8a7b2c_20151130-sql_files"
+           "3_feature-clock_8216c7c_20161103/feature-clock_8216c7c_20161103-sql_files"
 
-# sql_file = os.path.join(sql_path, "AVHRR_GAC_pygaclog_201611_pygac-commit-c8a7b2c.sqlite3")
-sql_file = os.path.join(sql_path, "test.sqlite3")
+# sql_file = os.path.join(sql_path, "AVHRR_GAC_pygaclog_201611_pygac-commit-c8a7b2c-efa101a-8216c7c.sqlite3")
+sql_file = os.path.join(sql_path, "test_pygaclog.sqlite3")
 
 # source
 source_table = "pygac_versions"
 source_column = ["feature-clock_c8a7b2c_20151130",
-                 "feature-clock_efa101a_20161103"]
+                 "feature-clock_efa101a_20161103",
+                 "feature-clock_8216c7c_20161103",
+                 "feature-clock_cec5b59_20161116"]
 # target
 target_type = "TEXT"
 target_column = "metadata"
-target_record = ["PyGAC version used for AVHRR GAC FCDR v2 (CLARA-A2, CC4CL)",
-                 "PyGAC version: Nan bug-fixed"]
+target_record = ["Used for AVHRR GAC FCDR v2 (CLARA-A2, CC4CL)",
+                 "Bug-fix: NaN pixels",
+                 "Bug-fix: temporary scan motor issue (NOAA-14,15,16)",
+                 "Bug-fix: corrupt scanline and timestamp"]
 
 
 

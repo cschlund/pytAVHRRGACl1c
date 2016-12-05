@@ -38,6 +38,7 @@ class AddMetadata(QuickDatabase):
         :return:
         """
         try:
+            print src_tab, src_col, tar_col, tar_rec
             query = "UPDATE {src_tab} SET {tar_col}=\'{tar_rec}\' " \
                     "WHERE name = \'{src_col}\'".format(src_tab=src_tab, src_col=src_col,
                                                         tar_col=tar_col, tar_rec=tar_rec)
@@ -54,8 +55,8 @@ if __name__ == '__main__':
     # add new column and its record
     db.add_column(table=source_table, new_column=target_column, new_type=target_type)
     for idx, rec in enumerate(target_record):
-        db.insert_metadata(src_tab=source_table, src_col=source_column,
-                           tar_col=target_column[idx], tar_rec=target_record[idx])
+        db.insert_metadata(src_tab=source_table, src_col=source_column[idx],
+                           tar_col=target_column, tar_rec=target_record[idx])
     db.commit_changes()
 
     # print schema
