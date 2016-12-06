@@ -1,0 +1,54 @@
+#!/usr/bin/env python2.7
+
+import os
+import datetime
+from subs_avhrrgac import get_satellite_list
+from subs_avhrrgac import get_channel_list
+from subs_avhrrgac import get_pystat_select_list
+
+# path for png files
+png_path = "/cmsaf/cmsaf-cld7/cschlund/figures/pytAVHRRGACl1c/quick_l1c_analysis"
+procs_png = "Plot_pygaclog_table_procs.png"
+stats_png = "Plot_pygaclog_table_stats.png"
+
+# symbolic links here
+sql_path = "/home/cschlund/Programme/python/pytAVHRRGACl1c/dbfiles"
+
+# pygac log sqlite file holding information about different pygac proc. versions
+# 1|feature-clock_c8a7b2c_20151130|Used for AVHRR GAC FCDR v2 (CLARA-A2, CC4CL)
+# 2|feature-clock_efa101a_20161103|Bug-fix: NaN pixels
+# 3|feature-clock_8216c7c_20161103|Bug-fix: temporary scan motor issue (NOAA-14,15,16)
+# 4|feature-clock_cec5b59_20161116|Bug-fix: corrupt scanline and timestamp
+
+sql_pygac_log = os.path.join(sql_path, "AVHRR_GAC_pygaclog_201611_pygac-commit-c8a7b2c-efa101a-8216c7c.sqlite3")
+
+#
+# TABLE procs:
+#   start_time_l1c TIMESTAMP, end_time_l1c TIMESTAMP,
+#   pygac_runtime FLOAT, pygac_errors TEXT, pygac_warnings TEXT
+#
+# TABLE stats
+#   min_val FLOAT, max_val FLOAT, mean_val FLOAT,
+#   number_of_total_obs INTEGER, number_of_masked_obs INTEGER, number_of_valid_obs INTEGER
+#
+
+# pystat sqlite files for different pygac processing versions
+sql_pystat_1 = os.path.join(sql_path, "AVHRR_GAC_pystat_201611_pygac-commit-c8a7b2c.sqlite3")
+sql_pystat_2 = os.path.join(sql_path, "AVHRR_GAC_pystat_201611_pygac-commit-efa101a.sqlite3")
+sql_pystat_3 = os.path.join(sql_path, "AVHRR_GAC_pystat_201611_pygac-commit-8216c7c.sqlite3")
+sql_pystat_4 = os.path.join(sql_path, "AVHRR_GAC_pystat_201611_pygac-commit-cec5b59.sqlite3")
+
+pystat_old = sql_pystat_1
+pystat_new = sql_pystat_2
+
+pystat_list = [sql_pystat_1, sql_pystat_2, sql_pystat_3]
+
+start_date = datetime.datetime(2000, 1, 1)
+end_date = datetime.datetime(2005, 5, 31)
+
+# satellite_list = get_satellite_list()
+satellite_list = ["NOAA16"]
+channel_list = get_channel_list()
+# channel_list = ["ch1"]
+select_list = get_pystat_select_list()
+# select_list = ["day_90sza"]

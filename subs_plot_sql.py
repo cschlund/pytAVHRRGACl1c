@@ -333,7 +333,8 @@ def pystat_channel_difference(cha_list, sat_list, sza_time, cursor,
 
 
 def plot_time_series(sat_list, channel, select, start_date, end_date, outpath,
-                     cursor, verbose, show_fig, linesty):
+                     cursor, verbose, show_fig, linesty,
+                     pystat_version=None, mean_range=None, stdv_range=None):
     """
     Plot time series based on pystat results.
     """
@@ -382,7 +383,7 @@ def plot_time_series(sat_list, channel, select, start_date, end_date, outpath,
             edate_str = subs.date2str(max_x_date)
             sname = subs.full_sat_name(sat_list[0])[2]
             fbase = 'Plot_TimeSeries_' + sdate_str + '_' + edate_str + \
-                    '_' + channel + '_' + stime + '_' + sname + '.png'
+                    '_' + channel + '_' + stime + '_' + sname + pystat_version + '.png'
         else:
             delta_days = (end_date - start_date).days
             min_x_date = start_date
@@ -390,13 +391,18 @@ def plot_time_series(sat_list, channel, select, start_date, end_date, outpath,
             sdate_str = subs.date2str(start_date)
             edate_str = subs.date2str(end_date)
             fbase = 'Plot_TimeSeries_' + sdate_str + '_' + edate_str + \
-                    '_' + channel + '_' + stime + '.png'
+                    '_' + channel + '_' + stime + pystat_version + '.png'
 
         ofile = os.path.join(outpath, fbase)
 
         # get number of valid orbits per day
         if len(sat_list) == 1:
             plot_orbits_per_day(ax_rec, sat_list[0], orb_cnts_lst, datelst, orbit_label)
+
+        if mean_range:
+            ax_val.set_ylim(mean_range[0], mean_range[1])
+        if stdv_range:
+            ax_std.set_ylim(stdv_range[0], stdv_range[1])
 
         # annotate plot
         label_pystat_plot(ave=ax_val, std=ax_std, obs=ax_rec,
