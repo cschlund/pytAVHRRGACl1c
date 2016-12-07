@@ -6,9 +6,15 @@ from subs_avhrrgac import get_satellite_list
 from subs_avhrrgac import get_channel_list
 from subs_avhrrgac import get_pystat_select_list
 
+# what to plot: options - set True or False
+vis_pygaclog = False
+vis_timestamps = True
+vis_pystat = False
+
 # path for png files
 png_path = "/cmsaf/cmsaf-cld7/cschlund/figures/pytAVHRRGACl1c/quick_l1c_analysis"
-procs_png = "Plot_pygaclog_table_procs.png"
+procs_png = "Plot_pygaclog_table_procs_runtime_and_errors.png"
+times_png = "Plot_pygaclog_table_procs_timestamps.png"
 stats_png = "Plot_pygaclog_table_stats.png"
 
 # symbolic links here
