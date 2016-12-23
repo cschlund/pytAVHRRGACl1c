@@ -334,7 +334,8 @@ def pystat_channel_difference(cha_list, sat_list, sza_time, cursor,
 
 def plot_time_series(sat_list, channel, select, start_date, end_date, outpath,
                      cursor, verbose, show_fig, linesty,
-                     pystat_version=None, mean_range=None, stdv_range=None):
+                     pystat_version=None, pystat_metadata=None,
+                     mean_range=None, stdv_range=None):
     """
     Plot time series based on pystat results.
     """
@@ -368,7 +369,8 @@ def plot_time_series(sat_list, channel, select, start_date, end_date, outpath,
         if len(datelst) > 1:
             isdata_cnt += 1
             ax_val.plot(datelst, meanlst, linesty, label=satellite, color=satcolor, alpha=0.8, markersize=5)
-            ax_std.plot(datelst, stdvlst, linesty, label=satellite, color=satcolor, alpha=0.8, markersize=5)
+            ax_std.plot(datelst, stdvlst, linesty, label=satellite+" "+pystat_metadata,
+                        color=satcolor, alpha=0.8, markersize=5)
             ax_rec.plot(datelst, nobslst, '--o', label=satellite, markersize=5, alpha=0.8, color=satcolor)
         else:
             continue

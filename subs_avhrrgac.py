@@ -261,6 +261,27 @@ def full_cha_name(target):
         sys.exit(message)
 
 
+def get_channel_unit(target):
+    """
+    Returns channel unit.
+    """
+    if target == 'rf1' or target == 'ch1':
+        return ""
+    elif target == 'rf2' or target == 'ch2':
+        return ""
+    elif target == 'rf3' or target == 'ch3a':
+        return ""
+    elif target == 'bt3' or target == 'ch3b':
+        return "[K]"
+    elif target == 'bt4' or target == 'ch4':
+        return "[K]"
+    elif target == 'bt5' or target == 'ch5':
+        return "[K]"
+    else:
+        message = "\n * Wrong target name! see help message !\n"
+        sys.exit(message)
+
+
 def pre_blacklist_reasons():
     """
     These blacklist reasons have been found and implemented so far,
