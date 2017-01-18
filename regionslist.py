@@ -60,7 +60,7 @@ REGIONS = dict(
     sam={"nam": "South America",
          "par": [-90, 91, 5],
          "mer": [-180, 181, 10],
-         "geo": {"lon_0": -60, "lat_0": -20, "height": 9000e3, "width": 7000e3,
+         "geo": {"lon_0": -60, "lat_0": -27, "height": 10000e3, "width": 7500e3,
                  "projection": 'stere', "resolution": 'l'}},
 
     nam={"nam": "North America",

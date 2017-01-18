@@ -136,6 +136,7 @@ def read_scanlines(ifile, records):
             return sl, el, xd, yd
 
     logger.info("No match found for {0} - {1}".format(sdt, edt))
+    return None, None, None, None
 
 
 def get_date_sat_from_filename(filename):
@@ -274,6 +275,16 @@ def map_avhrrgac_l1c(flist, args):
 
         # get scanlines and dimension of orbit
         sl, el, xdim, ydim = read_scanlines(fil, recs)
+        if xdim is None or ydim is None:
+            f = h5py.File(fil, "r+")
+            fil_dim = rh5.get_data_size(f)
+            f.close()
+            if fil_dim is not None:
+                xdim = fil_dim[1]
+                ydim = fil_dim[0]
+            else:
+                logger.info("*** Skip %s -> no file dimensions!" % fil_name)
+                sys.exit(0)
         if sl is None:
             sl = 0
             #sl = 1000
@@ -386,12 +397,14 @@ def map_avhrrgac_l1c(flist, args):
             # pcolor = m.pcolor(x, y, mtar, cmap='jet', vmin=0.0, vmax=1.0)
             # pcolor = m.pcolor(x, y, mtar.filled(tarmin-1), cmap=cmap, vmin=np.min(tar), vmax=np.max(tar))
             cmap = cm.get_cmap(ctable)
-            cmap.set_under('Gray')
-            cmap.set_bad('DimGrey')
+            #cmap.set_under('Gray')
+            #cmap.set_bad('DimGrey')
+            cmap.set_under('Pink')
+            cmap.set_bad('Pink')
             if args.region == 'glo': 
                 symsize = 1.0
             else: 
-                symsize = 4.0
+                symsize = 1.0
             pcolor = m.scatter(x, y, c=mtar.filled(tarmin-1), s=symsize, edgecolor='none', 
                                alpha=0.5, cmap=cmap, vmin=tarmin, vmax=tarmax)
 
