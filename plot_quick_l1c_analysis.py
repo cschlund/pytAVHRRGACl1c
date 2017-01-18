@@ -135,6 +135,16 @@ def datetime2str(dateobject):
     return dateobject.strftime("%Y/%m/%d %H:%M")
 
 
+def init_tab_stats_plot_tsm():
+    """
+    Initialize plot for table stats (tsm check).
+    """
+    fig = plt.figure(figsize=(16, 9))
+    fig_normal = fig.add_subplot(211)
+    fig_zoom = fig.add_subplot(212)
+    return fig, fig_normal, fig_zoom
+
+
 def init_tab_stats_plot():
     """
     Initialize plot for table stats (channel information).
@@ -184,6 +194,42 @@ def finalize_tab_stats_plot(obj1, obj2, obj3, ptitle, sdt, edt, obj1_y_range):
     plt.tight_layout(rect=(0.01, 0.01, 0.99, 0.99))
     # plt.tight_layout(h_pad=2.2)
 
+    return
+
+
+def finalize_tab_stats_plot_tsm(obj1, obj2, ptitle, sdt, edt):
+    """
+    Finalize table stats plot tsm-check: annotate and legend
+    """
+    # title
+    obj1.set_title(ptitle)
+    # y axis range
+    obj2.set_ylim(-5000, 500)
+    # x axis range
+    for obj in [obj1, obj2]:
+        obj.set_xlim(sdt, edt)
+    # modify x axis
+    delta_days = (edt - sdt).days
+    (minor_loc, major_loc, major_fmt, date_label) = calc_date_formatter(delta_days, "Date")
+    for obj in [obj1, obj2]:
+        obj.xaxis.set_major_locator(major_loc)
+        obj.xaxis.set_minor_locator(minor_loc)
+        obj.xaxis.set_major_formatter(major_fmt)
+        obj.grid(which='both')
+    # fancy date labeling
+    plt.gcf().autofmt_xdate(rotation=20)
+    # set y format
+    obj1.yaxis.get_major_formatter().set_powerlimits((0, 1))
+    obj2.yaxis.get_major_formatter().set_powerlimits((0, 1))
+    # annotate plot
+    obj1.set_ylabel("# masked obs.")
+    obj2.set_ylabel("# masked obs.")
+    obj2.set_xlabel(date_label)
+    # make legend
+    leg = obj1.legend(ncol=2, loc='best', fancybox=True)
+    leg.get_frame().set_alpha(0.9)
+    plt.tight_layout(rect=(0.01, 0.01, 0.99, 0.99))
+    # plt.tight_layout(h_pad=2.2)
     return
 
 
@@ -927,13 +973,113 @@ def slice_data(dates, values):
     return dat_list, val_list
 
 
+def plot_tsm_check(cursor, satellite, sdate, edate):
+    """
+    Plot number_of_masked_obs before and after TSM correction.
+    TSM: temporary scan motor issue
+    """
+    channel_list = get_channel_list()
+
+    for channel in channel_list:
+
+        # initialize plot
+        (fig, fig_normal, fig_zoom) = init_tab_stats_plot_tsm()
+
+        logger.info("Working on {0}:{1}".format(satellite, channel))
+        logger.info("Read all available pygac processing versions")
+        pygac_versions = get_pygac_versions_dict(cursor=cursor)
+
+        p_vers_list = list()
+        l1b_dates = list()
+        # number_of_masked_obs from two different runs
+        tsm_masked_1 = list()
+        tsm_masked_2 = list()
+        l1b_filenames_1 = list()
+        l1b_filenames_2 = list()
+
+        for pv in pygac_versions:
+            pv_id = pv['id']
+            if pv_id is not tsm_id_1 and pv_id is not tsm_id_2:
+                continue
+            pv_name = pv['name']
+            pv_info = pv['metadata']
+            p_vers_list.append(pv_info)
+
+            logger.info("Working on: {0}, i.e. {1}".format(pv_name, pv_info))
+
+            # get statistics
+            cmd = "SELECT orbit_name, number_of_masked_obs " \
+                  "FROM vw_stats WHERE " \
+                  "satellite_name=\'{satellite}\' AND " \
+                  "channel_name=\'{channel}\' AND " \
+                  "pygac_version_id={pv_id} AND " \
+                  "number_of_total_obs is not null " \
+                  "ORDER BY orbit_name"
+
+            cursor.execute(cmd.format(satellite=satellite, channel=channel,
+                                      pv_id=pv_id, sdate=sdate, edate=edate))
+            channel_stat = cursor.fetchall()
+            if channel_stat:
+                for cs in channel_stat:
+                    if pv_id == tsm_id_1:
+                        l1b_filenames_1.append(cs['orbit_name'])
+                        tsm_masked_1.append(cs['number_of_masked_obs'])
+                    if pv_id == tsm_id_2:
+                        l1b_filenames_2.append(cs['orbit_name'])
+                        tsm_masked_2.append(cs['number_of_masked_obs'])
+            else:
+                continue
+
+        if len(l1b_filenames_1) != len(l1b_filenames_2) and \
+            len(tsm_masked_1) != len(tsm_masked_2):
+                logger.info("Something is wrong here! lists are not of same length")
+                sys.exit(1)
+
+        start_time_l1b = list()
+        for orbit in l1b_filenames_1:
+            odict = extract_orbit_attrs(orbit)
+            start_time_l1b.append(odict['start_time_l1b'])
+
+        # collect start_time_l1b
+        for dt in start_time_l1b:
+            l1b_dates.append(dt)
+
+        # plot data
+        (x1, y1) = slice_data(dates=start_time_l1b, values=tsm_masked_1)
+        (x2, y2) = slice_data(dates=start_time_l1b, values=tsm_masked_2)
+
+        ydiff = list()
+        for i, j in zip(y1, y2):
+            ydiff.append(i-j)
+
+        label = p_vers_list[0] + " MINUS " + p_vers_list[1]
+        fig_normal.plot(x1, ydiff, '-', label=label, color='Navy', alpha=0.75, linewidth=1.)
+        fig_zoom.plot(x1, ydiff, '-', color='Navy', alpha=0.75, linewidth=1.)
+
+        # finalize plot
+        (sdt, edt) = check_dates_limits(l1b_dates)
+        fc = full_cha_name(target=channel)
+        ptitle = satellite + ": " + fc + " " + date2str(sdt) + " - " + date2str(edt) + "\n"
+        finalize_tab_stats_plot_tsm(obj1=fig_normal, obj2=fig_zoom, ptitle=ptitle, sdt=sdt, edt=edt)
+
+        # save plot as png file
+        dat_str = date2filestr(sdt) + '_' + date2filestr(edt)
+        png_fil = stats_png + "_" + dat_str + '_' + channel + '_' + satellite + "_tsm-check.png"
+        outfile = os.path.join(png_path, png_fil)
+        fig.savefig(outfile)
+        logger.info("Done {0}".format(outfile))
+        plt.close()
+    return
+
+
 if __name__ == '__main__':
 
     if not os.path.exists(png_path):
         os.makedirs(png_path)
 
     try:
-        pygaclog = lite.connect(sql_pygac_log, detect_types=lite.PARSE_DECLTYPES | lite.PARSE_COLNAMES)
+        pygaclog = lite.connect(sql_pygac_log,
+                                detect_types=lite.PARSE_DECLTYPES | lite.PARSE_COLNAMES)
         pygaclog.row_factory = dict_factory
         cur_log = pygaclog.cursor()
 
@@ -957,6 +1103,10 @@ if __name__ == '__main__':
                              sdate=start_date, edate=end_date)
             plot_table_stats_all_in_one(cursor=cur_log, satellite=sat,
                                         sdate=start_date, edate=end_date)
+
+        if vis_tsm_check:
+            plot_tsm_check(cursor=cur_log, satellite=sat,
+                           sdate=start_date, edate=end_date)
 
         # close dbfile
         pygaclog.close()

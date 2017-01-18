@@ -14,6 +14,10 @@ vis_pygaclog = True
 vis_timestamps = True
 vis_pystat = True
 vis_tab_stats = True
+# compare two pygac_versions id_1 minus id_2
+vis_tsm_check = True
+tsm_id_1 = 2
+tsm_id_2 = 3
 
 # ================================================================================
 # Satellite, Start and End Date used for pygaclog (errors, runtime) plot
