@@ -942,6 +942,9 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate, sat_list, ignore_sats, 
         # plt_title = base_title + "AVHRR's on-board NOAA/MetOp Polar Satellites"
 
     # initialize plot
+    # -- ACP ERA Simulator paper --
+    # fig = plt.figure(figsize=(18, 5))
+    # ----------------------------------
     fig = plt.figure(figsize=(15, 7))
     ax = fig.add_subplot(111)
 
@@ -1078,6 +1081,10 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate, sat_list, ignore_sats, 
 
     # modify y axis
     if primes:
+        # -- ACP ERA simulator paper --
+        # hour_start = 12 * 3600
+        # hour_end = 18 * 3600
+        # -----------------------------
         hour_start = 5 * 3600
         hour_end = 18 * 3600
     else:
@@ -1141,9 +1148,12 @@ def plot_avhrr_ect_results(dbfile, outdir, sdate, edate, sat_list, ignore_sats, 
     if primes:
         xmin = 0.02
         ymax = 0.95
+        # -- ACP ERA Simulator paper --
+        # strings = ["AVHRR-PM"]
+        # scolors = ['Navy']
+        # -----------------------------
         strings = ["AVHRR-PM", "AVHRR-AM", "MODIS-Terra", "MODIS-Aqua", "ATSR2-AATSR", "MERIS+AATSR"]
         scolors = ['Navy', 'DodgerBlue', 'DarkGreen', 'LimeGreen', 'DarkOrange', 'DarkViolet']
-        # not so fancy box
         props = dict(boxstyle='round,pad=0.5', facecolor='white', alpha=1)
         ax.text(xmin, ymax, 'Cloud_cci datasets:\n\n\n\n\n\n\n\n', fontweight='bold',
                 transform=ax.transAxes, fontsize=18, verticalalignment='top', bbox=props)
