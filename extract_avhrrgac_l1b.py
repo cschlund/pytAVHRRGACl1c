@@ -75,7 +75,6 @@ def get_file_list_from_sql(args, db):
         else: 
             cmd = "SELECT satellite_name, filename, tarfile_name "\
                   "FROM vw_std WHERE blacklist=0 AND "\
-                  #"number_of_missing_scanlines>12000 AND "\
                   "start_time_l1c is not null order by start_time_l1b"
             res = db.execute(cmd) 
 
